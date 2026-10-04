@@ -116,6 +116,16 @@ class EnvironmentVariables {
 
   @IsString()
   OTP_PEPPER!: string;
+
+  /**
+   * Explicit OTP development flag. When true, `sendOtp` logs the code instead of
+   * calling the SMS provider. Defaults to false so a missing variable can never
+   * silently disable real OTP delivery — set it deliberately in dev only.
+   */
+  @IsOptional()
+  @Transform(({ value }) => (value === undefined ? undefined : value === true || value === 'true'))
+  @IsBoolean()
+  OTP_DEV_MODE: boolean = false;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

@@ -13,8 +13,30 @@ import { adminConfig, appConfig, isReady, TEST_DB_NAME } from './test-db';
  */
 export const integrationEnabled = isReady();
 
-/** `describe` when the database is ready, `describe.skip` otherwise. */
-export const describeIntegration = integrationEnabled ? describe : describe.skip;
+/**
+ * When `INTEGRATION_DB_REQUIRED === 'true'` (set by CI) a missing Postgres is a
+ * hard failure instead of a silent skip: a green build must mean the isolation
+ * specs actually ran. Locally the flag stays unset, so `npm run test:integration`
+ * keeps working without docker.
+ */
+export const integrationRequired = process.env.INTEGRATION_DB_REQUIRED === 'true';
+
+/** `describe` when the database is ready; otherwise skip, or fail when required. */
+export const describeIntegration = integrationEnabled
+  ? describe
+  : integrationRequired
+    ? (name: string, fn: () => void) =>
+        describe(name, () => {
+          // Fail before the spec body registers its own hooks, so the report is
+          // a single clear failure instead of hook noise from an empty DataSource.
+          beforeAll(() => {
+            throw new Error(
+              '[integration] Postgres is unreachable but INTEGRATION_DB_REQUIRED=true — the suite must not pass silently',
+            );
+          });
+          fn();
+        })
+    : describe.skip;
 
 let dataSource: DataSource | null = null;
 

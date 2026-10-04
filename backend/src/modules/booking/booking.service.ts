@@ -120,7 +120,7 @@ export class BookingService {
       return saved;
     } catch (error) {
       // 23P01: exclusion violation (GIST overlap constraint) | 40P01: deadlock on concurrent GIST insert
-      if (isOverlap(error) || (error.code && error.code === '40P01')) {
+      if (isOverlap(error) || hasSqlState(error, '40P01')) {
         throw new ConflictException('این بازه زمانی قبلاً برای این متخصص رزرو شده است. لطفاً زمان دیگری انتخاب کنید.');
       }
       throw error;
@@ -375,6 +375,11 @@ function rangeStart(value: string): Date {
 }
 
 function isOverlap(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23P01';
+  return hasSqlState(error, '23P01');
+}
+
+/** True when a thrown value carries the given Postgres SQLSTATE in `code`. */
+function hasSqlState(error: unknown, state: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === state;
 }
 

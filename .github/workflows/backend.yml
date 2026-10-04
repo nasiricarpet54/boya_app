@@ -16,6 +16,46 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # Postgres + Redis back the integration suite. The init script is mounted the
+    # same way docker-compose.yml mounts it, so `beauty_app` exists with
+    # NOBYPASSRLS and the RLS isolation specs run against a realistic cluster.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: beauty
+          POSTGRES_PASSWORD: change-me
+          POSTGRES_DB: beauty_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U beauty -d beauty_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        volumes:
+          - ${{ github.workspace }}/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Point the harness at the service containers above.
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 5432
+      DATABASE_USER: beauty
+      DATABASE_PASSWORD: change-me
+      DATABASE_NAME: beauty_platform
+      DATABASE_MIGRATION_USER: beauty
+      DATABASE_MIGRATION_PASSWORD: change-me
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      INTEGRATION_DB_REQUIRED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,4 +65,9 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run build
+      # Unit tests (TZ is pinned inside jest via test/setup/unit-tz.setup.ts).
       - run: npm test
+      # Integration tests: RLS isolation, booking exclusion and policy GUC.
+      # The harness creates `beauty_platform_test`, migrates it and skips only
+      # when Postgres is unreachable.
+      - run: npm run test:integration

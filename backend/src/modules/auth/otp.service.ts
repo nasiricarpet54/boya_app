@@ -44,9 +44,10 @@ export class OtpService {
     await this.redis.set(this.otpKey(phone), this.hash(phone, code), 'EX', OTP_TTL_SECONDS);
     await this.redis.del(this.attemptKey(phone));
 
-    const apiKey = process.env.KAVENEGAR_API_KEY;
-    const nodeEnv = process.env.NODE_ENV ?? 'development';
-    const isDevMode = !apiKey || nodeEnv !== 'production';
+    // Explicit dev flag (not NODE_ENV): log the code instead of calling the SMS
+    // provider only when OTP_DEV_MODE === 'true'. Production default is false, so
+    // a missing variable can never silently disable real OTP delivery.
+    const isDevMode = process.env.OTP_DEV_MODE === 'true';
 
     if (isDevMode) {
       // eslint-disable-next-line no-console

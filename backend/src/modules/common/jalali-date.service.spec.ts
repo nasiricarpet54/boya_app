@@ -9,7 +9,7 @@ describe('JalaliDateService', () => {
   });
 
   it('turns a Persian Jalali date back into Tehran midnight', () => {
-    expect(service.toGregorian('۱۴۰۳/۰۱/۰۱').toISOString()).toBe('2024-03-20T20:30:00.000Z');
+    expect(service.toGregorian('۱۴۰۳/۰۱/۰۱').toISOString()).toBe('2024-03-19T20:30:00.000Z');
   });
 
   it('rejects 30 Esfand of a common year', () => {

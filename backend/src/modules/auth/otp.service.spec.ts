@@ -14,9 +14,25 @@ describe('OtpService', () => {
   };
   const sms = { verify: jest.fn() };
   let service: OtpService;
+  const originalEnv: Record<string, string | undefined> = {};
+
+  beforeAll(() => {
+    originalEnv.OTP_DEV_MODE = process.env.OTP_DEV_MODE;
+    originalEnv.KAVENEGAR_API_KEY = process.env.KAVENEGAR_API_KEY;
+  });
+
+  afterAll(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // Explicit dev flag off + fake provider key: sendOtp must reach sms.verify.
+    process.env.OTP_DEV_MODE = 'false';
+    process.env.KAVENEGAR_API_KEY = 'test-key';
     redis.incr.mockResolvedValue(1);
     redis.expire.mockResolvedValue(1);
     redis.set.mockResolvedValue('OK');
