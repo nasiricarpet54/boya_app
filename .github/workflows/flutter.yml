@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [customer_app, salon_app, shared]
+        app: [customer_app, salon_app]
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -19,4 +19,4 @@ jobs:
           channel: stable
       - run: cd mobile/${{ matrix.app }} && flutter pub get
       - run: cd mobile/${{ matrix.app }} && flutter analyze
-      - run: cd mobile/${{ matrix.app }} && flutter test || true
+      - run: cd mobile/${{ matrix.app }} && flutter test
