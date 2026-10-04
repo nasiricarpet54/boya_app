@@ -202,32 +202,48 @@ export class BookingService {
     reason: CancellationReason,
     now = new Date(),
   ): Promise<{ booking: Booking; refund: RefundCalculation }> {
-    const booking = await this.findById(tenantId, id);
-    if (booking.status === BookingStatus.Cancelled) throw new BadRequestException('این رزرو قبلاً لغو شده است');
-    if (booking.status === BookingStatus.Completed) throw new BadRequestException('رزرو تکمیل‌شده قابل لغو نیست');
+    // One tenant-scoped transaction for the read and the write: `bookings` is
+    // FORCE ROW LEVEL SECURITY, so the SELECT only sees the row (and the UPDATE
+    // only passes WITH CHECK) while the GUC is set.
+    const result = await this.inTenant(tenantId, async (bookings) => {
+      const booking = await this.findScoped(bookings, tenantId, id);
+      if (booking.status === BookingStatus.Cancelled) {
+        throw new BadRequestException('این رزرو قبلاً لغو شده است');
+      }
+      if (booking.status === BookingStatus.Completed) {
+        throw new BadRequestException('رزرو تکمیل‌شده قابل لغو نیست');
+      }
 
-    const refund = this.cancellation.calculate({
-      totalPrice: Number(booking.totalPrice),
-      startsAt: rangeStart(booking.timeSlot),
-      now,
-      reason,
+      const refund = this.cancellation.calculate({
+        totalPrice: Number(booking.totalPrice),
+        startsAt: rangeStart(booking.timeSlot),
+        now,
+        reason,
+      });
+      booking.status = BookingStatus.Cancelled;
+      return { booking: await bookings.save(booking), refund };
     });
-    booking.status = BookingStatus.Cancelled;
-    const saved = await this.bookings.save(booking);
+
     this.events.emit(BOOKING_CANCELLED, {
-      bookingId: saved.id,
+      bookingId: result.booking.id,
       tenantId,
-      customerId: saved.customerId,
+      customerId: result.booking.customerId,
       reason,
-      refundAmount: refund.refundAmount,
+      refundAmount: result.refund.refundAmount,
     });
-    return { booking: saved, refund };
+    return result;
   }
 
+  /**
+   * Single-row read, scoped to the caller's tenant.
+   *
+   * `bookings` is FORCE ROW LEVEL SECURITY on
+   * `current_setting('app.current_tenant_id')`, so a bare `findOne` is filtered
+   * to zero rows and would surface as a spurious 404. Running it inside
+   * [inTenant] sets the GUC for the read, exactly like the write paths do.
+   */
   async findById(tenantId: string, id: string): Promise<Booking> {
-    const booking = await this.bookings.findOne({ where: { tenantId, id } });
-    if (!booking) throw new NotFoundException('رزرو مورد نظر یافت نشد');
-    return booking;
+    return this.inTenant(tenantId, async (bookings) => this.findScoped(bookings, tenantId, id));
   }
 
   /**
@@ -349,23 +365,57 @@ export class BookingService {
    * exposed here so the transition lives beside the rest of the state machine.
    */
   async markReviewed(tenantId: string, id: string): Promise<Booking> {
-    const booking = await this.findById(tenantId, id);
-    if (booking.status !== BookingStatus.Completed) {
-      throw new ConflictException('فقط رزرو تکمیل‌شده قابل بازبینی است');
-    }
-    booking.status = BookingStatus.Reviewed;
-    return this.bookings.save(booking);
+    // FORCE RLS again: the read and the write must share one tenant-scoped tx.
+    return this.inTenant(tenantId, async (bookings) => {
+      const booking = await this.findScoped(bookings, tenantId, id);
+      if (booking.status !== BookingStatus.Completed) {
+        throw new ConflictException('فقط رزرو تکمیل‌شده قابل بازبینی است');
+      }
+      booking.status = BookingStatus.Reviewed;
+      return bookings.save(booking);
+    });
   }
 
   /**
    * Customer-side "I was there". Stops the no-show sweep from flagging a visit
    * that actually happened. The booking must belong to the caller.
    */
+  /**
+   * Customer-side "I was there". Stops the no-show sweep from flagging a visit
+   * that actually happened. The booking must belong to the caller.
+   *
+   * A customer's JWT carries `tenantId = null` and `bookings` is FORCE ROW LEVEL
+   * SECURITY, so the caller cannot read the row to learn the tenant it belongs
+   * to. [resolveOwnedBookingTenant] settles that through a SECURITY DEFINER
+   * lookup that only answers for a booking the caller owns; the read and the
+   * write then run in that tenant's scope, so the RLS policy still guards them.
+   */
   async confirmVisitByCustomer(user: AuthenticatedUser, id: string): Promise<Booking> {
-    const booking = await this.bookings.findOne({ where: { id, customerId: user.userId } });
-    if (!booking) throw new NotFoundException('رزرو مورد نظر یافت نشد');
-    booking.visitConfirmedByCustomerAt = new Date();
-    return this.bookings.save(booking);
+    const tenantId = await this.resolveOwnedBookingTenant(user.userId, id);
+    return this.inTenant(tenantId, async (bookings) => {
+      const booking = await this.findScoped(bookings, tenantId, id);
+      if (booking.customerId !== user.userId) throw new NotFoundException('رزرو مورد نظر یافت نشد');
+      booking.visitConfirmedByCustomerAt = new Date();
+      return bookings.save(booking);
+    });
+  }
+
+  /**
+   * The tenant of a booking, but only when it belongs to `customerId`.
+   *
+   * Runs through the `get_customer_booking_tenant()` SECURITY DEFINER function
+   * (migration 1730000000028): a customer has no tenant of their own, and the
+   * booking row is unreadable under FORCE RLS until the GUC is set, so this is
+   * the one query that can break the deadlock without widening RLS.
+   */
+  private async resolveOwnedBookingTenant(customerId: string, bookingId: string): Promise<string> {
+    const rows = await this.dataSource.query<Array<{ tenant_id: string | null }>>(
+      `SELECT get_customer_booking_tenant($1, $2) AS tenant_id`,
+      [bookingId, customerId],
+    );
+    const tenantId = rows[0]?.tenant_id;
+    if (!tenantId) throw new NotFoundException('رزرو مورد نظر یافت نشد');
+    return tenantId;
   }
 }
 

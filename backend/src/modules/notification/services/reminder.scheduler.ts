@@ -163,11 +163,13 @@ export class ReminderScheduler implements OnModuleInit {
       this.logger.warn(`push ${kind} reminder failed for ${row.id}: ${(error as Error).message}`);
     }
 
-    // The phone is looked up per booking because customers are tenant-scoped.
-    const phone = await this.dataSource.query<{ phone: string }[]>(
-      `SELECT u.phone FROM users u
-       JOIN tenants t ON t.id = u.tenant_id
-       WHERE u.id = $1`,
+    // The phone is looked up through a SECURITY DEFINER function: `users` is
+    // FORCE ROW LEVEL SECURITY and this sweep runs with no tenant context, so a
+    // plain read returns nothing. The previous `JOIN tenants ON t.id = u.tenant_id`
+    // dropped every customer outright, because `users.tenant_id` is NULL for
+    // customers by design (migration 1730000000007) — the SMS never went out.
+    const phone = await this.dataSource.query<Array<{ phone: string | null }>>(
+      `SELECT get_user_phone($1) AS phone`,
       [row.customer_id],
     );
     if (phone[0]?.phone) {
