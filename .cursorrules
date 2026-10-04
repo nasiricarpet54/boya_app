@@ -18,6 +18,7 @@
 - مبلغ فقط integer تومان (نه ریال، نه float)
 
 - هر تابع SECURITY DEFINER باید 3 شرط داشته باشد: SET search_path, REVOKE ALL FROM PUBLIC, GRANT فقط به beauty_app. بدون اینها pentest fail میدهد.
+- grep روی migration قدیمی برای امنیت کافی نیست — lineage توابع را دنبال کن: `DROP FUNCTION`/`CREATE OR REPLACE` در migrationهای بعدی بدنه را عوض می‌کند. مرجع حقیقت `pg_proc.proconfig` است، نه متن فایل.
 
 ## Database
 - migration قدیمی هرگز ویرایش نشود؛ فقط migration جدید

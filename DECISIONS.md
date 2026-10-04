@@ -68,3 +68,10 @@
 **پیامد:** الگوی واحد برای توابع 0028/0029/0030 و آینده.
 
 **تست:** هر تابع یک integration test با DB واقعی.
+
+**Audit (2026-10-05):** در DB زنده ۲۲ تابع `SECURITY DEFINER` وجود دارد و **هر ۲۲ تا** `SET search_path = public, pg_temp` دارند؛ هیچ‌کدام فاقد آن نیستند
+(`SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef AND NOT (p.proconfig @> ARRAY['search_path=public, pg_temp'])` → ۰ ردیف).
+
+**درس audit:** grep ایستا روی متن migration قابل اعتماد نیست و می‌تواند هشدار کاذب بدهد. `1730000000008` تابع را بدون `search_path` ساخته بود، ولی `1730000000013`
+همان تابع را `DROP` و با `search_path` از نو `CREATE` کرد — پس بدنهٔ `0008` دیگر در هیچ DBای وجود ندارد و lineage واقعی `0008 → 0013` است.
+**قاعده:** وضعیت امنیتی توابع را از `pg_proc` (مرجع حقیقت) بسنج، نه از متن migration.
