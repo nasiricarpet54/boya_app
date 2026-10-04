@@ -97,34 +97,22 @@ export class ReminderScheduler implements OnModuleInit {
   }
 
   private async claimDue(kind: 'booking' | 'feedback'): Promise<ReminderRow[]> {
+    // The claim runs through SECURITY DEFINER functions (migration
+    // 1730000000030): `bookings` is FORCE ROW LEVEL SECURITY and a @Cron
+    // handler runs with no `app.current_tenant_id`, so a bare
+    // `UPDATE bookings ... WHERE status = ...` is filtered to zero rows and
+    // claims nothing. The functions are the one place that can see every
+    // tenant's due rows without widening a policy.
     if (kind === 'booking') {
       return this.dataSource.query<ReminderRow[]>(
-        `UPDATE bookings b
-         SET booking_reminder_sent_at = NOW()
-         WHERE b.id IN (
-           SELECT id FROM bookings
-           WHERE status = $1
-             AND booking_reminder_sent_at IS NULL
-             AND lower(time_slot) > NOW()
-             AND lower(time_slot) <= NOW() + ($2 || ' hours')::interval
-         )
-         RETURNING b.id, b.tenant_id, b.customer_id`,
-        [BookingStatus.Confirmed, REMINDER_LEAD_HOURS],
+        `SELECT id, tenant_id, customer_id FROM claim_due_booking_reminders($1)`,
+        [REMINDER_LEAD_HOURS],
       );
     }
 
     return this.dataSource.query<ReminderRow[]>(
-      `UPDATE bookings b
-       SET feedback_reminder_sent_at = NOW()
-       WHERE b.id IN (
-         SELECT id FROM bookings
-         WHERE status = $1
-           AND feedback_reminder_sent_at IS NULL
-           AND upper(time_slot) <= NOW() - ($2 || ' hours')::interval
-           AND upper(time_slot) > NOW() - ($3 || ' hours')::interval
-       )
-       RETURNING b.id, b.tenant_id, b.customer_id`,
-      [BookingStatus.Completed, FEEDBACK_DELAY_HOURS, FEEDBACK_WINDOW_HOURS],
+      `SELECT id, tenant_id, customer_id FROM claim_due_feedback_reminders($1, $2)`,
+      [FEEDBACK_DELAY_HOURS, FEEDBACK_WINDOW_HOURS],
     );
   }
 
@@ -181,24 +169,18 @@ export class ReminderScheduler implements OnModuleInit {
    * confirmed → no_show once the grace window has passed and the customer has
    * not confirmed they turned up. A salon that already marked the visit
    * complete is never swept, because the status is no longer `confirmed`.
+   *
+   * Runs through the `mark_no_show_bookings()` SECURITY DEFINER function
+   * (migration 1730000000030): both the `bookings` UPDATE and the
+   * `users.no_show_count` bump are RLS-protected and the @Cron has no tenant
+   * context, so they are done together, privileged, in one call.
    */
   private async markNoShows(): Promise<number> {
     const rows = await this.dataSource.query<{ id: string; customer_id: string }[]>(
-      `UPDATE bookings
-       SET status = $1
-       WHERE status = $2
-         AND visit_confirmed_by_customer_at IS NULL
-         AND lower(time_slot) + ($3 || ' minutes')::interval < NOW()
-       RETURNING id, customer_id`,
-      [BookingStatus.NoShow, BookingStatus.Confirmed, NO_SHOW_GRACE_MINUTES],
+      `SELECT id, customer_id FROM mark_no_show_bookings($1)`,
+      [NO_SHOW_GRACE_MINUTES],
     );
 
-    for (const row of rows) {
-      await this.dataSource.query(
-        `UPDATE users SET no_show_count = no_show_count + 1 WHERE id = $1`,
-        [row.customer_id],
-      );
-    }
     return rows.length;
   }
 }

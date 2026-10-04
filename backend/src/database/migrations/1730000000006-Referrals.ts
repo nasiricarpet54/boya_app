@@ -5,8 +5,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Neither table is tenant-scoped, so neither gets RLS: a referral links two
  * users and loyalty points follow a user across salons. Access is limited in
- * the application layer to the acting user. No GRANT is issued here because the
- * `boya_app` role does not exist in this environment yet.
+ * the application layer to the acting user. No GRANT is issued here either,
+ * because the tables are user-scoped rather than tenant-scoped and are reached
+ * only through the `beauty_app` pool that already owns the standard table
+ * privileges from the init script.
  *
  * `uq_loyalty_points_expiry_once` keeps the expiry sweep idempotent: a given
  * 'earned' row can only be cancelled by one 'expired' row.
@@ -67,7 +69,8 @@ export class Referrals1730000000006 implements MigrationInterface {
         ON loyalty_points(source_id, type) WHERE type = 'expired'
     `);
 
-    // No RLS and no boya_app grant on purpose: user-scoped, not tenant-scoped.
+    // No RLS and no explicit grant on purpose: user-scoped, not tenant-scoped.
+    // The `beauty_app` role already holds the default table privileges.
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
