@@ -1,0 +1,45 @@
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+/** In-app notifications only. Device tokens wait until a real JWT user exists. */
+export class Notifications1730000000005 implements MigrationInterface {
+  name = 'Notifications1730000000005';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        body TEXT NOT NULL,
+        data JSONB NOT NULL DEFAULT '{}'::jsonb,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        read_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_notifications_tenant_id ON notifications(tenant_id)`);
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
+        ON notifications(user_id) WHERE is_read = false
+    `);
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_user_created
+        ON notifications(user_id, created_at DESC)
+    `);
+    await queryRunner.query(`ALTER TABLE notifications ENABLE ROW LEVEL SECURITY`);
+    await queryRunner.query(`ALTER TABLE notifications FORCE ROW LEVEL SECURITY`);
+    await queryRunner.query(`DROP POLICY IF EXISTS notifications_tenant_isolation ON notifications`);
+    await queryRunner.query(`
+      CREATE POLICY notifications_tenant_isolation ON notifications
+        USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP POLICY IF EXISTS notifications_tenant_isolation ON notifications`);
+    await queryRunner.query(`DROP TABLE IF EXISTS notifications`);
+  }
+}

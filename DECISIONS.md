@@ -1,0 +1,54 @@
+# DECISIONS — تصمیمات معماری پروژه BOYA
+
+تاریخ شروع: 2026-10-03
+فرمت: هر تصمیم = تاریخ | وضعیت | زمینه | تصمیم | پیامد (ADR کوتاه). متن «تصمیم» بدون تغییر از سمت ذینفعان آمده است.
+
+---
+
+## ADR-001
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: policyهای RLS امروز دو نام GUC دارند (bookings روی `app.tenant_id`، بقیه روی `app.current_tenant_id`) و helper فعلی `setTenantContext` مقدار `app.tenant_id` می‌زند؛ نیاز به یک استاندارد واحد است.
+- تصمیم: ADR-001: GUC استاندارد = app.current_tenant_id + NULLIF(...,'')::uuid. حذف app.tenant_id از کل کد.
+- پیامد: یک migration جدید برای بازنویسی هر policy به نام جدید + بروزرسانی `backend/src/database/tenant-context.ts`، اسکریپت‌ها و کامنت‌ها؛ معیار پذیرش این است که grep روی `app.tenant_id` صفر شود. نکته: کد فعلی هنوز `app.tenant_id` است؛ این ADR هنوز اجرا نشده.
+
+## ADR-002
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: OTP (ioredis)، Bull و کش هم‌اکنون به یک Redis واحد وصل‌اند؛ `maxmemory-policy` در سطح instance تنظیم می‌شود و با DB number قابل تفکیک نیست، پس اشباع کش می‌تواند کلیدهای OTP/Bull را دور بریزد (یا بالعکس).
+- تصمیم: ADR-002: Redis = دو instance جدا. OTP+Bull روی noeviction، کش روی allkeys-lru. جداسازی با DB number کافی نیست چون maxmemory-policy در سطح instance است.
+- پیامد: دو سرویس redis در docker-compose با پورت‌های جدا، دو ست env (برای OTP/Bull و برای کش)، پیکربندی AuthModule/BullModule/CacheModule روی instanceهای مجزا؛ روی noeviction اشباق حافظه به‌جای purge خطا می‌دهد — سقف OTP باید کوچک و پایش‌شده بماند.
+
+## ADR-003
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: سه اپ Flutter (customer/salon/specialist) برای یک نفر نگهدارنده؛ `specialist_app` هم‌اکنون بدون API client و بدون router و فقط با صفحات placeholder است.
+- تصمیم: ADR-003: حذف specialist_app جدا و ادغام در salon_app با UI مبتنی بر نقش. دلیل: نگهداری سه اپ برای یک نفر غیرعملی.
+- پیامد: حذف `mobile/specialist_app`؛ نقش specialist با route guard مبتنی بر JWT role به salon_app اضافه می‌شود؛ pubspec و CI موبایل به دو اپ کاهش می‌یابد.
+
+## ADR-004
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: PROJECT_CHARTER فاز ۱ را ویترین رایگان تعریف می‌کند (بدون پرداخت آنلاین، بدون کمیسیون، بدون escrow)؛ درگاه Zarinpal نصب ولی غیرفعال است.
+- تصمیم: ADR-004: تعویق Phase 2 (پرداخت واقعی). PAYMENTS_ENABLED=false تا اثبات تقاضا در بتا.
+- پیامد: هر endpoint پرداخت 503 می‌ماند؛ `PaymentService`/provider فقط در درخت کد نگه داشته می‌شود؛ هیچ توسعه درگاه (از جمله Stripe) تا تأیید تقاضا در بتا.
+
+## ADR-005
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: `users.tenant_id` از migration 1730000000007 nullable شده (مشتری چندسالنه)، اما policy فعلی `users_tenant_isolation` فقط برابری `tenant_id` با GUC را چک می‌کند؛ ردیف کاربرِ بدون tenant (NULL) دیده نمی‌شود — باگ خاموشِ فعلی.
+- تصمیم: ADR-005: users.tenant_id می‌تواند NULL باشد (مشتری چندسالنه). policy users باید شامل OR id = current_setting('app.current_user_id', true)::uuid باشد. (رفع باگ خاموش فعلی)
+- پیامد: policy جدید `users` با شرط OR روی `app.current_user_id`؛ set کردن transaction-local آن کنار GUC tenant در تراکنش‌های مربوط به کاربر؛ تست ایزولاسیون الزامی می‌شود (به ADR-006).
+
+## ADR-006
+
+- تاریخ: 2026-10-03
+- وضعیت: پذیرفته
+- زمینه: دو تست قرمز (`jalali-date.service.spec` و `otp.service.spec`) بدون هیچ تست integration؛ هیچ تستی RLS و Exclusion Constraint را با DB واقعی پوشش نمی‌دهد.
+- تصمیم: ADR-006: تست harness با DB واقعی قبل از fix تست‌های قرمز. ترتیب: harness → تست ایزولاسیون/23P01 → تست‌های قرمز.
+- پیامد: ابتدا harness اجرا (docker compose + migrations + اجرای تست‌ها روی DB)، سپس تست‌های ایزولاسیون tenant و خطای 23P01، در پایان رفع تست‌های قرمز؛ CI باید postgres/redis سرو کند.

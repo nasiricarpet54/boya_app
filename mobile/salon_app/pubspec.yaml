@@ -1,0 +1,32 @@
+name: salon_app
+description: Beauty Platform salon panel.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  boya_shared:
+    path: ../shared
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.1
+  flutter_localizations:
+    sdk: flutter
+  dio: ^5.4.0
+  shared_preferences: ^2.5.5
+  # The booking detail's «تماس با مشتری» button opens the dialler with
+  # `tel:`. It is the only place the app hands a URI to the OS, which is why
+  # the dependency is here rather than in boya_shared.
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

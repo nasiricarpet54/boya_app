@@ -1,0 +1,14 @@
+﻿flutter : Flutter assets will be downloaded from https://pub.myket.ir. Make sure you trust this 
+source!
+At line:1 char:54
++ ...  platform\mobile\customer_app'; flutter analyze --no-pub 2>&1 | Out-F ...
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Flutter assets ...st this source!:String) [], Remot 
+   eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Analyzing customer_app...                                       
+
+  error - The name 'MyApp' isn't a class. Try correcting the name to match an existing class - test\widget_test.dart:16:35 - creation_with_non_type
+
+1 issue found. (ran in 3.5s)

@@ -1,0 +1,41 @@
+# BOYA Platform — قوانین ثابت برای AI
+
+پروژه: E:\BOYA platform (monorepo: backend، mobile، admin-panel، web)
+مرجع تصمیم‌ها: DECISIONS.md (ADR-001 تا ADR-006) — در تضاد با کد، ADR مبناست.
+تاریخ تصویب: 2026-10-03
+
+## Multi-tenancy (غیرقابل نقض)
+- هر query روی جدول tenant-scoped فقط از طریق withTenant(tenantId, fn)
+- GUC فقط app.current_tenant_id با NULLIF(...,'')::uuid
+- set_config همیشه با is_local=true داخل تراکنش
+- جدول users: policy باید هم tenant_id و هم id کاربر جاری را چک کند
+- هر تابع SECURITY DEFINER: SET search_path = public, pg_temp + REVOKE ALL FROM PUBLIC + GRANT فقط به beauty_app
+
+## Security
+- هر endpoint باید @Roles() داشته باشد (مگر @Public صریح)
+- پنل سالن علاوه بر نقش، مالکیت tenant را هم چک کند (user.tenantId === resource.tenantId)
+- JWT access کوتاه + refresh با rotation
+- مبلغ فقط integer تومان (نه ریال، نه float)
+
+## Database
+- migration قدیمی هرگز ویرایش نشود؛ فقط migration جدید
+- هر migration باید backward-compatible باشد (add → use → remove)
+- نام migration: timestamp-Description
+- synchronize: false همیشه
+
+## Code style
+- set_config مستقیم در سرویس‌ها ممنوع؛ فقط با withTenant()
+- TypeScript strict، بدون any
+- Persian error messages از persian-errors استفاده کنند
+
+## Workflow با AI
+- قبل از هر تغییر در migration/policy/set_config، diff کامل خوانده شود
+- هر commit = یک تغییر منطقی
+- قبل از merge: بازبینی diff از نظر نشت tenant + نبود چک نقش + race condition
+
+## Forbidden (فعلاً)
+- Stripe (استفاده نکن؛ Zarinpal غیرفعال است)
+- @jeonghochoi/rbac (استفاده نکن؛ RolesGuard ساده بنویس)
+- microservice، Kubernetes، Elasticsearch
+
+پیش از هر تغییر معماری ابتدا PROJECT_CHARTER.md، README.md و DECISIONS.md را بخوان.
