@@ -4,16 +4,15 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * ADR-001: every tenant policy must read `app.current_tenant_id` with
  * NULLIF(...,'')::uuid.
  *
- * 1730000000000 created `bookings_tenant_isolation` on an interim GUC
- * spelling, and 1730000000026 (already applied here) left
- * users / service_lines / transactions / notifications on that same interim
- * spelling. The application now sets one GUC only — setTenantContext writes
- * `app.current_tenant_id` — so this migration recreates all five policies on
- * the standard spelling (USING + WITH CHECK).
+ * This is the single place that defines tenant policies. The older migrations
+ * create the tables and enable RLS (bookings in 1730000000000; users,
+ * service_lines, transactions and notifications in 1730000000002–0005) but
+ * define no policy, and 1730000000026 is a no-op.
  *
- * The source files of the older migrations already carry the standard
- * spelling, so on a fresh database every policy is created correctly from the
- * start and this migration merely re-creates identical ones.
+ * The application sets one GUC only (setTenantContext writes
+ * `app.current_tenant_id`), so all five policies are (re)created here on the
+ * standard spelling, USING + WITH CHECK, for fresh and existing databases
+ * alike.
  */
 export class UnifyTenantGuc1730000000027 implements MigrationInterface {
   name = 'UnifyTenantGuc1730000000027';

@@ -33,8 +33,8 @@ export class Notifications1730000000005 implements MigrationInterface {
     await queryRunner.query(`DROP POLICY IF EXISTS notifications_tenant_isolation ON notifications`);
     await queryRunner.query(`
       CREATE POLICY notifications_tenant_isolation ON notifications
-        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
-        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+        USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
     `);
   }
 

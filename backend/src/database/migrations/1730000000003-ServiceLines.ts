@@ -32,8 +32,8 @@ export class ServiceLines1730000000003 implements MigrationInterface {
       await queryRunner.query(`DROP POLICY IF EXISTS ${table}_tenant_isolation ON ${table}`);
       await queryRunner.query(`
         CREATE POLICY ${table}_tenant_isolation ON ${table}
-          USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
-          WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+          USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+          WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
       `);
     }
   }

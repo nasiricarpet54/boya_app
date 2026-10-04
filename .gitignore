@@ -15,6 +15,7 @@ pubspec.lock
 .idea/
 .vscode/
 *.iml
+.integration-ready
 
 .DS_Store
 Thumbs.db

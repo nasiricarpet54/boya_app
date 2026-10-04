@@ -26,10 +26,10 @@ export class TenantUserProfile1730000000002 implements MigrationInterface {
     await queryRunner.query(`
       CREATE POLICY users_tenant_isolation ON users
         USING (
-          tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+          tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
         )
         WITH CHECK (
-          tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+          tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
         )
     `);
   }

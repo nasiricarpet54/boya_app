@@ -39,8 +39,8 @@ export class Transactions1730000000004 implements MigrationInterface {
     await queryRunner.query(`DROP POLICY IF EXISTS transactions_tenant_isolation ON transactions`);
     await queryRunner.query(`
       CREATE POLICY transactions_tenant_isolation ON transactions
-        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
-        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+        USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
     `);
   }
 

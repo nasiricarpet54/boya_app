@@ -119,7 +119,8 @@ export class BookingService {
       });
       return saved;
     } catch (error) {
-      if (isOverlap(error)) {
+      // 23P01: exclusion violation (GIST overlap constraint) | 40P01: deadlock on concurrent GIST insert
+      if (isOverlap(error) || (error.code && error.code === '40P01')) {
         throw new ConflictException('این بازه زمانی قبلاً برای این متخصص رزرو شده است. لطفاً زمان دیگری انتخاب کنید.');
       }
       throw error;
