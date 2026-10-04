@@ -17,6 +17,8 @@
 - JWT access کوتاه + refresh با rotation
 - مبلغ فقط integer تومان (نه ریال، نه float)
 
+- هر تابع SECURITY DEFINER باید 3 شرط داشته باشد: SET search_path, REVOKE ALL FROM PUBLIC, GRANT فقط به beauty_app. بدون اینها pentest fail میدهد.
+
 ## Database
 - migration قدیمی هرگز ویرایش نشود؛ فقط migration جدید
 - هر migration باید backward-compatible باشد (add → use → remove)

@@ -52,3 +52,19 @@
 - زمینه: دو تست قرمز (`jalali-date.service.spec` و `otp.service.spec`) بدون هیچ تست integration؛ هیچ تستی RLS و Exclusion Constraint را با DB واقعی پوشش نمی‌دهد.
 - تصمیم: ADR-006: تست harness با DB واقعی قبل از fix تست‌های قرمز. ترتیب: harness → تست ایزولاسیون/23P01 → تست‌های قرمز.
 - پیامد: ابتدا harness اجرا (docker compose + migrations + اجرای تست‌ها روی DB)، سپس تست‌های ایزولاسیون tenant و خطای 23P01، در پایان رفع تست‌های قرمز؛ CI باید postgres/redis سرو کند.
+
+---
+
+## ADR-007: SECURITY DEFINER pattern (2026-10-05)
+
+**زمینه:** @Cron بدون GUC اجرا میشود؛ FORCE RLS روی bookings/users صفر برمیگرداند.
+
+**تصمیم:** هر تابع cross-tenant:
+- SECURITY DEFINER + SET search_path = public, pg_temp
+- REVOKE ALL FROM PUBLIC
+- GRANT EXECUTE فقط به beauty_app
+- فقط داده اسکوپشده برمیگرداند (نه کل جدول)
+
+**پیامد:** الگوی واحد برای توابع 0028/0029/0030 و آینده.
+
+**تست:** هر تابع یک integration test با DB واقعی.
