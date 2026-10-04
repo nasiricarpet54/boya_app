@@ -138,7 +138,7 @@ export class AddSalonFieldsAndCategories1730000000009
 
     // ------------------------------------------------------- 3) public tag read
     // service_lines is FORCE ROW LEVEL SECURITY and the API role (beauty_app)
-    // has no BYPASSRLS and no app.tenant_id when serving a *public*
+    // has no BYPASSRLS and no app.current_tenant_id when serving a *public*
     // listing that spans tenants, so a plain SELECT sees zero rows. Same
     // SECURITY DEFINER escape hatch as find_or_create_customer_by_phone().
     await queryRunner.query(`

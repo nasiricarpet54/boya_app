@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * User-scoped, not tenant-scoped: a customer belongs to no tenant and a
  * notification is read across every tenant the customer was booked into, so a
  * tenant column would hide tokens from exactly the requests that need them.
- * `users` itself stays FORCE ROW LEVEL SECURITY on `app.tenant_id` —
+ * `users` itself stays FORCE ROW LEVEL SECURITY on `app.current_tenant_id` —
  * this table carries no RLS, the same trade-off `audit_logs` makes, because
  * token rows are keyed by a verified `user_id` from the JWT and never by a
  * request-supplied value.

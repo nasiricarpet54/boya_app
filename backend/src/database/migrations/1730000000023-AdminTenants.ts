@@ -5,8 +5,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * PATCH /admin/tenants/:id/status).
  *
  * Why functions: `tenants` and `specialists` carry no RLS so they are plain
- * reads, but `bookings` is FORCE ROW LEVEL SECURITY on `app.tenant_id` and
- * `service_lines` on `app.tenant_id` — an admin JWT carries neither,
+ * reads, but `bookings` is FORCE ROW LEVEL SECURITY on `app.current_tenant_id` and
+ * `service_lines` on `app.current_tenant_id` — an admin JWT carries neither,
  * so plain COUNT / JOIN subqueries would silently return zero. The pattern
  * follows migrations 1730000000020 (approvals) and 1730000000022 (dashboard):
  * cross-tenant aggregation lives inside SECURITY DEFINER functions granted

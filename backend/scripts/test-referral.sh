@@ -4,7 +4,7 @@
 #
 # SQL only: no application process is needed. The app connects as `beauty`,
 # which is the container superuser and therefore bypasses RLS, so this script
-# sets `app.tenant_id` by hand to mirror what the app does.
+# sets `app.current_tenant_id` by hand to mirror what the app does.
 
 set -euo pipefail
 
@@ -30,7 +30,7 @@ $PSQL -c "SELECT COUNT(*) AS loyalty_visible FROM loyalty_points;"
 
 echo "=== 1. Fixtures: one tenant and two customers ==="
 $PSQL <<SQL
-SET app.tenant_id = '${TENANT}';
+SET app.current_tenant_id = '${TENANT}';
 INSERT INTO tenants (id, name) VALUES ('${TENANT}', 'Test Salon')
   ON CONFLICT (id) DO NOTHING;
 INSERT INTO users (id, tenant_id, full_name, phone, role) VALUES

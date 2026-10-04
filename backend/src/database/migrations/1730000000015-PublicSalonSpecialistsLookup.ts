@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * `specialists` itself has no RLS, but the display name and avatar live in
  * `users`, which is `ENABLE + FORCE ROW LEVEL SECURITY` behind
- * `users_tenant_isolation` (`tenant_id = app.tenant_id`). A public
+ * `users_tenant_isolation` (`tenant_id = app.current_tenant_id`). A public
  * request has no tenant context, so a plain `LEFT JOIN users` would come back
  * with empty names — the same problem 1730000000014 describes for booking
  * reads.

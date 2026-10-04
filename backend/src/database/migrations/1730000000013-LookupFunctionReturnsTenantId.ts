@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Reading `users.tenant_id` from application code is not an option: `users` is
  * `ENABLE + FORCE ROW LEVEL SECURITY` behind `users_tenant_isolation`
- * (`tenant_id = app.tenant_id`), and the login request has no tenant
+ * (`tenant_id = app.current_tenant_id`), and the login request has no tenant
  * context yet — that is exactly the fact it is trying to discover. A plain
  * SELECT as `beauty_app` therefore sees zero rows.
  *

@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * endpoints in `modules/admin/approvals` can read and update them with plain
  * SQL. `service_lines` cannot: migration 1730000000003 put it behind
  * `ENABLE + FORCE ROW LEVEL SECURITY` with
- * `service_lines_tenant_isolation` (`tenant_id = app.tenant_id`).
+ * `service_lines_tenant_isolation` (`tenant_id = app.current_tenant_id`).
  *
  * An admin's JWT carries `tenantId = null` — admins are not tenant-scoped —
  * so with no setting on the connection PostgreSQL filters the table down to

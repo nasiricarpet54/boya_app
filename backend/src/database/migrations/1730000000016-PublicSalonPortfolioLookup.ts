@@ -14,7 +14,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * The new function has to expand the JSONB and name the specialist, and
  * `users` is `ENABLE + FORCE ROW LEVEL SECURITY` behind `users_tenant_isolation`
- * (`tenant_id = app.tenant_id`). A public request carries no tenant
+ * (`tenant_id = app.current_tenant_id`). A public request carries no tenant
  * context, so a plain `JOIN users` would return empty names — the same problem
  * 1730000000015 describes. The join therefore stays inside a SECURITY DEFINER
  * function, the escape hatch `get_public_salon_tags()` (1730000000009),

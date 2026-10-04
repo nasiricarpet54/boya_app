@@ -89,7 +89,7 @@ export class BookingService {
     let saved: Booking;
     try {
       // The `bookings_tenant_isolation` RLS policy requires that
-      // current_setting('app.tenant_id') match the row's tenant_id. The
+      // current_setting('app.current_tenant_id') match the row's tenant_id. The
       // customer's JWT carries tenantId=null (customers are not tenant-scoped),
       // so nothing has been set on the pool connection. Wrap the INSERT in a
       // transaction that sets the session variable for that transaction only
@@ -246,7 +246,7 @@ export class BookingService {
   /**
    * Run a salon-side transition as its own tenant.
    *
-   * `bookings` is FORCE ROW LEVEL SECURITY on `current_setting('app.tenant_id')`
+   * `bookings` is FORCE ROW LEVEL SECURITY on `current_setting('app.current_tenant_id')`
    * and nothing sets that variable globally, so without it the SELECT would be
    * filtered to zero rows (404) and the UPDATE would break the policy's
    * WITH CHECK. `set_config(..., true)` is transaction-local, which keeps the

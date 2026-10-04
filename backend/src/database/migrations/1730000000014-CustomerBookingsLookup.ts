@@ -7,12 +7,12 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * That read cannot run as a plain query on `beauty_app`:
  *
  * - `bookings` is `ENABLE + FORCE ROW LEVEL SECURITY` behind
- *   `bookings_tenant_isolation` (`tenant_id = app.tenant_id`) and a customer's
+ *   `bookings_tenant_isolation` (`tenant_id = app.current_tenant_id`) and a customer's
  *   JWT carries `tenantId = null` — customers are not tenant-scoped. One
  *   customer books at several salons, so no single tenant setting could make
  *   all of their rows visible anyway.
  * - `users`, the only place a specialist's name lives, is FORCE ROW LEVEL
- *   SECURITY behind `users_tenant_isolation` (`tenant_id = app.tenant_id`),
+ *   SECURITY behind `users_tenant_isolation` (`tenant_id = app.current_tenant_id`),
  *   so the joined name would come back empty for the same reason.
  *
  * The fix widens nothing: the join stays inside a SECURITY DEFINER function,

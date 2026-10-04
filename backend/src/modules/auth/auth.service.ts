@@ -40,7 +40,7 @@ export class AuthService {
     const normalized = this.normalizePhone(phoneNumber);
 
     // 3. Find or create the user via the SECURITY DEFINER lookup function.
-    //    `users` is FORCE ROW LEVEL SECURITY on app.tenant_id and a
+    //    `users` is FORCE ROW LEVEL SECURITY on app.current_tenant_id and a
     //    login request has no tenant context, so the tenant_id can only come
     //    from that function (see migration 1730000000013). It is NULL for
     //    customers and set for salon_owner / line_manager / specialist / admin.

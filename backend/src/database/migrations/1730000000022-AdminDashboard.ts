@@ -5,7 +5,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * `bookings` cannot be counted with plain SQL: migration 1730000000000 put it
  * behind `ENABLE + FORCE ROW LEVEL SECURITY` with `bookings_tenant_isolation`
- * (`tenant_id = app.tenant_id`), and an admin's JWT carries no tenant — so a
+ * (`tenant_id = app.current_tenant_id`), and an admin's JWT carries no tenant — so a
  * plain `COUNT(*)` would return zero and the dashboard would look permanently
  * empty. `service_lines` has the same problem (migration 1730000000003), which
  * is why the pending-approvals total cannot just sum three plain counts.

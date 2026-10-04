@@ -6,10 +6,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * `GET /salon/me/bookings` has to show who a booking is for, and the only place
  * a customer's name lives is `users`. That table is `ENABLE + FORCE ROW LEVEL
  * SECURITY` behind `users_tenant_isolation`
- * (`tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid`),
+ * (`tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid`),
  * and customers carry `tenant_id IS NULL` since migration 1730000000007 — they
  * are not tenant-scoped, because one customer books at several salons. So the
- * panel transaction, which does set `app.tenant_id` to the staff user's
+ * panel transaction, which does set `app.current_tenant_id` to the staff user's
  * salon in order to read `bookings`, filters every customer row out of that
  * join and the list would render nameless cards.
  *

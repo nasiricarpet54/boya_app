@@ -81,8 +81,8 @@ export class CreateBookings1730000000000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE bookings FORCE ROW LEVEL SECURITY`);
     await queryRunner.query(`
       CREATE POLICY bookings_tenant_isolation ON bookings
-        USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
-        WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid)
+        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
     `);
   }
 

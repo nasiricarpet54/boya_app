@@ -914,7 +914,7 @@ export class SalonService {
    * Runs a read that has to see a tenant's rows on a route that has no tenant
    * context of its own.
    *
-   * `bookings` is FORCE ROW LEVEL SECURITY on `current_setting('app.tenant_id')`,
+   * `bookings` is FORCE ROW LEVEL SECURITY on `current_setting('app.current_tenant_id')`,
    * so without this a public request would be filtered to zero rows and every
    * slot would look free. The setting is transaction-local (`set_config(..., true)`),
    * which keeps it off the pooled connection â€” the same pattern
@@ -932,7 +932,7 @@ export class SalonService {
 
   /**
    * Same shape as [withTenant] for panel endpoints.
-   * All tenant policies read `app.tenant_id` (see setTenantContext).
+   * All tenant policies read `app.current_tenant_id` (see setTenantContext).
    * Transaction-local via the helper, so nothing leaks.
    */
   private withPanelTenant<T>(
@@ -1249,7 +1249,7 @@ export class SalonService {
 
   /**
    * The `specialists` row owned by this JWT user, if any. `users` and
-   * `specialists` are FORCE RLS on `app.tenant_id`, so this runs inside the
+   * `specialists` are FORCE RLS on `app.current_tenant_id`, so this runs inside the
    * tenant scope opened by `withTenant`.
    */
   private async activeSpecialistId(manager: EntityManager, userId: string): Promise<string | null> {
