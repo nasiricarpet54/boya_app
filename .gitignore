@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist-test/
+backend/dist/
+backend/dist-test/
 coverage/
 .env
 .env.local
