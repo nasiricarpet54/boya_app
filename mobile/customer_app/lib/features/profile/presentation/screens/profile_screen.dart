@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../notifications/data/notifications_api.dart';
+import '../../../auth/application/auth_controller.dart';
 import '../../application/profile_controller.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -48,7 +49,17 @@ class ProfileScreen extends ConsumerWidget {
               // Same counter as the home bell, so the two never disagree.
               badge: unread,
             ),
-            _MenuItem(icon: Icons.logout, title: 'خروج از حساب', color: BoyaColors.error, onTap: () => context.go('/auth/login')),
+            _MenuItem(
+              icon: Icons.logout,
+              title: 'خروج از حساب',
+              color: BoyaColors.error,
+              // Signing out has to go through the controller: navigating alone
+              // left the session and the refresh token alive on the device.
+              onTap: () async {
+                await ref.read(authControllerProvider.notifier).logout();
+                if (context.mounted) context.go('/auth/login');
+              },
+            ),
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),

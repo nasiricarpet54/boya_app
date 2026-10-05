@@ -18,6 +18,11 @@ dependencies:
   shared_preferences: ^2.2.3
   cached_network_image: ^4.0.3
   shimmer: ^4.0.0
+  # Session storage. The refresh token is long-lived and single-use, so it lives
+  # in the platform keystore (Keychain / EncryptedSharedPreferences) rather than
+  # a readable preferences file. Constraint matches boya_shared so pub resolves
+  # one copy of the plugin instead of two.
+  flutter_secure_storage: ^11.2.0
 
 
 dev_dependencies:

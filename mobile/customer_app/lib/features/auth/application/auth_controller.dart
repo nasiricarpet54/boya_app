@@ -1,12 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/auth_api.dart';
+import '../data/session_store.dart';
 import '../domain/auth_session.dart';
-
-const _kSessionKey = 'boya_auth_session';
 
 /// Session plus the two flags the UI and the router both need.
 class AuthState {
@@ -33,16 +29,8 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _restore() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_kSessionKey);
-      if (raw == null) {
-        state = const AuthState();
-        return;
-      }
-      final json = jsonDecode(raw) as Map<String, dynamic>;
-      // toJson() is flat, so it is re-read through the nested {token, user}
-      // shape that fromApi expects.
-      state = AuthState(session: AuthSession.fromApi({'token': json['token'], 'user': json}));
+      // The store migrates a pre-ADR-009 SharedPreferences session on first read.
+      state = AuthState(session: await ref.read(sessionStoreProvider).read());
     } catch (_) {
       state = const AuthState();
     }
@@ -66,8 +54,7 @@ class AuthController extends Notifier<AuthState> {
         phoneNumber: phoneNumber,
         code: code,
       );
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_kSessionKey, jsonEncode(session.toJson()));
+      await ref.read(sessionStoreProvider).write(session);
       state = AuthState(session: session);
       return session;
     } catch (_) {
@@ -76,10 +63,49 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// Refreshes proactively, e.g. when returning from the background. The
+  /// interceptor handles the automatic case; this is for an explicit retry.
+  Future<AuthSession> refresh() async {
+    final current = state.session;
+    if (current == null || current.refreshToken.isEmpty) {
+      throw StateError('no refresh token available');
+    }
+    final session = await ref.read(authApiProvider).refresh(current.refreshToken);
+    await ref.read(sessionStoreProvider).write(session);
+    state = AuthState(session: session);
+    return session;
+  }
+
+  /// Signs out for real: the refresh token is revoked server-side first, so a
+  /// copy lifted from the device stops working instead of living out its TTL. A
+  /// failure to reach the API must not trap the customer, so the local session
+  /// is cleared either way.
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kSessionKey);
+    final store = ref.read(sessionStoreProvider);
+    try {
+      final session = await store.read();
+      if (session != null && session.refreshToken.isNotEmpty) {
+        await ref.read(authApiProvider).logout(session.refreshToken);
+      }
+    } catch (_) {
+      // Offline or already expired: fall through and drop the local copy.
+    }
+    await store.clear();
     state = const AuthState();
+  }
+
+  /// Revokes every session of this account on every device.
+  Future<int> logoutAll() async {
+    final store = ref.read(sessionStoreProvider);
+    var revoked = 0;
+    try {
+      revoked = await ref.read(authApiProvider).logoutAll();
+    } catch (_) {
+      // Same reasoning as `logout`.
+    }
+    await store.clear();
+    state = const AuthState();
+    return revoked;
   }
 }
 

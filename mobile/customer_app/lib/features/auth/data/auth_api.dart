@@ -24,7 +24,38 @@ class AuthApi {
     );
     final data = response.data;
     if (data == null) throw Exception('Empty response');
+    if (data['accessToken'] == null && data['token'] != null) {
+      // A pre-ADR-009 server. Caching that would produce a session with an
+      // empty access token and every later call would 401 in silence.
+      throw const FormatException(
+        'پاسخ سرور قدیمی است (token). سرور باید accessToken بفرستد.',
+      );
+    }
     return AuthSession.fromApi(data);
+  }
+
+  /// Trades a refresh token for a new pair. The interceptor normally drives
+  /// this; exposed so the app can refresh proactively after being backgrounded.
+  Future<AuthSession> refresh(String refreshToken) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken},
+    );
+    final data = response.data;
+    if (data == null) throw Exception('Empty response');
+    return AuthSession.fromApi(data);
+  }
+
+  /// Revokes this device's refresh token. Best effort: the caller clears the
+  /// local session whatever the server answers.
+  Future<void> logout(String refreshToken) async {
+    await _dio.post<void>('/auth/logout', data: {'refreshToken': refreshToken});
+  }
+
+  /// Revokes every session of the caller. Needs a valid access token.
+  Future<int> logoutAll() async {
+    final response = await _dio.post<Map<String, dynamic>>('/auth/logout-all');
+    return (response.data?['revoked'] as num?)?.toInt() ?? 0;
   }
 }
 
