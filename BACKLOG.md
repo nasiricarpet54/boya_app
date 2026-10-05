@@ -58,26 +58,52 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 - [x] ~~JWT refresh: rotation + revocation strategy؟~~ — **بسته شد 2026-10-05** (ADR-009).
       refresh با rotation و reuse detection پیاده شد؛ `POST /auth/otp/verify`
       حالا `accessToken` + `refreshToken` برمی‌گرداند.
-- [ ] **⚠️ فرانت را با تغییر breaking هماهنگ کن.** `POST /auth/otp/verify`
-      دیگر `token` برنمی‌گرداند؛ `accessToken` + `refreshToken` +
-      `refreshExpiresAt` می‌دهد. هر سه اپ موبایل الان `token` را می‌خوانند و
-      **بعد از deploy بک‌اند، ورود در همهٔ اپ‌ها می‌شکند** تا وقتی آپدیت شوند:
-      - `mobile/customer_app`: `AuthSession.fromApi` فقط `token` می‌خواند
-      - `mobile/salon_app`: همان مسئله در `AuthSession.fromApi`
-      - `admin-panel`: `auth.ts` store
-      - افزودن نگه‌داری refresh token، فراخوانی `/auth/refresh` روی ۴۰۱، و
-        تماس `/auth/logout` هنگام خروج
-- [ ] ~~`flutter_secure_storage` جای `SharedPreferences`~~ — اولویت پایین‌تر شد:
-      تا قبل از refresh rotation، توکن کوتاه‌عمر بود و ریسک کمتری داشت. حالا که
-      refresh token بلندعمر اضافه شد، **انتقال به secure storage دوباره مهم شد**.
+- [x] ~~**⚠️ فرانت را با تغییر breaking هماهنگ کن.**~~ — **بسته شد 2026-10-05.**
+      هر سه کلاینت `POST /auth/otp/verify` را با `accessToken` + `refreshToken` +
+      `refreshExpiresAt` مصرف می‌کنند و `/auth/refresh` روی ۴۰۱ صدا می‌زنند:
+      - `mobile/salon_app` (commit `88228b3`) — secure storage + interceptor با single-flight
+      - `mobile/customer_app` (commit `0116b5f`) — همان الگو، با حفظ ساختار flat خودش
+      - `admin-panel` (commit `773f407`) — axios interceptor + `useSignOut`
+- [x] ~~`flutter_secure_storage` جای `SharedPreferences`~~ — **بسته شد 2026-10-05** در
+      هر دو اپ موبایل (`^11.2.0`، هم‌تراز با `boya_shared`). مهاجرت از کلید قدیمی
+      انجام و نسخهٔ plaintext پاک می‌شود. `admin-panel` استثناست — مرورگر
+      keystore ندارد؛ به بخش A فاز ۲ نگاه کن.
 
 ### کارهای باقی‌مانده از فاز زیرساخت
-- [ ] `web/specialist/` و جدول `web/README.md` هنوز به یک اپ جداگانه اشاره
-      می‌کنند؛ یا `web/specialist/` حذف شود یا صرفاً به نقش در `salon_app`
-      اشاره کند.
+- [x] ~~`fl_chart` در `salon_app` اعلام نشده بود~~ — **بسته شد 2026-10-05**
+      (`^1.2.0` اضافه شد، هم‌تراز با `boya_shared` تا یک نسخه resolve شود؛
+      `flutter analyze` در هر سه پکیج پاک است).
 - [x] ~~**`pubspec.lock` برای اپ‌ها commit نمی‌شود**~~ — **بسته شد 2026-10-05**
       (commit `cceb453`). خط سراسری `pubspec.lock` در `.gitignore` با
       `/mobile/shared/pubspec.lock` جایگزین شد: فقط lockfile پکیج کتابخانه‌ای
       ignore می‌شود و lockfile هر دو اپ track می‌شود تا build قابل بازتولید باشد.
-- [x] ~~`fl_chart` در `salon_app` اعلام نشده بود~~ — **بسته شد 2026-10-05**؛
-      `flutter analyze` در هر سه پکیج پاک است.
+
+## Phase 2 — Security (تأخیر عمدی)
+
+موارد زیر **عمداً به فاز ۲ موکول شده‌اند**، نه از سر فراموشی: هر کدام یا
+ریسک‌شان فقط با کاربر واقعی معنا پیدا می‌کند، یا بازده کمی دارند.
+
+### A. refresh token در localStorage (admin-panel)
+- **ریسک:** XSS → دزدیدن refresh token
+- **راه‌حل:** httpOnly cookie برای refresh
+- **نیاز:** تغییر بک‌اند (Set-Cookie در verifyOtp) + CORS با credentials
+- **اولویت:** بعد از اولین کاربران واقعی
+
+> دو اپ موبایل refresh token را در keystore گذاشتند، ولی مرورگر چنین
+> چیزی ندارد. localStorage بهترین گزینهٔ موجود است، اما یک عقب‌نشینی
+> امنیتی آگاهانه نسبت به موبایل است، نه یک انتخاب بی‌فرق.
+
+### B. تست admin-panel
+- **وضعیت:** هیچ setup تستی ندارد (نه jest، نه vitest)
+- **حداقل:** یک تست single-flight برای refresh interceptor
+- **اولویت:** کم — admin-panel فقط internal است
+- **نکته:** `tsc --noEmit` و `next build` هر دو پاس می‌شوند، ولی منطق
+  single-flight و retry همان چیزی است که در دو اپ دیگر تست شد و اینجا
+  **بدون پوشش تستی** ریسک است.
+
+### C. web/specialist/ حذف
+- **وضعیت:** پوشه‌ای که به یک اپ جداگانه اشاره می‌کند که دیگر وجود ندارد
+  (`mobile/specialist_app` طبق ADR-003 حذف شد)
+- **اولویت:** کم — فقط cleanup
+- **توجه:** جدول `web/README.md` اصلاح شده و به `salon_app` اشاره می‌کند؛ خودِ
+  پوشه هنوز سر جایش است.
