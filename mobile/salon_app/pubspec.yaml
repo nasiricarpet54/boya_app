@@ -22,6 +22,11 @@ dependencies:
   # `tel:`. It is the only place the app hands a URI to the OS, which is why
   # the dependency is here rather than in boya_shared.
   url_launcher: ^6.3.1
+  # The dashboard's weekly-revenue chart. `boya_shared` also depends on fl_chart,
+  # but depending on it does not put it in *this* package's dependency set, and
+  # importing it here without declaring it trips depend_on_referenced_packages.
+  # Keep the constraint aligned with boya_shared so pub resolves one copy.
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
