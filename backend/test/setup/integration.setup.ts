@@ -39,6 +39,7 @@ export const describeIntegration = integrationEnabled
     : describe.skip;
 
 let dataSource: DataSource | null = null;
+let adminDataSource: DataSource | null = null;
 
 beforeAll(async () => {
   if (!integrationEnabled) {
@@ -58,14 +59,46 @@ beforeAll(async () => {
     synchronize: false,
   });
   await dataSource.initialize();
-}, 30_000);
+
+    // A second connection as the migration owner. The application itself runs
+    // as this role, so specs that must mirror production behaviour (anything
+    // resolving a row from a credential, before any RLS context exists) use
+    // this one rather than the NOBYPASSRLS role above.
+    adminDataSource = new DataSource({
+      type: 'postgres',
+      host: String(adminConfig.host),
+      port: Number(adminConfig.port),
+      username: String(adminConfig.user),
+      password: String(adminConfig.password),
+      database: TEST_DB_NAME,
+      entities: [],
+      synchronize: false,
+    });
+    await adminDataSource.initialize();
+  }, 30_000);
 
 afterAll(async () => {
-  if (dataSource?.isInitialized) {
-    await dataSource.destroy();
-  }
-  dataSource = null;
+    if (dataSource?.isInitialized) {
+      await dataSource.destroy();
+    }
+    if (adminDataSource?.isInitialized) {
+      await adminDataSource.destroy();
+    }
+    dataSource = null;
+    adminDataSource = null;
 });
+
+/**
+ * The migration-owner DataSource — the role the application itself connects as.
+ * Use it for specs that must reproduce production access, and `getDataSource()`
+ * for the RLS-isolation assertions that must not bypass any policy.
+ */
+export function getAdminDataSource(): DataSource {
+  if (!adminDataSource?.isInitialized) {
+    throw new Error('integration admin DataSource is not initialised (was the suite skipped?)');
+  }
+  return adminDataSource;
+}
 
 /** The connected RLS-subject DataSource; only valid inside a spec. */
 export function getDataSource(): DataSource {

@@ -95,3 +95,26 @@
 **پیامد:** `customer` و نقش‌های ناشناخته به صفحهٔ «شما به این پنل دسترسی ندارید» با دکمهٔ خروج می‌روند. متخصص طبق ADR-003 و چون در `APPROVER_ROLES` است **عمداً مجاز ماند**؛ مسدودکردنش تأیید رزرو را می‌شکست. `/auth/forbidden` جدا از پیشوند `/auth` نگه داشته شد تا حلقهٔ redirect ایجاد نشود.
 
 **تست:** `mobile/salon_app/test/role_guard_test.dart` — ۱۵ تست: چهار نقش مجاز، `customer`، نقش ناشناخته، `null`/خالی، و هر چهار حالت redirect شامل ضدحلقه.
+
+---
+
+## ADR-009: JWT Refresh با rotation و reuse detection (2026-10-05)
+
+**زمینه:** `JWT_REFRESH_SECRET` از ابتدا در env تعریف شده بود ولی **هیچ‌جا مصرف نمی‌شد**. نتیجه دو مشکل: (۱) access token عملاً ابطال‌ناپذیر بود — نشت یک توکن تا ابد معتبر می‌ماند و تغییر نقش کاربر هیچ اثری روی نشست‌های قبلی نداشت؛ (۲) خروج واقعی ممکن نبود و فرانت فقط داده محلی را پاک می‌کرد.
+
+**تصمیم:** توکن کوتاه‌عمر + توکن بلندعمر چرخشی.
+- Access: JWT با TTL از `JWT_ACCESS_TTL`؛ Refresh: توکن تصادفی ۳۲ بایتی با TTL از `JWT_REFRESH_TTL` (پیش‌فرض ۳۰ روز)
+- **در DB فقط SHA-256 توکن ذخیره می‌شود**، هرگز plaintext
+- **rotation اجباری**: هر refresh یک توکن تازه می‌سازد و قبلی را revoke می‌کند
+- **reuse detection**: ارائهٔ توکنی که revoke شده یعنی replay یا توکن سرقت‌شده؛ چون سرور نمی‌تواند این دو را تشخیص دهد، کل `family_id` باطل می‌شود و کاربر مجبور به ورود دوباره می‌شود. باطل‌کردن فقط همان توکن، نسخهٔ سرقت‌شده را زنده نگه می‌داشت
+- `family_id`: یک خانواده به ازای هر دستگاه/نشست؛ `replaced_by` زنجیره را ثبت می‌کند
+- جدول **user-scoped** است نه tenant-scoped (مشتری tenant ندارد — ADR-005)، پس policy روی GUC جدید `app.current_user_id` می‌خواند
+
+**endpoint‌ها:** `POST /auth/refresh` و `POST /auth/logout` عمومی‌اند (دقیقاً چون access token منقضی شده که کلاینت را به اینجا می‌آورد)، و `POST /auth/logout-all` نیازمند guard.
+
+**پیامد:**
+- **تغییر breaking در `POST /auth/otp/verify`**: فیلد `token` به `accessToken` تغییر کرد و `refreshToken` و `refreshExpiresAt` اضافه شدند. فرانت باید آپدیت شود.
+- `rotate` عمداً **داخل transaction پرتاب نمی‌کند**؛ verdict را برمی‌گرداند و بیرون از تراکنش throw می‌کند، چون throw داخل تراکنش باعث rollback می‌شد و دقیقاً همان revoke خانواده‌ای را که هدف تشخیص reuse است، باطل می‌کرد.
+- محدودیت شناخته‌شده: مسیر `/auth/refresh` باید `user_id` را از خود هش توکن پیدا کند، یعنی *قبل* از وجود هر context رRLS. این با نقشی که RLS را دور می‌زند کار می‌کند (همان نقشی که خود اپ با آن وصل می‌شود). انتقال آیندهٔ اپ به نقش NOBYPASSRLS این مسیر را می‌شکند — بهتر است fail loud کند تا دسترسی بی‌سروصدا باز شود.
+
+**تست:** `backend/test/integration/refresh-token.integration-spec.ts` — ۱۰ سناریو روی DB واقعی: هش به‌جای plaintext، rotation با حفظ خانواده و `replaced_by`، reuse detection (کل خانواده باطل می‌شود)، انقضا، توکن ناشناخته، logout تک‌دستگاه، `revokeAll` با شمارش، `revokeFamily`، claimهای access token، و `msDuration`.

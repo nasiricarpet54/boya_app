@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
 import { OtpService } from './otp.service';
+import { RefreshTokenService } from './refresh-token.service';
 
 export interface AuthUser {
   id: string;
@@ -13,7 +14,15 @@ export interface AuthUser {
 }
 
 export interface AuthResponse {
-  token: string;
+  /**
+   * Short-lived JWT for API calls. ADR-009: previously this field was called
+   * `token`; it is now explicitly the *access* token because a long-lived
+   * `refreshToken` accompanies it and the two have very different lifetimes.
+   */
+  accessToken: string;
+  /** Long-lived, single-use, rotatable. Only its SHA-256 hash is stored. */
+  refreshToken: string;
+  refreshExpiresAt: Date;
   user: AuthUser;
 }
 
@@ -23,6 +32,7 @@ export class AuthService {
     private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   async verifyOtpAndIssueToken(
@@ -61,18 +71,22 @@ export class AuthService {
 
     const tenantId = row.tenant_id ?? null;
 
-    // 4. Sign JWT with the real tenantId from the DB (customers have null).
-    //    Salon-side routes (e.g. POST /bookings/:id/approve) read this claim to
-    //    pick the tenant they act on; a missing claim locks staff out of them.
-    const token = await this.jwtService.signAsync({
-      sub: row.id,
+    // 4. Open a refresh session (ADR-009) and take its access token from it.
+    //    The claims match what `JwtAuthGuard` expects: `sub` and `role` drive
+    //    every authorisation decision, and salon-side routes (e.g.
+    //    POST /bookings/:id/approve) read `tenantId` to pick the salon they
+    //    act on, so it must come from the DB — it is null for customers.
+    const issued = await this.refreshTokenService.issue({
+      userId: row.id,
+      tenantId,
       phone: row.phone,
       role: row.role,
-      tenantId,
     });
 
     return {
-      token,
+      accessToken: issued.accessToken,
+      refreshToken: issued.refreshToken,
+      refreshExpiresAt: issued.refreshExpiresAt,
       user: {
         id: row.id,
         phoneNumber: row.phone,

@@ -8,6 +8,7 @@ import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
+import { RefreshTokenService } from './refresh-token.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { OtpService } from './otp.service';
   providers: [
     AuthService,
     OtpService,
+    RefreshTokenService,
     {
       provide: 'OTP_REDIS',
       inject: [ConfigService],
@@ -39,6 +41,6 @@ import { OtpService } from './otp.service';
         }),
     },
   ],
-  exports: [AuthService, OtpService],
+  exports: [AuthService, OtpService, RefreshTokenService],
 })
 export class AuthModule {}

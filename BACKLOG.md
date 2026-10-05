@@ -55,10 +55,21 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 ### تصمیم‌های باز محصول
 - [ ] ورود مدیر سالن: دعوتنامه با SMS؟ یا admin-panel؟
 - [ ] ورود متخصص: توسط مدیر دعوت میشود یا خودش؟
-- [ ] JWT refresh: rotation + revocation strategy؟
-      (بک‌اند `JWT_REFRESH_SECRET` را تعریف می‌کند ولی طبق گزارش ۰۳ مصرف نمی‌شود — B6)
-- [ ] `flutter_secure_storage` جای `SharedPreferences`
-      (برای نگهداری access/refresh token روی دستگاه)
+- [x] ~~JWT refresh: rotation + revocation strategy؟~~ — **بسته شد 2026-10-05** (ADR-009).
+      refresh با rotation و reuse detection پیاده شد؛ `POST /auth/otp/verify`
+      حالا `accessToken` + `refreshToken` برمی‌گرداند.
+- [ ] **⚠️ فرانت را با تغییر breaking هماهنگ کن.** `POST /auth/otp/verify`
+      دیگر `token` برنمی‌گرداند؛ `accessToken` + `refreshToken` +
+      `refreshExpiresAt` می‌دهد. هر سه اپ موبایل الان `token` را می‌خوانند و
+      **بعد از deploy بک‌اند، ورود در همهٔ اپ‌ها می‌شکند** تا وقتی آپدیت شوند:
+      - `mobile/customer_app`: `AuthSession.fromApi` فقط `token` می‌خواند
+      - `mobile/salon_app`: همان مسئله در `AuthSession.fromApi`
+      - `admin-panel`: `auth.ts` store
+      - افزودن نگه‌داری refresh token، فراخوانی `/auth/refresh` روی ۴۰۱، و
+        تماس `/auth/logout` هنگام خروج
+- [ ] ~~`flutter_secure_storage` جای `SharedPreferences`~~ — اولویت پایین‌تر شد:
+      تا قبل از refresh rotation، توکن کوتاه‌عمر بود و ریسک کمتری داشت. حالا که
+      refresh token بلندعمر اضافه شد، **انتقال به secure storage دوباره مهم شد**.
 
 ### کارهای باقی‌مانده از فاز زیرساخت
 - [ ] `web/specialist/` و جدول `web/README.md` هنوز به یک اپ جداگانه اشاره
