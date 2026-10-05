@@ -7,8 +7,20 @@ interface PolicyRow extends Record<string, unknown> {
   with_check: string | null;
 }
 
-/** The five tenant-scoped tables, as published by the migration chain. */
-const TENANT_TABLES = ['bookings', 'notifications', 'service_lines', 'transactions', 'users'];
+/**
+ * The tenant-scoped tables, as published by the migration chain.
+ *
+ * Alphabetical, matching `ORDER BY tablename` in the query below, so a new
+ * tenant-scoped table is one added line rather than a reordering.
+ */
+const TENANT_TABLES = [
+  'bookings',
+  'invite_tokens',
+  'notifications',
+  'service_lines',
+  'transactions',
+  'users',
+];
 
 describeIntegration('tenant policies (pg_policies)', () => {
   it('defines every tenant policy on app.current_tenant_id only', async () => {

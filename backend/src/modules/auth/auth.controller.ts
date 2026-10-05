@@ -1,8 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
+  ForbiddenException,
+  Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
+  Param,
   Post,
   Req,
 } from '@nestjs/common';
@@ -10,9 +15,13 @@ import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { Public } from './decorators/public.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { AuthService } from './auth.service';
 import { SendOtpDto, VerifyOtpDto } from './dto/otp.dto';
+import { AcceptInviteDto, CreateInviteDto } from './dto/invite.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
+import { InviteTokenService } from './invite-token.service';
 import { OtpService } from './otp.service';
 import { RefreshTokenService } from './refresh-token.service';
 import type { AuthenticatedUser } from './guards/jwt-auth.guard';
@@ -24,6 +33,7 @@ export class AuthController {
     private readonly otpService: OtpService,
     private readonly authService: AuthService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly inviteTokenService: InviteTokenService,
   ) {}
 
   @Public()
@@ -73,5 +83,68 @@ export class AuthController {
     const user = request.user as AuthenticatedUser;
     const revoked = await this.refreshTokenService.revokeAll(user.userId);
     return { revoked };
+  }
+
+  // --- Invites (ADR-010) -------------------------------------------------
+  // `tenantId` is always the caller's own, taken from the JWT: an invite grants
+  // access to one salon, so accepting a tenant from the body would let any
+  // signed-in user mint themselves an owner role in someone else's salon.
+
+  @Roles('salon_owner', 'line_manager', 'admin')
+  @Post('invite')
+  @HttpCode(HttpStatus.CREATED)
+  async createInvite(
+    @Body() body: CreateInviteDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const tenantId = this.requireTenant(user);
+    return this.inviteTokenService.create(body, user.userId, tenantId);
+  }
+
+  @Roles('salon_owner', 'line_manager', 'admin')
+  @Get('invite/list')
+  async listInvites(@CurrentUser() user: AuthenticatedUser) {
+    return this.inviteTokenService.listByTenant(this.requireTenant(user));
+  }
+
+  @Roles('salon_owner', 'line_manager', 'admin')
+  @Delete('invite/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeInvite(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const revoked = await this.inviteTokenService.revoke(
+      id,
+      this.requireTenant(user),
+      user.userId,
+      user.role === 'admin',
+    );
+    if (!revoked) {
+      // 404 rather than 403: "not yours" and "already used" must look the same
+      // so the endpoint cannot be used to probe which invite ids exist.
+      throw new NotFoundException('دعوت‌نامه یافت نشد');
+    }
+  }
+
+  /**
+   * Public: the invitee has no account yet, which is the whole point.
+   *
+   * The OTP is checked under the `invite` purpose, so a code sent for a normal
+   * login cannot be spent here (and vice versa).
+   */
+  @Public()
+  @Post('invite/accept')
+  @HttpCode(HttpStatus.OK)
+  async acceptInvite(@Body() body: AcceptInviteDto) {
+    return this.authService.verifyInviteOtpAndIssueToken(body.token, body.phone, body.otpCode);
+  }
+
+  /** Guards the invite endpoints: staff without a salon have no tenant. */
+  private requireTenant(user: AuthenticatedUser): string {
+    if (!user.tenantId) {
+      throw new ForbiddenException('برای این عملیات باید به یک سالن وابسته باشید');
+    }
+    return user.tenantId;
   }
 }

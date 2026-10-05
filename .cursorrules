@@ -24,6 +24,11 @@
 - مجموعهٔ نقش‌های مجاز هر پنل باید با بک‌اند هم‌تراز بماند (`STAFF_ROLES`/`APPROVER_ROLES`)، نه با یک فهرست محلی جدا
 - هر route جدید در salon_app باید در `test/role_guard_test.dart` پوشش داده شود (بازهٔ مسیرها و مقصد redirect)
 - refresh token همیشه به‌صورت **SHA-256 hash** در DB ذخیره شود، هرگز plaintext؛ توکن خام فقط یک‌بار به کلاینت داده می‌شود (ADR-009)
+- **invite token** هم همین‌طور: فقط hash (SHA-256) در `invite_tokens`؛ توکن خام فقط یک‌بار در پاسخِ ساخت دعوت (ADR-010)
+- invite **یکبارمصرف** است: ستون `used_at` + قفل `FOR UPDATE` هنگام accept؛ استفادهٔ دوم = `UnauthorizedException`، و قفل ردیف جلوی دو پذیرشِ همزمان را می‌گیرد
+- **tenant_id در invite از JWT می‌آید، نه از body** — قبول‌کردن tenant از درخواست یعنی هر کاربرِ وارد‌شده می‌تواند خودش را مدیرِ سالنِ دیگری کند
+- OTPِ invite با purpose=invite جدا می‌شود (`otp:invite:<phone>`)؛ کلید rate-limit اما مشترک می‌ماند تا عوض‌کردن purpose از سقف پیامک فرار ندهد
+- `RolesGuard` حالا APP_GUARD است؛ هر endpoint نقش‌دار باید `@Roles()` داشته باشد، وگرنه برای هر کاربرِ وارد‌شده باز است
 - rotation اجباری است: هر refresh باید توکن تازه صادر و توکن قبلی revoke کند؛ refresh بدون rotation خطای امنیتی است
 - reuse detection: ارائهٔ توکن revoke‌شده باید **کل family** را باطل کند، نه فقط همان توکن را
 - توکن‌های refresh داخل transaction **پرتاب نشوند**؛ ابتدا تغییرات commit شود و بعد خطا داده شود، وگرنه rollback کل سازوکار تشخیص reuse را خنثی می‌کند

@@ -87,6 +87,24 @@ class EnvironmentVariables {
   KAVENEGAR_BOOKING_TEMPLATE?: string;
 
   /**
+   * Kavenegar template for the salon-invite OTP. Separate from the login one so
+   * the message can read "کد ورود به پنل سالن" instead of a generic login code.
+   * Falls back to KAVENEGAR_OTP_TEMPLATE when unset.
+   */
+  @IsOptional()
+  @IsString()
+  KAVENEGAR_INVITE_TEMPLATE?: string;
+
+  /**
+   * How long a staff invite stays redeemable (ADR-010). Days, not seconds, so
+   * the value is readable in `.env`. A non-positive or unparsable value falls
+   * back to 7 rather than minting an already-expired invite.
+   */
+  @IsOptional()
+  @IsString()
+  INVITE_EXPIRY_DAYS?: string;
+
+  /**
    * FCM service account. All three are optional and all three must be present
    * for push to turn on: PushNotificationService stays a logged no-op without
    * them, so a local run or a fresh checkout still boots.

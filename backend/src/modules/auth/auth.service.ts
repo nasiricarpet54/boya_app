@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
+import { AcceptedInvite, InviteTokenService } from './invite-token.service';
 import { OtpService } from './otp.service';
 import { RefreshTokenService } from './refresh-token.service';
 
@@ -33,6 +34,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly inviteTokenService: InviteTokenService,
   ) {}
 
   async verifyOtpAndIssueToken(
@@ -110,5 +112,25 @@ export class AuthService {
     if (p.startsWith('+98')) p = '0' + p.slice(3);
     if (p.startsWith('98') && p.length === 12) p = '0' + p.slice(2);
     return p;
+  }
+
+  /**
+   * Redeem an invite: verify the OTP under the **invite** purpose, then let the
+   * invite service mint the account and session.
+   *
+   * Deliberately separate from `verifyOtpAndIssueToken`. That path runs
+   * `find_or_create_customer_by_phone`, which hard-codes `role = 'customer'`, so
+   * routing an invited phone through it would hand out a customer account and
+   * defeat the invite entirely. The purpose string is what keeps the two
+   * credential spaces apart: a code sent for a customer login lives under
+   * `otp:login:<phone>` and cannot be spent here.
+   */
+  async verifyInviteOtpAndIssueToken(
+    inviteToken: string,
+    phone: string,
+    code: string,
+  ): Promise<AcceptedInvite> {
+    await this.otpService.verifyOtp(phone, code, 'invite');
+    return this.inviteTokenService.accept(inviteToken, phone);
   }
 }

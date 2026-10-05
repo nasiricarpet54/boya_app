@@ -12,6 +12,7 @@ import { SmsModule } from '@mirad-work/sms-nestjs';
 import { validateEnv } from './config/env.validation';
 import { typeOrmConfig } from './config/typeorm.config';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingModule } from './modules/booking/booking.module';
@@ -78,10 +79,12 @@ import { UserModule } from './modules/user/user.module';
     ReviewModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
-  // still rate limited before token verification.
+  // still rate limited before token verification, and `RolesGuard` last so
+  // `@Roles()` is only read from a request whose token has already verified.
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

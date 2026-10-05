@@ -69,11 +69,32 @@ describe('OtpService', () => {
       tokens: { code: expect.stringMatching(/^[0-9]{6}$/) },
     });
     expect(redis.set).toHaveBeenCalledWith(
-      'otp:09121234567',
+      'otp:login:09121234567',
       expect.stringMatching(/^[a-f0-9]{64}$/),
       'EX',
       120,
     );
+  });
+
+  it('namespaces the key by purpose so an invite code is not a login code', async () => {
+    await service.sendOtp('09121234567', 'invite');
+
+    // The invite code lives under its own key, so it cannot be spent on the
+    // customer login endpoint (or the reverse).
+    expect(redis.set).toHaveBeenCalledWith(
+      'otp:invite:09121234567',
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      'EX',
+      120,
+    );
+    // ...while the rate-limit key is shared, so switching purpose cannot be used
+    // to slip past the per-window send cap.
+    expect(redis.incr).toHaveBeenCalledWith('otp:rate:09121234567');
+
+    // A login code does not verify an invite, and vice versa.
+    const storedHash = redis.set.mock.calls[0][1] as string;
+    redis.get.mockResolvedValueOnce(storedHash);
+    await expect(service.verifyOtp('09121234567', '000000', 'login')).rejects.toThrow();
   });
 
   it('rejects a fourth send inside the window', async () => {

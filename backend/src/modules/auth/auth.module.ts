@@ -7,6 +7,7 @@ import Redis from 'ioredis';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { InviteTokenService } from './invite-token.service';
 import { OtpService } from './otp.service';
 import { RefreshTokenService } from './refresh-token.service';
 
@@ -30,6 +31,7 @@ import { RefreshTokenService } from './refresh-token.service';
     AuthService,
     OtpService,
     RefreshTokenService,
+    InviteTokenService,
     {
       provide: 'OTP_REDIS',
       inject: [ConfigService],
