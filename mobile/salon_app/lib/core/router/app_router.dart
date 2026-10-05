@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_controller.dart';
+import '../../features/auth/domain/salon_user.dart';
+import '../../features/auth/presentation/screens/forbidden_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/bookings/screens/booking_detail_screen.dart';
@@ -45,6 +47,12 @@ const String specialistCreatePath = '/specialists/new';
 const String portfolioPath = '/portfolio';
 
 String specialistEditPath(String id) => '/specialists/$id/edit';
+
+/// Where a signed-in account with no salon role is sent.
+///
+/// Separate from the login path on purpose: the token is valid, so bouncing to
+/// `/auth/login` would ask a real user to re-authenticate and land in a loop.
+const String forbiddenPath = '/auth/forbidden';
 
 /// Booking management paths.
 ///
@@ -93,6 +101,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/auth/otp',
         builder: (_, state) => OtpScreen(phone: state.extra as String? ?? ''),
       ),
+      GoRoute(path: forbiddenPath, builder: (_, _) => const ForbiddenScreen()),
       // Sibling of the shell rather than a branch of it: the form takes over
       // the whole screen, bottom navigation bar included. The auth redirect
       // below still applies — only the path prefix is checked.
@@ -191,11 +200,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // redirect rather than bouncing a signed-in user to the login screen.
       if (auth.isRestoring) return null;
 
-      final onAuthPath = state.matchedLocation.startsWith('/auth');
+      final location = state.matchedLocation;
+      final onLoginPage = location == '/auth/login' || location == '/auth/otp';
+      final onForbiddenPage = location == forbiddenPath;
+
       if (!auth.isAuthenticated) {
-        return onAuthPath ? null : '/auth/login';
+        return onLoginPage || onForbiddenPage ? null : '/auth/login';
       }
-      if (onAuthPath) return '/dashboard';
+
+      // Signed in, but not a role this panel admits. `hasSalonAccess` fails
+      // closed, so an unknown or blank role lands here too. Staying put on the
+      // forbidden page avoids redirecting into a loop.
+      if (!hasSalonAccess(auth.user?.role)) {
+        return onForbiddenPage ? null : forbiddenPath;
+      }
+
+      // Allowed in: keep the panel's own entry pages out of reach.
+      if (onLoginPage || onForbiddenPage) return '/dashboard';
       return null;
     },
   );

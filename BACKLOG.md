@@ -47,12 +47,10 @@ registry چین وابسته نیست. `npm ci` و هر سه suite سبز شدن
 postgres/redis واقعی). اینها تصمیم‌های باز قبل از نوشتن کد فاز محصول‌اند.
 
 ### شکاف امنیتی/محصولی که باید اول بسته شود
-- [ ] **route guard نقش در `salon_app`** — پیامد باقی‌ماندهٔ ADR-003.
-      `salon_app/lib/core/router/app_router.dart` فقط `auth.isAuthenticated` را
-      چک می‌کند و **نقش JWT را نمی‌خواند**. نتیجه: حساب `specialist` (که در
-      `APPROVER_ROLES` است) امروز تب‌های `finance`، مدیریت متخصصان و خطوط
-      خدمات را می‌بیند. تا وقتی این بسته نشود، نباید اپ سالن برای متخصص‌ها
-      منتشر شود.
+- [x] ~~**route guard نقش در `salon_app`**~~ — **بسته شد 2026-10-05** (ADR-008).
+      `hasSalonAccess` به‌صورت allow-list هم‌تراز با `STAFF_ROLES` بک‌اند اضافه شد،
+      `redirect` در `app_router.dart` نقش را می‌خواند، صفحهٔ `/auth/forbidden` با
+      دکمهٔ خروج ساخته شد و ۱۵ تست در `test/role_guard_test.dart` اضافه شد.
 
 ### تصمیم‌های باز محصول
 - [ ] ورود مدیر سالن: دعوتنامه با SMS؟ یا admin-panel؟

@@ -76,3 +76,22 @@
 **درس audit:** grep ایستا روی متن migration قابل اعتماد نیست و می‌تواند هشدار کاذب بدهد. `1730000000008` تابع را بدون `search_path` ساخته بود، ولی `1730000000013`
 همان تابع را `DROP` و با `search_path` از نو `CREATE` کرد — پس بدنهٔ `0008` دیگر در هیچ DBای وجود ندارد و lineage واقعی `0008 → 0013` است.
 **قاعده:** وضعیت امنیتی توابع را از `pg_proc` (مرجع حقیقت) بسنج، نه از متن migration.
+
+---
+
+## ADR-008: Role-based route guard در salon_app (2026-10-05)
+
+**زمینه:** پیامد باقی‌ماندهٔ ADR-003 این بود که نقش specialist باید با route guard مبتنی بر JWT به salon_app اضافه شود، ولی تا امروز انجام نشده بود: `redirect` در `app_router.dart` فقط `auth.isAuthenticated` را چک می‌کرد. نتیجه: هر کاربری که OTP تأییدشده داشت — حتی `customer` — کل پنل سالن را می‌دید، شامل `finance`، مدیریت متخصصان و خطوط خدمات. ضمناً `auth_controller.verifyOtp` فقط نقش `customer` را رد می‌کرد، و آن هم فقط در لحظهٔ ورود؛ یک سشن کش‌شده بدون هیچ بررسی نقشی از guard عبور می‌کرد.
+
+**تصمیم:** گارد در `redirect`، در هر بار ناوبری و بر اساس نقش تصمیم می‌گیرد و کاربر را به `/auth/forbidden` می‌فرستد:
+- `!isAuthenticated` → `/auth/login` (رفتار قبلی)
+- `isAuthenticated && !hasSalonAccess(role)` → `/auth/forbidden`
+- در غیر این صورت مسیر عادی
+
+**نقش‌های مجاز:** `salon_owner`, `line_manager`, `specialist`, `admin` — هم‌تراز با `STAFF_ROLES` در `salon.service.ts` و `APPROVER_ROLES` در `booking.entity.ts`.
+
+**قاعدهٔ fail-closed:** گارد یک allow-list است، نه deny-list. نقش `null`، خالی یا ناشناخته رد می‌شود، چون پنل سالن به امور مالی و مدیریت کارکنان دسترسی دارد و نقشی که اپ نشناخته نباید عبور کند.
+
+**پیامد:** `customer` و نقش‌های ناشناخته به صفحهٔ «شما به این پنل دسترسی ندارید» با دکمهٔ خروج می‌روند. متخصص طبق ADR-003 و چون در `APPROVER_ROLES` است **عمداً مجاز ماند**؛ مسدودکردنش تأیید رزرو را می‌شکست. `/auth/forbidden` جدا از پیشوند `/auth` نگه داشته شد تا حلقهٔ redirect ایجاد نشود.
+
+**تست:** `mobile/salon_app/test/role_guard_test.dart` — ۱۵ تست: چهار نقش مجاز، `customer`، نقش ناشناخته، `null`/خالی، و هر چهار حالت redirect شامل ضدحلقه.
