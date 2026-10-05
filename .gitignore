@@ -13,7 +13,11 @@ coverage/
 .flutter-plugins-dependencies
 .packages
 build/
-pubspec.lock
+# `boya_shared` is a library: its lockfile is not committed, so downstream apps
+# resolve their own compatible versions. The two apps are applications, so their
+# lockfiles ARE tracked — without them every CI `flutter pub get` resolves fresh
+# versions and the build stops being reproducible.
+/mobile/shared/pubspec.lock
 
 .idea/
 .vscode/
