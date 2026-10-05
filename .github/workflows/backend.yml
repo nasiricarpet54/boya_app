@@ -72,9 +72,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # TODO: remove continue-on-error once BACKLOG.md "Lint Issues" is empty.
       - run: npm run lint
-        continue-on-error: true
       - run: npm run build
       # Migrates the development database. The integration harness migrates its own
       # `beauty_platform_test` in globalSetup, so this step is a separate guard:

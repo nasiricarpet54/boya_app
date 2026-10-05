@@ -30,7 +30,7 @@ interface PgClientConstructor {
   new (config: PgConfig & { connectionTimeoutMillis?: number }): PgClient;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- pg ships no types (see header)
 const { Client } = require('pg') as { Client: PgClientConstructor };
 
 export function createPgClient(config: PgConfig & { connectionTimeoutMillis?: number }): PgClient {

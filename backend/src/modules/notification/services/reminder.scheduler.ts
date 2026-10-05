@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import { BookingStatus } from '../../booking/booking.entity';
 import { InAppNotificationService } from './in-app-notification.service';
 import { KavenegarAlertService } from './kavenegar-alert.service';
 import { PushNotificationService } from './push-notification.service';

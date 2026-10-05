@@ -95,7 +95,7 @@ export async function createTestDatabaseIfMissing(): Promise<void> {
  * way `npm run migration:run` does).
  */
 export async function runMigrationsOnTestDatabase(): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- registers the TS loader at runtime
   require('ts-node').register({ transpileOnly: true });
 
   const dataSource = new DataSource({

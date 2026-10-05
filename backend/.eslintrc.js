@@ -2,10 +2,9 @@
  * Lint rules for the NestJS backend.
  *
  * `parserOptions.project` gives the parser type information, so type-aware
- * rules work. Rules below `recommended` that the project deliberately does not
- * follow are downgraded to `warn` and tracked in BACKLOG.md ("Lint Issues")
- * rather than fixed in bulk — CI runs `npm run lint` with
- * `continue-on-error: true` until that list is empty.
+ * rules work. `no-explicit-any` and `no-unused-vars` are `warn` so the suite
+ * can tighten gradually; the lint script's `--max-warnings 0` is what makes CI
+ * block on them.
  */
 module.exports = {
   parser: '@typescript-eslint/parser',
@@ -26,4 +25,12 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
+  overrides: [
+    {
+      // Migrations are append-only history and `.cursorrules` forbids editing an
+      // old migration, so an unused `queryRunner` in `down()` is left alone.
+      files: ['src/database/migrations/**/*.ts'],
+      rules: { '@typescript-eslint/no-unused-vars': 'off' },
+    },
+  ],
 };

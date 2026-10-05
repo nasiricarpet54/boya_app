@@ -1,63 +1,49 @@
 # BACKLOG
 
-## Lint Issues (TODO)
+## Lint Issues
 
-Verified with ESLint 8.57.1 + `@typescript-eslint` (config: `backend/.eslintrc.js`).
-`npm run lint` runs with `--max-warnings 0`, so every warning below fails the
-command. CI runs the lint step with `continue-on-error: true` until this list
-is empty.
+**وضعیت: خالی — `npm run lint` با ۰ error و ۰ warning پاس می‌شود.**
 
-- [ ] `backend/src/database/migrations/1730000000007-MakeUserTenantNullable.ts:14` — `@typescript-eslint/no-unused-vars` (warn) — پارامتر `queryRunner` در `down()` استفاده نمی‌شود؛ با پیشوند `_` اصلاح شود
-- [ ] `backend/src/modules/admin/audit-logs/admin-audit-logs.service.ts:8` — `@typescript-eslint/no-unused-vars` (warn) — `TARGET_TYPES` فقط به‌عنوان type استفاده می‌شود؛ `const` بی‌مصرف است
-- [ ] `backend/src/modules/auth/auth.service.ts:3` — `@typescript-eslint/no-unused-vars` (warn) — `InjectRepository` ایمپورت شده ولی استفاده نمی‌شود
-- [ ] `backend/src/modules/notification/services/reminder.scheduler.ts:6` — `@typescript-eslint/no-unused-vars` (warn) — `BookingStatus` ایمپورت شده ولی استفاده نمی‌شود
-- [ ] `backend/test/setup/pg-client.ts:34` — `@typescript-eslint/no-require-imports` (**error**) — `require('pg')` به‌عمد است چون `@types/pg` نصب نیست و `pg` بدون type است؛ کامنت disable موجود_name اشتباه است (`no-var-requires` به‌جای `no-require-imports`)
-- [ ] `backend/test/setup/test-db.ts:99` — `@typescript-eslint/no-require-imports` (**error**) — همان مورد بالا برای `require('ts-node').register(...)`؛ کامنت disable موجود هم rule اشتباه را خاموش می‌کند
+eslint 8.57.1 + `@typescript-eslint` 8.71.0 نصب و پیکربندی شده
+(`backend/.eslintrc.js`) و step مربوط به lint در CI دیگر `continue-on-error`
+ندارد، یعنی **lint واقعاً build را می‌شکند اگر regress کند**.
 
-**جمع:** ۴ warning + ۲ error (زیر آستانهٔ ۵۰، پس `--max-warnings` دست‌نخورده ماند).
+### موارد رفع‌شده (۶ مورد، ۰ مورد deferred)
+- [x] `src/modules/auth/auth.service.ts` — ایمپورت بی‌استفادهٔ `InjectRepository` حذف شد
+- [x] `src/modules/notification/services/reminder.scheduler.ts` — ایپورت بی‌استفادهٔ `BookingStatus` حذف شد
+- [x] `src/modules/admin/audit-logs/admin-audit-logs.service.ts` — `TARGET_TYPES` هیچ استفادهٔ runtime نداشت؛ به union type مستقیم تبدیل شد (`export type AuditTargetType = 'tenant' | 'user' | 'booking'`)
+- [x] `test/setup/pg-client.ts` — کامنت disable به rule درست اصلاح شد؛ کامنت قبلی `no-var-requires` را خاموش می‌کرد در حالی که rule فعال `no-require-imports` است
+- [x] `test/setup/test-db.ts` — همان اصلاح برای `require('ts-node').register(...)`
+- [x] `src/database/migrations/1730000000007-MakeUserTenantNullable.ts` — **عمداً ویرایش نشد**. `.cursorrules` می‌گوید migration قدیمی هرگز ویرایش نشود؛ به‌جایش در `.eslintrc.js` یک `overrides` برای `src/database/migrations/**` اضافه شد که `no-unused-vars` را خاموش می‌کند
 
-### نکتهٔ راهبردی برای دو مورد error
-هر دو `no-require-imports` **عمدی** هستند و با `@types/pg` نبودن توضیح داده شده‌اند
-(به `pg-client.ts` هدر فایل نگاه کنید). راه درست، خاموش‌کردن این rule برای
-`test/setup/**` است، نه تغییر کد. کامنت‌های `eslint-disable-next-line
-@typescript-eslint/no-var-requires` که الان در فایل هستند rule اشتباهی را
-خاموش می‌کنند و باید به `no-require-imports` تغییر کنند.
+هر دو `require()` عمدی هستند: `pg` بدون type نصب می‌شود (`@types/pg` وجود ندارد و
+هدر `pg-client.ts` این را توضیح می‌دهد)، پس `require` + type assertion تنها راه
+بدون `noImplicitAny` است.
 
-## Blocker: eslint نصب نمی‌شود (lockfile خراب)
+## حل‌شده: lockfile خراب (historical)
 
-`npm i -D eslint@8 @typescript-eslint/parser @typescript-eslint/eslint-plugin`
-در این ریپو با خطای زیر می‌شکند:
+این مورد دیگر blocker نیست و صرفاً برای سابقه ثبت شده.
+
+`npm ci` قبلاً با خطای زیر می‌شکست:
 
 ```
 npm error TypeError: Invalid Version:
-npm error   at new Semver (.../semver/classes/semver.js:40:13)
 npm error   at Node.canDedupe (.../@npmcli/arborist/lib/node.js:1140:32)
-npm error   at PlaceDep.pruneDedupable (.../arborist/lib/place-dep.js:426:14)
 ```
 
-**علت ریشه‌ای:** در `backend/package-lock.json` **۲۷ ورودی `version` ندارند** — همه
-اختیاری و platform-specific هستند:
+**علت ریشه‌ای:** در `backend/package-lock.json` ۲۷ ورودی `version` نداشتند — همه
+اختیاری و platform-specific:
 `node_modules/jest-haste-map/node_modules/fsevents`،
-`@msgpackr-extract/msgpackr-extract-*` (۴ مورد) و
-`@unrs/resolver-binding-*` (۲۱ مورد).
+`@msgpackr-extract/msgpackr-extract-*` (۴) و `@unrs/resolver-binding-*` (۲۱).
 `canDedupe` روی `undefined` صدای `semver.compare` را می‌زند و می‌ترکد.
 
-این خرابی **پیش‌بین این تغییر** است و ربطی به eslint ندارد.
+**رفع:** آن ۲۷ ورودی حذف شدند (commit `d564101`). diff خالص حذف بود: ۱۰۳ خط
+حذف، صفر خط اضافه — یعنی هیچ `resolved`/`integrity` بازنویسی نشد و CI به
+registry چین وابسته نیست. `npm ci` و هر سه suite سبز شدند.
 
-### چرا eslint را به `package.json` اضافه نکردم
-اگر eslint را فقط به `package.json` اضافه کنیم بدون اینکه lockfile هم sync شود،
-`npm ci` در CI با خطای زیر می‌شکند و **کل jobها قرمز می‌شوند**:
+## نکتهٔ محیطی: شبکه
 
-> npm ci can only install packages when your package.json and package-lock.json
-> are in sync
-
-پس تا وقتی lockfile درست نشود، افزودن dependency به `package.json` ریسک
-خرابی کل CI را دارد.
-
-### ترتیب پیشنهادی رفع
-۱. حذف آن ۲۷ ورودی version-less از `backend/package-lock.json` (اختیاری و
-   platform-specific هستند؛ npm خودش از manifest دوباره resolve می‌کند).
-۲. `npm install` در `backend` برای بازسازی lockfile.
-۳. `npm i -D eslint@8 @typescript-eslint/parser @typescript-eslint/eslint-plugin`
-۴. حذف `continue-on-error` از `.github/workflows/backend.yml`.
-۵. پاک‌کردن لیست بالا و کاهش تدریجی سخت‌گیری lint.
+در این ماشین `registry.npmjs.org` مدام `ECONNRESET` می‌داد و نصب‌ها شکست می‌خوردند
+(خطای npm: `Exit handler never called!`). با
+`npm config set registry https://registry.npmmirror.com` نصب‌ها سالم شدند.
+این تنظیم **سراسری روی این ماشین** است، نه مخصوص پروژه.

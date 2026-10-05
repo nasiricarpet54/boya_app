@@ -5,8 +5,7 @@ import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 
 /** Action domains the panel turns into targetType values and filter chips. */
-const TARGET_TYPES = ['tenant', 'user', 'booking'] as const;
-export type AuditTargetType = (typeof TARGET_TYPES)[number];
+export type AuditTargetType = 'tenant' | 'user' | 'booking';
 
 interface AuditLogRow {
   id: string;
