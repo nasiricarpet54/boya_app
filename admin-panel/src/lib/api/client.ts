@@ -4,34 +4,54 @@ import { DEFAULT_API_URL, TOKEN_STORAGE_KEY } from '../constants';
 import { defaultLocale, isLocale } from '../../routing';
 
 /**
- * Reads the access token out of storage.
+ * Reads the persisted session out of storage.
  *
- * The key holds the whole Zustand-persist envelope (`{"state":{"token":…}}`),
- * but a bare token is accepted too: the interceptor must keep working if the
- * value is ever written by hand or by a future token-only migration.
+ * The key holds the whole Zustand-persist envelope
+ * (`{"state":{"accessToken":…,"refreshToken":…}}`), so the interceptors read
+ * storage directly rather than importing the store — the axios instance is
+ * created at module scope, before any React context exists, and a bare token
+ * is still accepted for a future token-only migration.
  */
-export function readStoredToken(): string | null {
-  if (typeof window === 'undefined') return null;
+export function readStoredTokens(): {
+  accessToken: string | null;
+  refreshToken: string | null;
+  refreshExpiresAt: string | null;
+} {
+  const empty = { accessToken: null, refreshToken: null, refreshExpiresAt: null };
+  if (typeof window === 'undefined') return empty;
 
   const raw = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (!raw) return null;
+  if (!raw) return empty;
 
   try {
     const parsed: unknown = JSON.parse(raw);
 
-    if (typeof parsed === 'string') return parsed || null;
+    if (typeof parsed === 'string') return { ...empty, accessToken: parsed || null };
 
     if (parsed && typeof parsed === 'object') {
-      const envelope = parsed as { state?: { token?: unknown }; token?: unknown };
-      const token = envelope.state?.token ?? envelope.token;
-      return typeof token === 'string' && token ? token : null;
+      const envelope = parsed as {
+        state?: { accessToken?: unknown; token?: unknown; refreshToken?: unknown; refreshExpiresAt?: unknown };
+        accessToken?: unknown;
+        token?: unknown;
+        refreshToken?: unknown;
+        refreshExpiresAt?: unknown;
+      };
+      const state = envelope.state ?? envelope;
+      const access = state.accessToken ?? state.token;
+      const refresh = state.refreshToken;
+      return {
+        accessToken: typeof access === 'string' && access ? access : null,
+        refreshToken: typeof refresh === 'string' && refresh ? refresh : null,
+        refreshExpiresAt:
+          typeof state.refreshExpiresAt === 'string' ? state.refreshExpiresAt : null,
+      };
     }
   } catch {
     // Not JSON — the key holds a raw token.
-    return raw;
+    return { ...empty, accessToken: raw };
   }
 
-  return null;
+  return empty;
 }
 
 /** Locale of the page the panel is currently on, so a redirect stays prefixed. */
@@ -61,6 +81,79 @@ function redirectToLogin(): void {
   window.location.replace(`/${locale}/login`);
 }
 
+/** A bare client for the refresh call, so it cannot re-enter this interceptor. */
+const refreshClient = axios.create({
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, ''),
+  timeout: 20_000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+/**
+ * Non-null while a rotation is in flight. Concurrent 401s must share one
+ * refresh: refresh tokens are single-use, so two parallel rotations make the
+ * second look like a reuse of the first and the server revokes the whole family
+ * — signing the admin out for no reason.
+ */
+let refreshInFlight: Promise<string> | null = null;
+
+interface RefreshPayload {
+  accessToken?: string;
+  refreshToken?: string;
+  refreshExpiresAt?: string;
+}
+
+async function rotateOnce(): Promise<string> {
+  if (refreshInFlight) return refreshInFlight;
+
+  const run = (async () => {
+    const { refreshToken } = readStoredTokens();
+    if (!refreshToken) throw new Error('no refresh token');
+
+    const response = await refreshClient.post<RefreshPayload>('/auth/refresh', {
+      refreshToken,
+    });
+
+    const data = response.data;
+    if (!data?.accessToken || !data.refreshToken) throw new Error('incomplete rotation');
+
+    // Written straight to the persist envelope: the interceptor lives outside
+    // React, so the Zustand store is not in scope here. `setTokens` on the store
+    // is the same write, done through the normal path on the next render.
+    if (typeof window !== 'undefined') {
+      const raw = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+      let user: unknown = null;
+      if (raw) {
+        try {
+          user = (JSON.parse(raw) as { state?: { user?: unknown } })?.state?.user ?? null;
+        } catch {
+          user = null;
+        }
+      }
+      window.localStorage.setItem(
+        TOKEN_STORAGE_KEY,
+        JSON.stringify({
+          state: {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            refreshExpiresAt: data.refreshExpiresAt ?? null,
+            user,
+          },
+          version: 1,
+        }),
+      );
+    }
+
+    return data.accessToken;
+  })();
+
+  refreshInFlight = run;
+  try {
+    return await run;
+  } finally {
+    refreshInFlight = null;
+  }
+}
+
 export const api = axios.create({
   baseURL: (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, ''),
   timeout: 20_000,
@@ -68,10 +161,10 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = readStoredToken();
+  const { accessToken } = readStoredTokens();
 
-  if (token) {
-    config.headers.set('Authorization', `Bearer ${token}`);
+  if (accessToken) {
+    config.headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
   return config;
@@ -79,18 +172,41 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
+  async (error: unknown) => {
     // `JwtAuthGuard` answers 401 for a missing, malformed or expired token.
     // Every other failure (403 for a non-admin, 400 for a bad OTP, 429 for the
     // rate limit) is a real answer to a real question and must reach the UI.
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    if (!axios.isAxiosError(error) || error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // The auth endpoints are excluded: a 401 from `/auth/refresh` is the
+    // answer itself, and the OTP paths answer 401 for a wrong code.
+    const url = error.config?.url ?? '';
+    if (url.startsWith('/auth/')) {
+      return Promise.reject(error);
+    }
+
+    try {
+      await rotateOnce();
+      // The rotated token is in storage now, so replaying through the same
+      // instance re-runs the request interceptor and picks it up.
+      const original = error.config;
+      if (!original) return Promise.reject(error);
+      original.headers = original.headers ?? {};
+      if (typeof original.headers.set === 'function') {
+        original.headers.set('Authorization', `Bearer ${readStoredTokens().accessToken ?? ''}`);
+      }
+      return api.request(original);
+    } catch (refreshError) {
+      // No refresh token, or the server rejected it (including reuse
+      // detection, which revokes the family). The session is gone.
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
       redirectToLogin();
+      return Promise.reject(refreshError);
     }
-
-    return Promise.reject(error);
   },
 );
 

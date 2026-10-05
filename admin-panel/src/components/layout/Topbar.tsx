@@ -6,6 +6,7 @@ import { CalendarDays, Check, Globe, LogOut, Moon, Sun, UserRound } from 'lucide
 import { useEffect, useState } from 'react';
 
 import { useAuthStore } from '@/lib/stores/auth';
+import { useSignOut } from '@/lib/api/sign-out';
 import { usePathname, useRouter } from '@/lib/navigation';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { cn } from '@/lib/utils/cn';
@@ -22,7 +23,7 @@ export function Topbar() {
   const tTopbar = useTranslations('topbar');
   const tAuth = useTranslations('auth');
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const handleSignOut = useSignOut();
   const { theme, toggleTheme } = useTheme();
 
   const locale = useLocale() as Locale;
@@ -114,8 +115,7 @@ export function Topbar() {
               <DropdownMenu.Item
                 className={cn(MENU_ITEM, 'text-error data-[highlighted]:bg-error/10')}
                 onSelect={() => {
-                  logout();
-                  router.replace('/login');
+                  void handleSignOut();
                 }}
               >
                 <LogOut className="h-4 w-4 shrink-0" aria-hidden />

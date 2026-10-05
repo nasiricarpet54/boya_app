@@ -3,12 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { LogOut } from 'lucide-react';
-import { useCallback } from 'react';
-
 import { NAV_SECTIONS } from './nav-items';
 import { useAuthStore } from '@/lib/stores/auth';
 import { dashboardApi } from '@/lib/api/dashboard';
-import { Link, usePathname, useRouter } from '@/lib/navigation';
+import { useSignOut } from '@/lib/api/sign-out';
+import { Link, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils/cn';
 import { faNumber } from '@/lib/utils/persian';
 
@@ -22,8 +21,7 @@ export function Sidebar() {
   const tCommon = useTranslations('common');
   const tAuth = useTranslations('auth');
   const pathname = usePathname();
-  const router = useRouter();
-  const logout = useAuthStore((state) => state.logout);
+  const handleLogout = useSignOut();
 
   // The badge is the one place the panel polls on a timer. It stays silent on
   // failure: a missing badge beats an error banner blocking the whole nav.
@@ -39,11 +37,6 @@ export function Sidebar() {
   });
 
   const pendingCount = dashboard?.stats.pendingApprovals ?? 0;
-
-  const handleLogout = useCallback(() => {
-    logout();
-    router.replace('/login');
-  }, [logout, router]);
 
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface">

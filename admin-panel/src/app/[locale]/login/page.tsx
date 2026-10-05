@@ -33,7 +33,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const token = useAuthStore((state) => state.token);
+  const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const setAuth = useAuthStore((state) => state.setAuth);
   const logout = useAuthStore((state) => state.logout);
@@ -50,10 +50,10 @@ export default function LoginPage() {
 
   // An admin who still holds a live session has no business on this page.
   useEffect(() => {
-    if (isHydrated && token && user?.role === ADMIN_ROLE) {
+    if (isHydrated && accessToken && user?.role === ADMIN_ROLE) {
       router.replace('/dashboard');
     }
-  }, [isHydrated, token, user, router]);
+  }, [isHydrated, accessToken, user, router]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -104,10 +104,8 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { token: accessToken, user: authUser } = await authApi.verifyOtp(
-        pendingPhone,
-        normalizedCode,
-      );
+      const { accessToken, refreshToken, refreshExpiresAt, user: authUser } =
+        await authApi.verifyOtp(pendingPhone, normalizedCode);
 
       if (authUser.role !== ADMIN_ROLE) {
         // The token is genuine but useless here. It is dropped before it can
@@ -117,12 +115,17 @@ export default function LoginPage() {
         return;
       }
 
-      setAuth(accessToken, {
-        id: authUser.id,
-        phoneNumber: authUser.phoneNumber,
-        fullName: authUser.fullName,
-        role: authUser.role,
-        tenantId: authUser.tenantId,
+      setAuth({
+        accessToken,
+        refreshToken,
+        refreshExpiresAt,
+        user: {
+          id: authUser.id,
+          phoneNumber: authUser.phoneNumber,
+          fullName: authUser.fullName,
+          role: authUser.role,
+          tenantId: authUser.tenantId,
+        },
       });
 
       toast({ title: tCommon('appName'), description: tLogin('title'), variant: 'success' });

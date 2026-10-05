@@ -27,10 +27,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const token = useAuthStore((state) => state.token);
+  const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
 
-  const canAccess = isAdminSession({ token, user });
+  const canAccess = isAdminSession({ accessToken, user });
 
   useEffect(() => {
     if (!isHydrated || canAccess) return;
