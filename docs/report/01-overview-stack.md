@@ -72,9 +72,8 @@ e:\BOYA platform\
 چهار پکیج Dart/Flutter:
 
 1. `mobile\customer_app\` — اپ مشتری. پوشه `lib\features\` شامل: `auth`, `booking`, `home`, `notifications`, `profile`, `salon`.
-2. `mobile\salon_app\` — اپ سالن. پوشه `lib\features\` شامل: `auth`, `bookings`, `dashboard`, `finance`, `portfolio`, `profile`, `salon`, `services`, `specialists`.
-3. `mobile\specialist_app\` — اپ متخصص. پوشه `lib\features\` شامل: `bookings`, `dashboard`, `profile`, `schedule`.
-4. `mobile\shared\` — پکیج مشترک. محتویات واقعی `lib\`:
+2. `mobile\salon_app\` — اپ سالن (و نقش متخصص). پوشه `lib\features\` شامل: `auth`, `bookings`, `dashboard`, `finance`, `portfolio`, `profile`, `salon`, `services`, `specialists`.
+3. `mobile\shared\` — پکیج مشترک. محتویات واقعی `lib\`:
    - `boya_shared.dart` (فایل barrel) و `beauty_shared.dart` (فایل قدیمی/نام‌گذاری پیشین)
    - `app\boya_app.dart`
    - `theme\boya_colors.dart`, `theme\boya_theme.dart`, `theme\boya_typography.dart`

@@ -19,7 +19,6 @@ jobs:
           - mobile/shared
           - mobile/customer_app
           - mobile/salon_app
-          - mobile/specialist_app
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

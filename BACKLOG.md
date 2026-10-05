@@ -41,9 +41,28 @@ npm error   at Node.canDedupe (.../@npmcli/arborist/lib/node.js:1140:32)
 حذف، صفر خط اضافه — یعنی هیچ `resolved`/`integrity` بازنویسی نشد و CI به
 registry چین وابسته نیست. `npm ci` و هر سه suite سبز شدند.
 
-## نکتهٔ محیطی: شبکه
+## Phase 2: Product (در حال شروع)
 
-در این ماشین `registry.npmjs.org` مدام `ECONNRESET` می‌داد و نصب‌ها شکست می‌خوردند
-(خطای npm: `Exit handler never called!`). با
-`npm config set registry https://registry.npmmirror.com` نصب‌ها سالم شدند.
-این تنظیم **سراسری روی این ماشین** است، نه مخصوص پروژه.
+زیرساخت پاک و سبز است (lint صفر خطا، هر سه suite بک‌اند سبز، CI با
+postgres/redis واقعی). اینها تصمیم‌های باز قبل از نوشتن کد فاز محصول‌اند.
+
+### شکاف امنیتی/محصولی که باید اول بسته شود
+- [ ] **route guard نقش در `salon_app`** — پیامد باقی‌ماندهٔ ADR-003.
+      `salon_app/lib/core/router/app_router.dart` فقط `auth.isAuthenticated` را
+      چک می‌کند و **نقش JWT را نمی‌خواند**. نتیجه: حساب `specialist` (که در
+      `APPROVER_ROLES` است) امروز تب‌های `finance`، مدیریت متخصصان و خطوط
+      خدمات را می‌بیند. تا وقتی این بسته نشود، نباید اپ سالن برای متخصص‌ها
+      منتشر شود.
+
+### تصمیم‌های باز محصول
+- [ ] ورود مدیر سالن: دعوتنامه با SMS؟ یا admin-panel؟
+- [ ] ورود متخصص: توسط مدیر دعوت میشود یا خودش؟
+- [ ] JWT refresh: rotation + revocation strategy؟
+      (بک‌اند `JWT_REFRESH_SECRET` را تعریف می‌کند ولی طبق گزارش ۰۳ مصرف نمی‌شود — B6)
+- [ ] `flutter_secure_storage` جای `SharedPreferences`
+      (برای نگهداری access/refresh token روی دستگاه)
+
+### کارهای باقی‌مانده از فاز زیرساخت
+- [ ] `web/specialist/` و جدول `web/README.md` هنوز به یک اپ جداگانه اشاره
+      می‌کنند؛ یا `web/specialist/` حذف شود یا صرفاً به نقش در `salon_app`
+      اشاره کند.

@@ -6,6 +6,6 @@ These panels exist so customer, salon, and specialist flows can be tried in a br
 | --- | --- | --- |
 | `customer/` | `mobile/customer_app` | http://localhost:3001 |
 | `salon/` | `mobile/salon_app` | http://localhost:3002 |
-| `specialist/` | `mobile/specialist_app` | http://localhost:3003 |
+| `specialist/` | `mobile/salon_app` (role-based) | http://localhost:3003 |
 
 Not built yet. No default user or password. API base: `http://localhost:3000/api/v1`.

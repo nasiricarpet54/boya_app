@@ -28,6 +28,7 @@
 - زمینه: سه اپ Flutter (customer/salon/specialist) برای یک نفر نگهدارنده؛ `specialist_app` هم‌اکنون بدون API client و بدون router و فقط با صفحات placeholder است.
 - تصمیم: ADR-003: حذف specialist_app جدا و ادغام در salon_app با UI مبتنی بر نقش. دلیل: نگهداری سه اپ برای یک نفر غیرعملی.
 - پیامد: حذف `mobile/specialist_app`؛ نقش specialist با route guard مبتنی بر JWT role به salon_app اضافه می‌شود؛ pubspec و CI موبایل به دو اپ کاهش می‌یابد.
+- اجرا شد در 2026-10-05: پوشه `mobile/specialist_app` حذف شد (ADR-003). ⚠️ **بخش route guard هنوز انجام نشده** — `salon_app/lib/core/router/app_router.dart` فقط `isAuthenticated` را چک می‌کند و نقش را نمی‌خواند، پس حساب `specialist` امروز کل UI سالن‌دار (شامل finance و مدیریت متخصصان) را می‌بیند. این باید قبل از عرضهٔ فاز محصول بسته شود (BACKLOG.md، فاز ۲).
 
 ## ADR-004
 

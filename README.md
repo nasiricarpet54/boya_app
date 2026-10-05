@@ -25,8 +25,7 @@ backend/                 NestJS 11 API
   src/utils/             Jalali dates and Persian numerals
 mobile/shared/           Shared Flutter package (theme, utils, localization)
 mobile/customer_app/     Customer app (بویا)
-mobile/salon_app/        Salon panel
-mobile/specialist_app/   Specialist panel
+mobile/salon_app/        Salon panel (also serves the `specialist` role)
 web/                     Test-only web panels (not the primary product)
   customer/              Browser stand-in for the customer app
   salon/                 Browser stand-in for the salon app
@@ -67,7 +66,8 @@ cd mobile/shared && flutter pub get
 cd ../customer_app && flutter pub get && flutter run
 ```
 
-Repeat `flutter pub get` in `salon_app` and `specialist_app`.
+Repeat `flutter pub get` in `salon_app`. There is no separate specialist app: the
+`specialist` role is served by `salon_app` (see ADR-003).
 
 ## Web panels (test only)
 
@@ -77,7 +77,7 @@ The apps stay the product. `web/` is only a browser stand-in so each panel can b
 | --- | --- | --- |
 | Customer | `mobile/customer_app` | `http://localhost:3001` |
 | Salon | `mobile/salon_app` | `http://localhost:3002` |
-| Specialist | `mobile/specialist_app` | `http://localhost:3003` |
+| Specialist | `mobile/salon_app` (role-based) | `http://localhost:3002` |
 
 Same API (`http://localhost:3000/api/v1`), same Persian/RTL/Jalali rules. No login is seeded yet, so these URLs do not open until the panels are built. Do not put business logic here that the apps do not have.
 
