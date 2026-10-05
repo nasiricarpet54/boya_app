@@ -64,12 +64,9 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 - [ ] `web/specialist/` و جدول `web/README.md` هنوز به یک اپ جداگانه اشاره
       می‌کنند؛ یا `web/specialist/` حذف شود یا صرفاً به نقش در `salon_app`
       اشاره کند.
-- [ ] **`pubspec.lock` برای اپ‌ها commit نمی‌شود.** خط `pubspec.lock` در
-      `.gitignore` (خط ۱۶) همهٔ lockfileها را حذف می‌کند، از جمله lockfile
-      اپ‌ها. برای یک *library* درست است، اما اپ‌ها **application** هستند و باید
-      lockfile را commit کنند تا build قابل بازتولید باشد. الان CI با
-      `flutter pub get` نسخه‌ها را تازه resolve می‌کند، پس هر build می‌تواند
-      نسخه‌های متفاوتی بگیرد. راه‌حل: محدود کردن ignore به پکیج‌ها
-      (مثلاً `mobile/shared/pubspec.lock` و `mobile/**/example/pubspec.lock`).
+- [x] ~~**`pubspec.lock` برای اپ‌ها commit نمی‌شود**~~ — **بسته شد 2026-10-05**
+      (commit `cceb453`). خط سراسری `pubspec.lock` در `.gitignore` با
+      `/mobile/shared/pubspec.lock` جایگزین شد: فقط lockfile پکیج کتابخانه‌ای
+      ignore می‌شود و lockfile هر دو اپ track می‌شود تا build قابل بازتولید باشد.
 - [x] ~~`fl_chart` در `salon_app` اعلام نشده بود~~ — **بسته شد 2026-10-05**؛
       `flutter analyze` در هر سه پکیج پاک است.
