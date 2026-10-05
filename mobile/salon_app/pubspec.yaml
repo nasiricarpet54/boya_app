@@ -18,6 +18,11 @@ dependencies:
     sdk: flutter
   dio: ^5.4.0
   shared_preferences: ^2.5.5
+  # Session storage. The refresh token is long-lived and single-use, so it lives
+  # in the platform keystore (Keychain / EncryptedSharedPreferences) rather than
+  # a readable preferences file. Constraint matches boya_shared so pub resolves
+  # one copy of the plugin instead of two.
+  flutter_secure_storage: ^11.2.0
   # The booking detail's «تماس با مشتری» button opens the dialler with
   # `tel:`. It is the only place the app hands a URI to the OS, which is why
   # the dependency is here rather than in boya_shared.

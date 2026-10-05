@@ -1,13 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/auth_api.dart';
+import '../data/session_store.dart';
 import '../domain/auth_session.dart';
 import '../domain/salon_user.dart';
-
-const _kSessionKey = 'salon_auth_session';
 
 /// Thrown when a customer account tries to enter the salon panel.
 class SalonAccessDeniedException implements Exception {
@@ -50,15 +46,12 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _restore() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_kSessionKey);
-      if (raw == null) {
+      final session = await ref.read(sessionStoreProvider).read();
+      if (session == null) {
         state = const AuthState();
         return;
       }
-      final json = jsonDecode(raw) as Map<String, dynamic>;
-      final session = AuthSession.fromApi(json);
-      state = AuthState(user: session.user, token: session.token);
+      state = AuthState(user: session.user, token: session.accessToken);
     } catch (_) {
       state = const AuthState();
     }
@@ -75,20 +68,15 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<AuthSession> verifyOtp({required String phoneNumber, required String code}) async {
+  Future<AuthSession> refresh({String? refreshToken, String? deviceInfo}) async {
     state = AuthState(user: state.user, token: state.token, isLoading: true);
     try {
-      final session = await ref.read(authApiProvider).verifyOtp(
-        phoneNumber: phoneNumber,
-        code: code,
+      final session = await ref.read(authApiProvider).refresh(
+        refreshToken: refreshToken,
+        deviceInfo: deviceInfo,
       );
-      // Only salon roles may enter the salon panel.
-      if (session.user.role == 'customer') {
-        throw const SalonAccessDeniedException('این حساب به پنل سالن دسترسی ندارد');
-      }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_kSessionKey, jsonEncode(session.toJson()));
-      state = AuthState(user: session.user, token: session.token);
+      await ref.read(sessionStoreProvider).write(session);
+      state = AuthState(user: session.user, token: session.accessToken);
       return session;
     } catch (_) {
       state = AuthState(user: state.user, token: state.token);
@@ -96,10 +84,57 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  Future<AuthSession> verifyOtp({required String phoneNumber, required String code}) async {
+    state = AuthState(user: state.user, token: state.token, isLoading: true);
+    try {
+      final session = await ref.read(authApiProvider).verifyOtp(
+        phoneNumber: phoneNumber,
+        code: code,
+      );
+      // Only salon roles may enter the salon panel (ADR-008). Checked before
+      // persisting so a rejected account never leaves a session on the device.
+      if (!session.user.hasSalonAccess) {
+        throw const SalonAccessDeniedException('این حساب به پنل سالن دسترسی ندارد');
+      }
+      await ref.read(sessionStoreProvider).write(session);
+      state = AuthState(user: session.user, token: session.accessToken);
+      return session;
+    } catch (_) {
+      state = AuthState(user: state.user, token: state.token);
+      rethrow;
+    }
+  }
+
+  /// Signs out for real: the refresh token is revoked server-side first, so a
+  /// copy lifted from the device stops working instead of living for the rest
+  /// of its TTL. A failure to reach the API must not trap the user in the
+  /// panel, so the local session is cleared either way.
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kSessionKey);
+    final store = ref.read(sessionStoreProvider);
+    try {
+      final session = await store.read();
+      if (session != null && session.refreshToken.isNotEmpty) {
+        await ref.read(authApiProvider).logout(session.refreshToken);
+      }
+    } catch (_) {
+      // Offline or already expired: fall through and drop the local copy.
+    }
+    await store.clear();
     state = const AuthState();
+  }
+
+  /// Revokes every session of this account on every device.
+  Future<int> logoutAll() async {
+    final store = ref.read(sessionStoreProvider);
+    var revoked = 0;
+    try {
+      revoked = await ref.read(authApiProvider).logoutAll();
+    } catch (_) {
+      // Same reasoning as `logout`.
+    }
+    await store.clear();
+    state = const AuthState();
+    return revoked;
   }
 }
 
