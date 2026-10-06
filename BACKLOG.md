@@ -107,3 +107,36 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 - **اولویت:** کم — فقط cleanup
 - **توجه:** جدول `web/README.md` اصلاح شده و به `salon_app` اشاره می‌کند؛ خودِ
   پوشه هنوز سر جایش است.
+
+## Testing — SMS (Kavenegar)
+
+مسیر دعوتنامه کامل پیاده شده (`invite-token.service.ts`: `create` ردیف را در
+`invite_tokens` ذخیره می‌کند و `sendInviteSms` را صدا می‌زند، `accept` با
+`SELECT ... FOR UPDATE` روی hash آن را خرج می‌کند)، ولی هنوز **هیچ SMS واقعی
+ارسال نشده**. `INVITE_BASE_URL` و قالب‌ها در `.env.example` اضافه شدند و
+`env.validation.ts` آن‌ها را optional گرفت، تا وقتی مقدار ندارند send سایلنت
+skip شود. این موارد دستی پیش از تحویل به یک شماره واقعی باید انجام شوند:
+
+- [ ] **کلید production در Kavenegar ساخته و نصب شود** — `KAVENEGAR_API_KEY` در
+      `backend/.env` روی کلید واقعی staging تنظیم شود (`change-me` فعلی فقط
+      sandbox است).
+- [ ] **قالب `invite` در پنل Kavenegar ساخته شود** — نام آن در
+      `KAVENEGAR_INVITE_TEMPLATE` می‌رود. این تنها قالب لازم است؛ همهٔ نقش‌ها
+      به آن fallback می‌کنند.
+- [ ] **قالب `invite-owner` ساخته شود** — `KAVENEGAR_INVITE_OWNER_TEMPLATE`.
+      قالبی جدا فقط اگر ورد دعوت مالک سالن باید متفاوت باشد؛ در غیر این صورت
+      خالی بگذارید تا generic استفاده شود.
+- [ ] **قالب `invite-specialist` ساخته شود** — `KAVENEGAR_INVITE_SPECIALIST_TEMPLATE`.
+      همان شرط بالا برای دعوت متخصص.
+- [ ] **E2E با دو شماره واقعی** — یک شماره مالک سالن، یکی متخصص. از پنل دعوت
+      صادر کنید، SMS را روی گوشی دریافت کنید، روی `${INVITE_BASE_URL}?token=…`
+      بزنید و ببینید نقش درست با OTP ساخته می‌شود.
+
+> **توجه:** `INVITE_BASE_URL` بدنهٔ پیام را تعیین می‌کند — `sendInviteSms`
+> از `${INVITE_BASE_URL}?token=<64hex>` می‌سازد و وقتی ست نیست فقط خود token
+> (یک hex ۶۴ کاراکتری) ارسال می‌شود که چیزی نمی‌تواند باز کند. دامنهٔ staging
+> تا زمانی که دامنهٔ نهایی روشن شود کافی است.
+>
+> **به‌جای SMS واقعی:** `backend/scripts/test-invite.sh` (که ignore شده و
+> commit نمی‌شود) کل مسیر را در SQL روی دیتابیس dev می‌برد و لینک را چاپ
+> می‌کند، بدون اینکه کاوه‌نگار را صدا بزند.

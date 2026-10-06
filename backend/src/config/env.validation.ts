@@ -96,6 +96,30 @@ class EnvironmentVariables {
   KAVENEGAR_INVITE_TEMPLATE?: string;
 
   /**
+   * Base of the deep link the invite SMS carries: `${INVITE_BASE_URL}?token=…`.
+   * Optional because nothing else in the app reads it, but with it unset the SMS
+   * contains only the bare token and the invitee has nothing to open, so set it
+   * wherever invites are actually delivered.
+   */
+  @IsOptional()
+  @IsString()
+  INVITE_BASE_URL?: string;
+
+  /**
+   * Per-role invite overrides. Each is optional and falls back to
+   * KAVENEGAR_INVITE_TEMPLATE, so one template serves every role until owner and
+   * specialist invites need different wording. `line_manager` has no override and
+   * uses the generic template.
+   */
+  @IsOptional()
+  @IsString()
+  KAVENEGAR_INVITE_OWNER_TEMPLATE?: string;
+
+  @IsOptional()
+  @IsString()
+  KAVENEGAR_INVITE_SPECIALIST_TEMPLATE?: string;
+
+  /**
    * How long a staff invite stays redeemable (ADR-010). Days, not seconds, so
    * the value is readable in `.env`. A non-positive or unparsable value falls
    * back to 7 rather than minting an already-expired invite.

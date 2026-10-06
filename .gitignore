@@ -23,6 +23,10 @@ build/
 .vscode/
 *.iml
 .integration-ready
+# Local manual-test helpers that touch the dev database. Not committed: they are
+# scaffolding for a developer running an E2E check by hand, not part of the app
+# or CI. `test-referral.sh` predates this rule and stays tracked.
+backend/scripts/test-invite.sh
 
 .DS_Store
 Thumbs.db

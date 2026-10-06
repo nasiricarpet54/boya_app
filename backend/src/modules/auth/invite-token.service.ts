@@ -27,6 +27,16 @@ export const INVITE_ISSUERS: ReadonlyArray<InviteRole | 'admin'> = [
 const INVITE_TOKEN_BYTES = 32;
 const DEFAULT_EXPIRY_DAYS = 7;
 
+/**
+ * Per-role invite templates, keyed by the env var holding the template name.
+ * `line_manager` is deliberately absent: it has no dedicated template and falls
+ * back to the generic one, same as a role whose override is configured but empty.
+ */
+const INVITE_TEMPLATE_BY_ROLE: Partial<Record<InviteRole, string>> = {
+  salon_owner: 'KAVENEGAR_INVITE_OWNER_TEMPLATE',
+  specialist: 'KAVENEGAR_INVITE_SPECIALIST_TEMPLATE',
+};
+
 export interface CreateInviteInput {
   role: InviteRole;
   phone?: string;
@@ -182,10 +192,32 @@ export class InviteTokenService {
    * and the caller is holding the one-time plaintext, so aborting here would
    * only hide a working invite behind a messaging error.
    */
+  /**
+   * Resolves the Kavenegar template for a role: a configured per-role override
+   * wins, otherwise everything falls back to `KAVENEGAR_INVITE_TEMPLATE`, so one
+   * template is enough until owner and specialist invites need different wording.
+   * Empty string (never undefined) when no template is configured at all, so the
+   * caller can skip the send rather than hand Kavenegar an empty template name.
+   *
+   * Uses falsy rather than nullish semantics on purpose: an override set but left
+   * blank means "no opinion", so the invite falls back to the generic template
+   * instead of sending an empty name to the provider.
+   */
+  private resolveInviteTemplate(role: InviteRole): string {
+    const override = INVITE_TEMPLATE_BY_ROLE[role];
+    return (
+      (override ? this.config.get<string>(override) : undefined) ||
+      this.config.get<string>('KAVENEGAR_INVITE_TEMPLATE') ||
+      ''
+    );
+  }
+
   private async sendInviteSms(phone: string, role: InviteRole, token: string): Promise<void> {
-    const template = this.config.get<string>('KAVENEGAR_INVITE_TEMPLATE');
+    const template = this.resolveInviteTemplate(role);
     if (!template) {
-      this.logger.warn('KAVENEGAR_INVITE_TEMPLATE is unset; invite SMS skipped');
+      this.logger.warn(
+        `KAVENEGAR_INVITE_TEMPLATE is unset for role=${role}; invite SMS skipped`,
+      );
       return;
     }
 

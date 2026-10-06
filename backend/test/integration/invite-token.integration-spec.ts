@@ -353,4 +353,90 @@ describeIntegration('invite tokens', () => {
     const ADMIN = '55555555-5555-5555-8555-5555555555a9';
     expect(await getService().revoke(inB.id, TENANT_A, ADMIN, true)).toBe(false);
   });
+
+  // The SMS half of `create`. `getService()` deliberately leaves the template
+  // unset so nothing reaches a provider, so these specs build their own service
+  // with a map-backed ConfigService and a recording SmsService to see the
+  // template and link `resolveInviteTemplate` actually hands Kavenegar.
+  describe('invite SMS template resolution', () => {
+    /** Builds a service whose `verify` calls are captured into `sent`. */
+    const serviceWith = (
+      env: Record<string, string>,
+    ): {
+      service: InviteTokenService;
+      sent: Array<{ to: string; template: string; token: string }>;
+    } => {
+      const sent: Array<{ to: string; template: string; token: string }> = [];
+      const service = new InviteTokenService(
+        getAdminDataSource(),
+        new RefreshTokenService(
+          getAdminDataSource(),
+          new JwtService({ secret: 'integration-secret' }),
+          { get: <T>(_key: string, fallback: T) => fallback } as unknown as ConfigService,
+        ),
+        { get: <T>(key: string, fallback: T): T => (key in env ? (env[key] as unknown as T) : fallback) } as unknown as ConfigService,
+        {
+          verify: async (message: { to: string; template: string; tokens: Record<string, string> }) => {
+            sent.push({ to: message.to, template: message.template, token: String(message.tokens.token) });
+            return { success: true } as never;
+          },
+        } as unknown as SmsService,
+      );
+      return { service, sent };
+    };
+
+    it('falls back to the generic template for every role when no override is set', async () => {
+      const { service, sent } = serviceWith({
+        KAVENEGAR_INVITE_TEMPLATE: 'invite',
+        INVITE_BASE_URL: 'https://staging.boya.ir',
+      });
+
+      for (const role of ['salon_owner', 'line_manager', 'specialist'] as const) {
+        sent.length = 0;
+        const phone = nextPhone();
+        const issued = await service.create({ role, phone }, OWNER, TENANT_A);
+        expect(sent).toHaveLength(1);
+        expect(sent[0].template).toBe('invite');
+        // INVITE_BASE_URL shapes the link; without it the SMS carries only the
+        // bare hex token, which nothing can open.
+        expect(sent[0].token).toBe(`https://staging.boya.ir?token=${issued.token}`);
+      }
+    });
+
+    it('prefers the per-role template, and falls back when the override is blank', async () => {
+      const { service, sent } = serviceWith({
+        KAVENEGAR_INVITE_TEMPLATE: 'invite',
+        // Set for owner, deliberately blank for specialist: blank means "no
+        // opinion", so specialist still resolves to the generic template.
+        KAVENEGAR_INVITE_OWNER_TEMPLATE: 'invite-owner',
+        KAVENEGAR_INVITE_SPECIALIST_TEMPLATE: '',
+      });
+
+      const ownerPhone = nextPhone();
+      await service.create({ role: 'salon_owner', phone: ownerPhone }, OWNER, TENANT_A);
+      expect(sent[0].template).toBe('invite-owner');
+
+      const specialistPhone = nextPhone();
+      await service.create({ role: 'specialist', phone: specialistPhone }, OWNER, TENANT_A);
+      expect(sent[1].template).toBe('invite');
+    });
+
+    it('skips the SMS when no template is configured at all', async () => {
+      const { service, sent } = serviceWith({ INVITE_BASE_URL: 'https://staging.boya.ir' });
+
+      await service.create({ role: 'specialist', phone: nextPhone() }, OWNER, TENANT_A);
+      // The invite is still persisted and still returned — the missing template
+      // only suppresses the send; it never fails the request.
+      expect(sent).toHaveLength(0);
+      expect(await rows()).toHaveLength(1);
+    });
+
+    it('sends only the bare token when INVITE_BASE_URL is unset', async () => {
+      const { service, sent } = serviceWith({ KAVENEGAR_INVITE_TEMPLATE: 'invite' });
+
+      const phone = nextPhone();
+      const issued = await service.create({ role: 'specialist', phone }, OWNER, TENANT_A);
+      expect(sent[0].token).toBe(issued.token);
+    });
+  });
 });
