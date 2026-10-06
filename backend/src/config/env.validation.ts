@@ -14,6 +14,10 @@ import { Transform } from 'class-transformer';
 enum NodeEnv {
   Development = 'development',
   Test = 'test',
+  // Staging mirrors production config but keeps dev-friendly CORS so a staging
+  // box on a LAN can be reached from localhost origins. Without this entry the
+  // env validation rejects NODE_ENV=staging and the app fails to boot.
+  Staging = 'staging',
   Production = 'production',
 }
 

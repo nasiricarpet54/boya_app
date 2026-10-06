@@ -230,6 +230,15 @@ verifyOtp: get نبود→OTP_EXPIRED؛ incr(tries)>5→429؛ toLatinDigits مق
 - **آخرین اجرا integration (2026-10-06): ۱۴ suite / ۵۸ test همگی pass** با Postgres واقعی روی `beauty_platform_test` و `INTEGRATION_DB_REQUIRED=true`؛ suite جدید specialist-idor (۳ تست: متخصص به ردیف همکارِ همان سالن ۴۰۴ می‌گیرد و ویرایش اعمال نمیشود، متخصص ردیف خودش را ویرایش می‌کند، مالک هر متخصصی را ویرایش می‌کند) سبز شد. `tsc --noEmit` + `eslint --max-warnings 0` بک‌اند هم پاس؛ `flutter analyze` (salon_app) بدون issue و `flutter test` با ۴۸ تست (شامل ۱۰ تست جدیدِ route guard onboarding) همه pass.
 - **onboarding UI (salon_app) تکمیل شد:** router کاربر `profileCompleted=false` را به `/setup/salon` (مالک/سرپرست خط) یا `/setup/specialist` (متخصص) می‌برد و تا true شدن پرچم آنجا نگه می‌دارد؛ `AuthController.refreshUser` پس از ذخیرهٔ فرم پرچم را از `GET /auth/me` دوباره می‌خواند.
 
+## Deploy
+- docker-compose.staging.yml: ✅ tested (2026-10-06) — postgres/redis `healthy`، `backend-migrate` exited(0)، backend `healthy`، caddy up
+- backend/Dockerfile: ✅ built successfully — multi-stage (builder با npm ci کامل → slim runtime با prod deps + dist)
+- Caddyfile: ✅ validated — `caddy validate` → `Valid configuration` (HTTP روی :80، WARN: auto-HTTPS خاموش چون فقط :80 listen می‌شود)
+- Smoke test: ✅ `/api/v1/health` → `{"status":"ok","timestamp":"..."}` و `/docs` → Swagger UI HTML، هم از طریق Caddy (:80) هم مستقیم (:3001)
+- نکتهٔ مسیر: endpoint health با prefix سراسری روی `/api/v1/health` است (`API_PREFIX=api/v1`)؛ `/health` خام 404 برمی‌گرداند.
+- اصلاح حین تست: compose `NODE_ENV: staging` می‌فرستاد ولی `@IsEnum(NodeEnv)` در `env.validation.ts` فقط development/test/production می‌پذیرفت → backend crash-loop می‌کرد. `Staging = 'staging'` به enum اضافه شد.
+- پورت‌های هاست staging (آفست‌دار از dev تا کنار هم run شوند): postgres `5434`، redis `6381`، backend `3001`، caddy `80/443`. جداول روی `beauty_platform`: ۱۹ جدول (شامل tenants/users/bookings/invite_tokens)؛ `count(*) FROM tenants` = ۵ (seed).
+
 ## Issues
 - TODO/FIXME: در src بکند و lib موبایل صفر (جستجوی TODO|FIXME|HACK|XXX: فقط placeholder UI، mock-jest، limitPlaceholder متغیر — هیچ TODO واقعی نیست)
 - mock: mobile/customer_app/lib/features/home/data/mock_salons.dart (5 سالن picsum + 13 کategori — «No backend call»)؛ migration 1730000000017 mock CDN portfolio (dev-only)؛ jest mocks در otp.spec؛ admin-panel PlaceholderPage برای settings

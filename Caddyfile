@@ -1,0 +1,23 @@
+# BOYA platform — staging reverse proxy (Caddy)
+#
+# Fronts the NestJS backend for SMS/OTP staging tests.
+#   docker compose -f docker-compose.staging.yml up -d
+#
+# Serves plain HTTP on :80 so it works on a LAN / local box with no domain name.
+# For automatic HTTPS, replace ":80" with your staging host and keep the body,
+# for example:
+#
+#   staging.boyaplatform.com {
+#       encode zstd gzip
+#       reverse_proxy backend:3000
+#   }
+#
+# Caddy sets X-Forwarded-For / -Proto / -Host on the upstream automatically.
+
+:80 {
+	# Compress responses.
+	encode zstd gzip
+
+	# NestJS API (global prefix /api/v1), Swagger UI (/docs) and any other path.
+	reverse_proxy backend:3000
+}

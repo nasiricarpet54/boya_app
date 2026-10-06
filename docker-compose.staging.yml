@@ -1,0 +1,162 @@
+# Staging stack — SMS / OTP testing.
+#
+# Brings up Postgres 16 + Redis 7 + the NestJS backend (behind Caddy) with the
+# schema already migrated, so the stack is ready to send real Kavenegar SMS.
+#
+#   1. Put the staging secrets in a repo-root .env (it is gitignored, same as
+#      backend/.env):
+#
+#        KAVENEGAR_API_KEY=<real key>
+#        OTP_PEPPER=<random string>
+#        JWT_ACCESS_SECRET=<random string>
+#        JWT_REFRESH_SECRET=<random string>
+#
+#   2. docker compose -f docker-compose.staging.yml up -d --build
+#
+# Host ports are offset from the dev docker-compose.yml (5434/6381/3001) so
+# staging can run next to the local dev stack without clashing.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: boya_postgres_staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: beauty
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: beauty_platform
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beauty -d beauty_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: boya_redis_staging
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_staging_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: applies the TypeORM migration chain to the staging database. It
+  # runs in the builder stage because `npm run migration:run` needs the TS
+  # sources + ts-node, which the slim runtime image deliberately does not ship.
+  # data-source.migration.ts refuses to run as beauty_app, so the master user
+  # (beauty) is used here.
+  backend-migrate:
+    build:
+      context: ./backend
+      target: builder
+    container_name: boya_backend_migrate_staging
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_MIGRATION_HOST: postgres
+      DATABASE_MIGRATION_PORT: "5432"
+      DATABASE_MIGRATION_USER: beauty
+      DATABASE_MIGRATION_PASSWORD: change-me
+      DATABASE_MIGRATION_NAME: beauty_platform
+    command: ["npm", "run", "migration:run"]
+
+  backend:
+    build:
+      context: ./backend
+    container_name: boya_backend_staging
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend-migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: staging
+      PORT: "3000"
+      API_PREFIX: api/v1
+      # --- PostgreSQL (compose-internal network) ---
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: beauty
+      DATABASE_PASSWORD: change-me
+      DATABASE_NAME: beauty_platform
+      DATABASE_MIGRATION_USER: beauty
+      DATABASE_MIGRATION_PASSWORD: change-me
+      DATABASE_SSL: "false"
+      # --- Redis ---
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      # --- JWT (required) ---
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      # --- SMS / OTP via Kavenegar (required for SMS testing) ---
+      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:?set KAVENEGAR_API_KEY in .env}
+      KAVENEGAR_SENDER: ${KAVENEGAR_SENDER:-}
+      KAVENEGAR_OTP_TEMPLATE: ${KAVENEGAR_OTP_TEMPLATE:-boya-otp}
+      KAVENEGAR_BOOKING_TEMPLATE: ${KAVENEGAR_BOOKING_TEMPLATE:-}
+      KAVENEGAR_INVITE_TEMPLATE: ${KAVENEGAR_INVITE_TEMPLATE:-invite}
+      KAVENEGAR_INVITE_OWNER_TEMPLATE: ${KAVENEGAR_INVITE_OWNER_TEMPLATE:-invite-owner}
+      KAVENEGAR_INVITE_SPECIALIST_TEMPLATE: ${KAVENEGAR_INVITE_SPECIALIST_TEMPLATE:-invite-specialist}
+      INVITE_BASE_URL: ${INVITE_BASE_URL:-https://staging.boya.ir}
+      INVITE_EXPIRY_DAYS: ${INVITE_EXPIRY_DAYS:-7}
+      OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER in .env}
+      # false => real SMS is sent through Kavenegar (the point of staging).
+      # Set OTP_DEV_MODE=true in .env to log codes instead of sending them.
+      OTP_DEV_MODE: ${OTP_DEV_MODE:-false}
+      # --- Feature flags (Phase 1 showcase: payments off) ---
+      PAYMENTS_ENABLED: ${PAYMENTS_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_CONNECT_CLIENT_ID: ${STRIPE_CONNECT_CLIENT_ID:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      NESHAN_API_KEY: ${NESHAN_API_KEY:-}
+      # --- CORS (comma-separated browser origins) ---
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "3001:3000" # direct API access for debugging (Caddy also proxies it)
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const n=require('net');n.connect(3000,()=>process.exit(0)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: boya_caddy_staging
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,28 @@
+# Version control & repo metadata
+.git
+.gitignore
+
+# Dependencies are installed inside the image via `npm ci`.
+# Copying the host node_modules would shadow them (and may carry OS-native binaries).
+node_modules
+
+# Build artifacts are produced inside the image via `npm run build`.
+dist
+dist-test
+coverage
+
+# Secrets & local config must never be baked into an image.
+.env
+.env.*
+!.env.example
+
+# Logs & runtime artifacts
+*.log
+*.pid
+npm-install.err
+
+# Tooling config not needed at runtime
+Dockerfile
+.dockerignore
+test
+tsconfig.test.json

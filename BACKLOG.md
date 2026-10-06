@@ -108,6 +108,27 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 - **توجه:** جدول `web/README.md` اصلاح شده و به `salon_app` اشاره می‌کند؛ خودِ
   پوشه هنوز سر جایش است.
 
+## Staging / Deploy (docker-compose.staging.yml)
+
+استک staging برای تست SMS/OTP بالا آمد و smoke test شد (جزئیات در `docs/report/STATE.md`
+بخش Deploy). این موارد production-blocker هستند و قبل از تحویل واقعی باید بسته شوند:
+
+- [ ] **DB password در staging از env بیاید (نه hardcoded)** — الان در
+      `docker-compose.staging.yml` مقدار `change-me` به‌صورت ثابت در چهار جا نوشته
+      شده: `POSTGRES_PASSWORD` (postgres)، `DATABASE_MIGRATION_PASSWORD`
+      (backend-migrate)، `DATABASE_PASSWORD` و `DATABASE_MIGRATION_PASSWORD`
+      (backend). باید `${POSTGRES_PASSWORD:?set in .env}` را از `.env` بخوانند تا
+      رمز واقعی هیچ‌وقت در repo نباشد.
+- [ ] **migration با `beauty_app` (نه master)** — الان `backend-migrate` با کاربر
+      `beauty` (master) اجرا می‌شود چون `data-source.migration.ts` به‌عنوان
+      `beauty_app` راه‌اندازی را رد می‌کند. نتیجه: جداول با owner=master زده
+      می‌شوند و مالکیت/GRANTهای RLS درست نمی‌نشینند. باید یا data-source را اصلاح
+      کرد یا حداقل پس از migration `ALTER TABLE ... OWNER TO beauty_app` زد.
+- [ ] **دامنه واقعی + HTTPS در Caddy** — الان `Caddyfile` روی `:80` سرو می‌کند
+      (بدون auto-HTTPS). باید `staging.boya.ir { encode zstd gzip; reverse_proxy
+      backend:3000 }` جایگزین شود تا Caddy به‌صورت خودکار گواهی Let's Encrypt
+      بگیرد؛ `INVITE_BASE_URL` هم باید به همان دامنه-set شود.
+
 ## Testing — SMS (Kavenegar)
 
 مسیر دعوتنامه کامل پیاده شده (`invite-token.service.ts`: `create` ردیف را در
