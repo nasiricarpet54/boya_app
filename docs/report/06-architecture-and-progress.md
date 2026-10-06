@@ -189,7 +189,7 @@ E:\BOYA platform
 
 **تکمیل UI (salon_app):** پرچم حالا در اپ مصرف می‌شود — `SalonUser.profileCompleted` از `GET /auth/me` پر شده و `AuthController.refreshUser` پس از ذخیرهٔ فرم آن را دوباره می‌خواند. router یک gate بعد از بررسی نقش اضافه کرد: `profileCompleted=false` → مالک/سرپرست خط به `/setup/salon` و متخصص به `/setup/specialist`، و تا زمانی که پرچم روی سرور `true` نشود کاربر آنجا می‌ماند (هیچ loopای نیست). دو صفحهٔ `SalonSetupScreen` و `SpecialistSetupScreen` همین فرم‌ها را از طریق `PATCH /salon/me` و `PATCH /salon/me/specialists/:id` ذخیره می‌کنند. متخصص ردیف خودش را با `userId` از `GET /salon/me/specialists` پیدا می‌کند (`/auth/me` شناسهٔ ردیف را نمی‌فرستد).
 
-**نتیجهٔ اجرا (۱۳۸۵/۰۷/۱۴):** integration ۱۳ suite / ۵۵ تست سبز (در فضای نام‌گذاری تمیز `0912887…`/`0912888…`/`0912889…`/`0912999…`)، `tsc --noEmit` و `eslint --max-warnings 0` بک‌اند پاس، `flutter analyze` بدون issue و `flutter test` salon_app با ۴۸ تست (۱۰ تای جدید برای gate) سبز.
+**نتیجهٔ اجرا (۱۳۸۵/۰۷/۱۴):** integration ۱۴ suite / ۵۸ تست سبز (در فضای نام‌گذاری تمیز `0912887…`/`0912888…`/`0912889…`/`0912999…`/`0912990…`)، `tsc --noEmit` و `eslint --max-warnings 0` بک‌اند پاس، `flutter analyze` بدون issue و `flutter test` salon_app با ۴۸ تست (۱۰ تای جدید برای gate) سبز. در همین روز یک IDOR روی `PATCH /salon/me/specialists/:id` با رویکرد تستِ قرمز رفع شد (بخش ۷.۷).
 
 ---
 
@@ -242,6 +242,14 @@ Tests:       51 skipped, 4 passed, 55 total
 - `design_system/boya_design_system.md` و `scripts/` بی‌استفاده‌اند.
 - دو روت مشتری («معرفی دوستان»، «امتیاز وفاداری») با وجود ۶ endpoint آماده در بک‌اند هنوز placeholder است.
 - `workers_hours` متخصص در migration ۰۰۳۳ اضافه شده ولی هنوز هیچ‌جا خوانده نمی‌شود (خودش در کامنت هم اعتراف کرده).
+
+### ۷.۷ ✅ رفع‌شده — IDOR در `PATCH /salon/me/specialists/:id`
+
+`requireStaffTenant` فقط چک می‌کند که فراخواننده **پرسنلِ یک سالن** باشد، نه اینکه صاحبِ آن ردیف باشد. جست‌وجوی ردیف متخصص هم فقط با `tenant_id` محدود می‌شد. چون خودِ متخصص هم `role` پرسنل دارد و از همان guard رد می‌شود، یک متخصص می‌توانست bio/skills/commission **همکارِ دیگر در همان سالن** را با id بازنویسی کند — و پنل همهٔ متخصصان سالن را لیست می‌کند، پس idها مخفی نیستند و این یک نوشتنِ واقعیِ بین‌اکانت بود، نه یک احتمالِ تئوریک.
+
+**رفع:** یک ضریب مالکیت به **هر دو** کوئری اضافه شد — `specialist` فقط ردیفی که `user_id` خودش را دارد می‌خواند/می‌نویسد (`WHERE ... AND user_id = $n`)؛ `salon_owner`/`line_manager` همچنان هر متخصصِ سالن خودشان (این تعریفِ مدیریتِ سالن است). قید روی خودِ `UPDATE` هم اضافه شد، نه فقط `SELECT`، تا گارد به یک خوانتنِ تنها وابسته نباشد. رد شدن → همان `NotFoundException` همیشگی (۴۰۴): «از شما نیست» دقیقاً مثلِ «در سالن شما نیست».
+
+**تأیید:** suite جدید `specialist-idor` (۳ تست): متخصص به ردیف همکار ۴۰۴ می‌گیرد و ویرایش اعمال **نمیشود**؛ متخصص ردیف خودش را ویرایش می‌کند و `profile_completed=true` می‌شود؛ مالک هر متخصصی از سالنش را ویرایش می‌کند. تست ابتدا **قرمز** نوشته شد و قبل از fix تأیید کرد که درخواست با `{status: 'approved'}` پاسخ می‌داد — یعنی ردیف قربانی واقعاً بازنویزی می‌شد.
 
 ---
 
@@ -324,6 +332,8 @@ constraint "invite_tokens_invited_by_fkey"
 | `backend/test/integration/tenant-onboarding.integration-spec.ts` | استثنای `ADMIN_USER` از دو پاک‌سازی (بخش ۸) + ثابت `ADMIN_PHONE` + توضیح `ON DELETE CASCADE` | `test:integration` → ۵۵/۵۵ پاس؛ `lint` → سبز |
 | `mobile/shared/lib/beauty_shared.dart` | حذف فایل کد مرده (تنها محتوایش `library beauty_shared;` بود و هیچ‌جا import نمی‌شد) | `flutter analyze` → No issues؛ `flutter test` → ۱۱/۱۱ |
 | `docs/report/06-architecture-and-progress.md` | همین گزارش (فایل جدید) | — |
+| `backend/test/integration/specialist-idor.integration-spec.ts` | suite جدید (۳ تست) برای مرز مالکیت روی `PATCH /salon/me/specialists/:id` با رویکرد تستِ قرمز؛ فضای نام اختصاصی `0912990…`/`it-idor-…` چون jest suiteها را موازی روی یک DB اجرا می‌کند | قبل از fix قرمز (درخواست `approved` برمی‌گشت)؛ بعد از fix ۳/۳ پاس |
+| `backend/src/modules/salon/salon.service.ts` | ضریب `user_id` روی SELECT و UPDATE در `updatePanelSpecialist` — متخصص فقط ردیف خودش، مالک/سرپرست خط همهٔ متخصصان سالن (بخش ۷.۷) | کل integration → ۱۴ suite / ۵۸ تست؛ `tsc --noEmit` + `eslint --max-warnings 0` سبز |
 
 **خارج از دامنهٔ این جلسه و دست‌نخورده مانده:** تمام فایل‌های commit‌نشدهٔ کار جاری onboarding (`auth.service.ts`، `auth.controller.ts`، `salon.service.ts`، entityها، migration ۰۰۳۳، spec جدید) — من فقط تعمیر تست را در همان فایل تست انجام دادم و هیچ کد محصولی را تغییر ندادم. دو فایل `backend/db-check.js` و `backend/db-fix-test.js` از طرف دیگری اضافه شده‌اند و دست نخورده‌اند؛ اگر اسکریپت دیباگ موقتی‌اند، قبل از commit باید حذف شوند.
 

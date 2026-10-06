@@ -2345,10 +2345,24 @@ export class SalonService {
     dto: UpdateSpecialistPanelDto,
   ): Promise<SalonPanelWriteResult> {
     const tenantId = this.requireStaffTenant(user);
+
+    // Ownership scoping (IDOR): the tenant boundary alone does not settle who
+    // may write this row, because a *specialist* is staff too and therefore
+    // passes `requireStaffTenant`. Scoped by tenant only, one specialist could
+    // rewrite another's bio/skills/commission of the same salon by id — the
+    // panel lists every specialist of the salon, so those ids are not secret
+    // and this is a real cross-account write. An owner or a line manager
+    // manages the whole salon, so only the specialist role is narrowed to the
+    // row carrying its own `user_id`; the 404 below is "not yours" as well as
+    // "not in your salon".
+    const ownRowOnly = user.role === 'specialist';
+
     return this.withPanelTenant(tenantId, async (manager) => {
       const rows = await manager.query<Array<{ id: string }>>(
-        `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
-        [tenantId, id],
+        ownRowOnly
+          ? `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`
+          : `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
+        ownRowOnly ? [tenantId, id, user.userId] : [tenantId, id],
       );
       if (rows.length === 0) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
 
@@ -2368,12 +2382,17 @@ export class SalonService {
         sets.push(`working_hours = ${push(JSON.stringify(dto.workingHours))}::jsonb`);
       }
 
+      // The ownership term on the write itself too, so the guard does not rest
+      // on the SELECT above alone. `push` appends the value and hands back its
+      // placeholder, which lands after every dto-driven `$n` above.
+      const ownershipTerm = ownRowOnly ? ` AND user_id = ${push(user.userId)}` : '';
+
       await manager.query(
         `UPDATE specialists
             SET ${sets.length > 0 ? `${sets.join(', ')}, ` : ''}
                 status = 'approved',
                 profile_completed = TRUE
-          WHERE tenant_id = $1 AND id = $2`,
+          WHERE tenant_id = $1 AND id = $2${ownershipTerm}`,
         params,
       );
       return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
