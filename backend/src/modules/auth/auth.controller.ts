@@ -3,12 +3,15 @@ import {
   Controller,
   Delete,
   ForbiddenException,
+  BadRequestException,
   Get,
   HttpCode,
   HttpStatus,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -86,9 +89,13 @@ export class AuthController {
   }
 
   // --- Invites (ADR-010) -------------------------------------------------
-  // `tenantId` is always the caller's own, taken from the JWT: an invite grants
-  // access to one salon, so accepting a tenant from the body would let any
-  // signed-in user mint themselves an owner role in someone else's salon.
+  // Who picks the salon:
+  // - staff have a salon, so theirs comes from the JWT and anything in the
+  //   body is ignored — accepting a staff-supplied tenant would let any
+  //   signed-in user mint themselves an owner role in someone else's salon.
+  // - `admin` has no salon (JWT `tenantId` is null), so they name one per
+  //   request. The check is the *role*, never a body flag: a
+  //   body-is-admin claim would be exactly the escalation above.
 
   @Roles('salon_owner', 'line_manager', 'admin')
   @Post('invite')
@@ -97,26 +104,32 @@ export class AuthController {
     @Body() body: CreateInviteDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const tenantId = this.requireTenant(user);
+    const tenantId = this.resolveInviteTenant(user, body.tenantId);
     return this.inviteTokenService.create(body, user.userId, tenantId);
   }
 
   @Roles('salon_owner', 'line_manager', 'admin')
   @Get('invite/list')
-  async listInvites(@CurrentUser() user: AuthenticatedUser) {
-    return this.inviteTokenService.listByTenant(this.requireTenant(user));
+  async listInvites(
+    @Query('tenantId', new ParseUUIDPipe({ version: '4', optional: true }))
+    tenantId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.inviteTokenService.listByTenant(this.resolveInviteTenant(user, tenantId));
   }
 
   @Roles('salon_owner', 'line_manager', 'admin')
   @Delete('invite/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeInvite(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('tenantId', new ParseUUIDPipe({ version: '4', optional: true }))
+    tenantId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     const revoked = await this.inviteTokenService.revoke(
       id,
-      this.requireTenant(user),
+      this.resolveInviteTenant(user, tenantId),
       user.userId,
       user.role === 'admin',
     );
@@ -140,11 +153,24 @@ export class AuthController {
     return this.authService.verifyInviteOtpAndIssueToken(body.token, body.phone, body.otpCode);
   }
 
-  /** Guards the invite endpoints: staff without a salon have no tenant. */
-  private requireTenant(user: AuthenticatedUser): string {
-    if (!user.tenantId) {
-      throw new ForbiddenException('برای این عملیات باید به یک سالن وابسته باشید');
+  /**
+   * Which salon an invite belongs to.
+   *
+   * Staff always use their JWT tenant: a `tenantId` sent by a `salon_owner` or
+   * `line_manager` is silently ignored, never honoured. An `admin` JWT carries
+   * no tenant, so they must name one per request — and a missing one is a 400,
+   * not a silent default, because defaulting would invite into the wrong salon.
+   */
+  private resolveInviteTenant(user: AuthenticatedUser, requested?: string): string {
+    if (user.role !== 'admin') {
+      if (!user.tenantId) {
+        throw new ForbiddenException('برای این عملیات باید به یک سالن وابسته باشید');
+      }
+      return user.tenantId;
     }
-    return user.tenantId;
+    if (!requested) {
+      throw new BadRequestException('برای مدیر سامانه، شناسه سالن الزامی است');
+    }
+    return requested;
   }
 }

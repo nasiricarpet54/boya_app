@@ -15,6 +15,7 @@
     "approvals": "Approvals",
     "tenants": "Salons",
     "users": "Users",
+    "invites": "Invites",
     "transactions": "Transactions",
     "auditLogs": "Audit log",
     "settings": "Settings",
@@ -233,6 +234,49 @@
       "deactivate": "Deactivate",
       "statusUpdatedToast": "User status updated.",
       "actionFailed": "The action failed. Please try again."
+    }
+  },
+  "invites": {
+    "title": "Invites",
+    "subtitle": "Invite a salon owner, line manager or specialist — every invite is single-use.",
+    "create": "New invite",
+    "tenantLabel": "Salon",
+    "tenantPlaceholder": "Select a salon…",
+    "empty": "No open invite for this salon.",
+    "roles": {
+      "salon_owner": "Salon owner",
+      "line_manager": "Line manager",
+      "specialist": "Specialist"
+    },
+    "createTitle": "New invite",
+    "createDescription": "Pick a role and a contact; after creation the token is shown exactly once.",
+    "roleLabel": "Role",
+    "phoneLabel": "Mobile number",
+    "phonePlaceholder": "09120000000",
+    "phoneHint": "Phone or email — at least one is required.",
+    "phoneInvalid": "That mobile number is not valid. Correct example: 09120000000",
+    "emailLabel": "Email",
+    "emailPlaceholder": "name@example.com",
+    "contactRequired": "Phone or email is required.",
+    "tenantRequired": "Choosing a salon is required.",
+    "loading": "Loading…",
+    "saving": "Creating…",
+    "cancel": "Cancel",
+    "createAction": "Create invite",
+    "actionFailed": "The action failed. Please try again.",
+    "issuedTitle": "Invite created — one time only",
+    "issuedDescription": "This token is shown here and nowhere else. Copy it and send it to the invitee.",
+    "tokenLabel": "Invite token",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed; select and copy the token manually.",
+    "copyFirst": "Press “Copy” first to enable the close button — closing early loses the token.",
+    "copiedClose": "Copied, close",
+    "revokedToast": "Invite revoked.",
+    "table": {
+      "contact": "Contact",
+      "role": "Role",
+      "expiresAt": "Expires"
     }
   },
   "auditLogs": {

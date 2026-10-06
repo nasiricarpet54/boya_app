@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
 import { toLatinDigits } from '../../../utils/persian-number.util';
 import { INVITE_ROLES } from '../invite-token.service';
@@ -24,6 +24,17 @@ export class CreateInviteDto {
   @IsOptional()
   @IsEmail({}, { message: 'ایمیل معتبر نیست' })
   email?: string;
+
+  /**
+   * Target salon — **admin only**. Staff tenant always comes from the JWT and
+   * any value sent here is ignored; an admin has no salon of their own, so
+   * they must name one. `whitelist + forbidNonWhitelisted` would 400 an
+   * undeclared key, hence the explicit field.
+   */
+  @ApiProperty({ required: false, description: 'فقط برای admin' })
+  @IsOptional()
+  @IsUUID('4', { message: 'شناسه سالن معتبر نیست' })
+  tenantId?: string;
 }
 
 /** `POST /auth/invite/accept` — `@Public()`; the invite plus the OTP. */

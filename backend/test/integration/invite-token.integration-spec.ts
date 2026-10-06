@@ -306,4 +306,23 @@ describeIntegration('invite tokens', () => {
     );
     expect(policies.map((p) => p.policyname)).toContain('invite_tokens_tenant_isolation');
   });
+
+  it('sees every tenant through the owner connection (production uses the app role)', async () => {
+    // Documents the service's contract: `create`/`listByTenant`/`revoke` are
+    // written tenant-explicit (`WHERE tenant_id = $1`), so even on a
+    // BYPASSRLS owner connection they only ever touch the caller's salon.
+    // Reads/writes that rely on the policy alone are covered by the RLS specs
+    // above through `withTenant`.
+    const inA = await getService().create({ role: 'specialist', phone: nextPhone() }, OWNER, TENANT_A);
+    const inB = await getService().create({ role: 'specialist', phone: nextPhone() }, OWNER, TENANT_B);
+
+    const seenA = await getService().listByTenant(TENANT_A);
+    const seenB = await getService().listByTenant(TENANT_B);
+    expect(seenA.map((i) => i.id)).toEqual([inA.id]);
+    expect(seenB.map((i) => i.id)).toEqual([inB.id]);
+
+    // ...and revoking across tenants stays a miss, even for an admin override.
+    const ADMIN = '55555555-5555-5555-8555-5555555555a9';
+    expect(await getService().revoke(inB.id, TENANT_A, ADMIN, true)).toBe(false);
+  });
 });
