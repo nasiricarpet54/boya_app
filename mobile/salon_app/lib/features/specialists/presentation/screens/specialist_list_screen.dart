@@ -28,8 +28,19 @@ class SpecialistListScreen extends ConsumerWidget {
       body: specialistsAsync.when(
         data: (specialists) {
           if (specialists.isEmpty) {
-            return const Center(
-              child: Text('متخصصی ثبت نشده است', style: BoyaTypography.body),
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('متخصصی ثبت نشده است', style: BoyaTypography.body),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(specialistInvitePath),
+                    icon: const Icon(Icons.mail_outline),
+                    label: const Text('دعوت متخصص'),
+                  ),
+                ],
+              ),
             );
           }
           return RefreshIndicator(
@@ -37,6 +48,15 @@ class SpecialistListScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(specialistInvitePath),
+                    icon: const Icon(Icons.mail_outline),
+                    label: const Text('دعوت متخصص'),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 for (final specialist in specialists) ...[
                   _SpecialistCard(specialist: specialist),
                   const SizedBox(height: 12),

@@ -19,6 +19,7 @@ import '../../features/services/presentation/screens/line_form_screen.dart';
 import '../../features/services/presentation/screens/lines_list_screen.dart';
 import '../../features/services/presentation/screens/service_form_screen.dart';
 import '../../features/services/presentation/screens/services_list_screen.dart';
+import '../../features/specialists/presentation/screens/invite_specialist_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_form_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_list_screen.dart';
 import '../navigation/salon_shell.dart';
@@ -44,6 +45,11 @@ String serviceEditPath(String id) => '/services/services/$id/edit';
 /// portfolio screen is reached from the profile menu.
 const String specialistsPath = '/specialists';
 const String specialistCreatePath = '/specialists/new';
+
+/// The invite screen (ADR-010). A sibling of the create form: the create form
+/// registers a specialist directly, this one issues a one-time invite the
+/// invitee redeems with an OTP. Both are full-page, reached from the list.
+const String specialistInvitePath = '/specialists/invite';
 const String portfolioPath = '/portfolio';
 
 String specialistEditPath(String id) => '/specialists/$id/edit';
@@ -147,6 +153,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: specialistCreatePath,
         builder: (_, _) => const SpecialistFormScreen(),
+      ),
+      // Declared before `/specialists/:id/edit` so the literal `invite`
+      // segment is not swallowed by the `:id` parameter.
+      GoRoute(
+        path: specialistInvitePath,
+        builder: (_, _) => const InviteSpecialistScreen(),
       ),
       GoRoute(
         path: '/specialists/:id/edit',

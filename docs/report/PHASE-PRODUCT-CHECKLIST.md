@@ -16,10 +16,20 @@
 - [x] فرآیند: admin → invite → accept → role=salon_owner (integration: `tenant-onboarding` — ۳ تست)
 - [ ] تست: ورود مدیر + مشاهده پنل (دستی، پس از تأیید سالن)
 
+> **یادداشت `is_active` در برابر `status` (بررسی ۲۰۲۶-۱۰-۰۶):** تناقضی وجود ندارد و عمدی است.
+> `is_active` کلید خاموش/روشن اپراتور است (در `tenants`، `specialists`، `services`، `users` یکسان)،
+> و `status`/`approved_at` چرخهٔ تأیید هستند. کاتالوگ عمومی با
+> `t.approved_at IS NOT NULL AND t.status <> 'suspended'` **به‌همراه** `t.is_active = true` فیلتر می‌شود
+> (`salon.service.ts`), پس `create` با `status='draft'` و `isActive=true` درست است: سالن «فعال» است
+> (اپراتور خاموشش نکرده) ولی چون `approved_at` تهی است دیده نمی‌شود. گره‌زدن صریح `isActive`
+> به `status` همان باگی است که کامنت کد دربارهٔ آن هشدار می‌دهد (خارج‌شدن سالن زنده از جست‌وجو با
+> یک ویرایش سادهٔ پروفایل). مسیر درست: تأیید ادمین در `PATCH /admin/tenants/:id/status` هم‌اکنون
+> `status='approved', approved_at=NOW()` را ست می‌کند و سالن را منتشر می‌کند.
+
 ## Onboarding متخصص
-- [ ] salon_app: صفحه «دعوت متخصص»
-- [ ] فرآیند: salon_owner → invite → accept → role=specialist
-- [ ] تست: ورود متخصص + مشاهده رزروها
+- [x] salon_app: صفحه «دعوت متخصص» (`invite_specialist_screen.dart` + `invite_api.dart`؛ فرم شماره+نقش، نمایش یک‌بارهٔ توکن و دکمهٔ کپی، روت `/specialists/invite`)
+- [x] فرآیند: salon_owner → invite → accept → role=specialist (integration: `specialist-onboarding` — ۳ تست)
+- [ ] تست: ورود متخصص + مشاهده رزروها (دستی، پس از پیوستن)
 
 ## مدل کسب‌وکار (فاز ۲)
 - [ ] PAYMENTS_ENABLED=true
