@@ -88,6 +88,21 @@ describeIntegration('invite tokens', () => {
     );
   };
 
+  /**
+   * Rows the redemption of a `specialist` invite leaves behind.
+   *
+   * `accept` now auto-creates the `specialists` row (ADR-010 follow-up), so the
+   * spec files that redeem specialist invites have to clear it — but this file
+   * deliberately owns no cleanup of its own: its invites target ephemeral
+   * `0912999…` phones and are dealt with in `beforeAll`. The helper exists so
+   * the other specs do not have to grow their own copy of the FK order.
+   */
+  const deleteSpecialistsFor = (phone: string) =>
+    queryAsAdmin(
+      `DELETE FROM specialists WHERE user_id IN (SELECT id FROM users WHERE phone LIKE $1)`,
+      [`${phone}%`],
+    );
+
   const rows = (tenantId = TENANT_A) =>
     queryAsAdmin<InviteRow>(
       `SELECT id, role, tenant_id, phone, token_hash, invited_by, used_at, used_by
@@ -98,11 +113,24 @@ describeIntegration('invite tokens', () => {
   beforeAll(async () => {
     // Previous runs leave invitee users behind (there is no tenant to cascade
     // from), and the phone counter restarts each run — clear them first so the
-    // unique index on `phone` cannot fail an otherwise valid spec.
+    // unique index on `phone` cannot fail an otherwise valid spec. A redeemed
+    // `specialist` invite also leaves a `specialists` row, and that row
+    // references the user, so it must go first or the user delete is refused.
+    await deleteSpecialistsFor('0912999%');
     await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912999%'`);
     await seedParty(TENANT_A, OWNER, 'salon_owner');
     await seedParty(TENANT_A, MANAGER, 'line_manager');
     await seedParty(TENANT_B, OWNER, 'salon_owner');
+  });
+
+  // The specs below redeem real invites, and `accept` reuses an existing
+  // same-phone account rather than creating a second one. The fixtures those
+  // redemptions leave behind (a user and, for a specialist, a `specialists`
+  // row) are therefore keyed by the phone and removed here, in FK order — the
+  // alternative is a suite that only passes on the first run.
+  afterEach(async () => {
+    await deleteSpecialistsFor('0912999%');
+    await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912999%'`);
   });
 
   beforeEach(async () => {

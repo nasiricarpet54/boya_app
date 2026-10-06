@@ -84,6 +84,23 @@ class SpecialistApi {
     return PanelWriteResult.fromJson(response.data ?? const {});
   }
 
+  /// The signed-in user's own specialist row, resolved from the salon's list on
+  /// `userId`.
+  ///
+  /// `GET /auth/me` reports the onboarding flag but not the row id, and the
+  /// specialist's setup form needs the id to `PATCH /salon/me/specialists/:id`.
+  /// The list is the same endpoint the owner's specialist tab reads, so it is
+  /// already tenant-scoped by the token; the `userId` match is what picks the
+  /// caller's own row out of it.
+  Future<SalonSpecialist?> mySpecialist(String userId) async {
+    if (userId.isEmpty) return null;
+    final all = await listSpecialists();
+    for (final specialist in all) {
+      if (specialist.userId == userId) return specialist;
+    }
+    return null;
+  }
+
   /// Soft-deletes the specialist. The backend answers 400 while active
   /// bookings exist; `messageFromDio` renders its Persian message.
   Future<PanelWriteResult> deleteSpecialist(String id) async {

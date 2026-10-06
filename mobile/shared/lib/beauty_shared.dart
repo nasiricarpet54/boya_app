@@ -1,1 +1,0 @@
-library beauty_shared;

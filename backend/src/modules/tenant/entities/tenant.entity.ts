@@ -54,4 +54,13 @@ export class Tenant {
 
   @Column({ name: 'pending_changes', type: 'jsonb', nullable: true })
   pendingChanges!: Record<string, unknown> | null;
+
+  /**
+   * Onboarding flag (migration 1730000000033): true once the owner has
+   * submitted the salon profile form. Independent of [status], which is the
+   * moderation lifecycle — a salon can be `pending_approval` with its profile
+   * prompt already answered.
+   */
+  @Column({ name: 'profile_completed', type: 'boolean', default: false })
+  profileCompleted!: boolean;
 }

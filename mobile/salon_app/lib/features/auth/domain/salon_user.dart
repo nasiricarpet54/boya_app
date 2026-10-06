@@ -31,6 +31,7 @@ class SalonUser {
     required this.role,
     this.fullName,
     this.tenantId,
+    this.profileCompleted = true,
   });
 
   factory SalonUser.fromJson(Map<String, dynamic> json) => SalonUser(
@@ -39,6 +40,7 @@ class SalonUser {
         role: json['role'] as String? ?? '',
         fullName: json['fullName'] as String?,
         tenantId: json['tenantId'] as String?,
+        profileCompleted: json['profileCompleted'] as bool? ?? true,
       );
 
   final String id;
@@ -52,6 +54,19 @@ class SalonUser {
   /// Salon the user belongs to; null for users without a tenant yet.
   final String? tenantId;
 
+  /// Whether this account still owes the panel a profile (ADR-010 follow-up).
+  ///
+  /// `GET /auth/me` is the authority here: it resolves the flag per role — a
+  /// `specialist` reads their own `specialists` row, an owner or line manager
+  /// reads `tenants.profile_completed`. The login reply does not carry it, so
+  /// [AuthController.refreshUser] re-reads this before the router opens the
+  /// panel.
+  ///
+  /// Defaults to `true` because the router fails open: a cached or legacy
+  /// session that cannot reach `/auth/me` must not be parked on the setup
+  /// screen forever. The server is re-consulted on the next restore or 401.
+  final bool profileCompleted;
+
   /// Whether this user may enter the salon panel.
   ///
   /// Reads [salonPanelRoles] directly rather than calling the top-level
@@ -64,5 +79,6 @@ class SalonUser {
         'role': role,
         'fullName': fullName,
         'tenantId': tenantId,
+        'profileCompleted': profileCompleted,
       };
 }

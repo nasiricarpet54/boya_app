@@ -15,6 +15,7 @@ import '../../features/finance/presentation/screens/salon_financial_screen.dart'
 import '../../features/portfolio/presentation/screens/portfolio_manage_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salon/presentation/screens/salon_edit_screen.dart';
+import '../../features/salon/presentation/screens/salon_setup_screen.dart';
 import '../../features/services/presentation/screens/line_form_screen.dart';
 import '../../features/services/presentation/screens/lines_list_screen.dart';
 import '../../features/services/presentation/screens/service_form_screen.dart';
@@ -22,12 +23,21 @@ import '../../features/services/presentation/screens/services_list_screen.dart';
 import '../../features/specialists/presentation/screens/invite_specialist_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_form_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_list_screen.dart';
+import '../../features/specialists/presentation/screens/specialist_setup_screen.dart';
 import '../navigation/salon_shell.dart';
 
 /// The salon profile form. Lives outside the shell on purpose: it is a full
 /// page reached from the profile tab, not a sixth tab of its own, so it is
 /// pushed onto the root navigator and takes the whole screen.
 const String salonEditPath = '/salon/edit';
+
+/// First-run onboarding. The router parks a signed-in account here while
+/// `profileCompleted` is false (migration 1730000000033 + `GET /auth/me`): an
+/// owner or line manager lands on the salon form, a specialist on their own.
+/// Outside the shell on purpose — setup is a gate, not a tab, so it must not be
+/// reachable by swiping between destinations.
+const String salonSetupPath = '/setup/salon';
+const String specialistSetupPath = '/setup/specialist';
 
 /// Service-line management paths. Like the edit form, they are full-page
 /// screens pushed onto the root navigator rather than a tab of their own.
@@ -108,6 +118,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => OtpScreen(phone: state.extra as String? ?? ''),
       ),
       GoRoute(path: forbiddenPath, builder: (_, _) => const ForbiddenScreen()),
+      // First-run onboarding gates. Siblings of the shell for the same reason
+      // the edit form is: they take the whole screen and must not be tabbed
+      // away from. The redirect below is what sends an incomplete profile here
+      // and keeps it here.
+      GoRoute(path: salonSetupPath, builder: (_, _) => const SalonSetupScreen()),
+      GoRoute(
+        path: specialistSetupPath,
+        builder: (_, _) => const SpecialistSetupScreen(),
+      ),
       // Sibling of the shell rather than a branch of it: the form takes over
       // the whole screen, bottom navigation bar included. The auth redirect
       // below still applies — only the path prefix is checked.
@@ -225,6 +244,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // forbidden page avoids redirecting into a loop.
       if (!hasSalonAccess(auth.user?.role)) {
         return onForbiddenPage ? null : forbiddenPath;
+      }
+
+      // Signed in with a salon role, but the profile the panel needs has not
+      // been submitted yet. Send the account to the setup screen for its role —
+      // a specialist completes their own row, an owner or line manager the
+      // salon's — and keep it there: the gate runs on every navigation, so the
+      // dashboard is unreachable until the flag flips on the server and
+      // `refreshUser` re-reads it. Staying put on the setup screen rather than
+      // redirecting is what keeps this from looping.
+      final user = auth.user;
+      if (user != null && !user.profileCompleted) {
+        final setupPath = user.role == 'specialist' ? specialistSetupPath : salonSetupPath;
+        return location == setupPath ? null : setupPath;
       }
 
       // Allowed in: keep the panel's own entry pages out of reach.

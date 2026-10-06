@@ -50,4 +50,20 @@ export class Specialist {
 
   @Column({ name: 'approved_by', type: 'uuid', nullable: true })
   approvedBy!: string | null;
+
+  /**
+   * Onboarding flag (migration 1730000000033): true once the specialist (or
+   * the owner editing them) has filled in bio/skills/hours. `false` on a
+   * freshly invited row is what routes the specialist into
+   * `SpecialistProfileSetupScreen`.
+   */
+  @Column({ name: 'profile_completed', type: 'boolean', default: false })
+  profileCompleted!: boolean;
+
+  /**
+   * The specialist's *stated* hours, kept for the profile. Not the schedule
+   * bookings are checked against — that is still `tenants.working_hours`.
+   */
+  @Column({ name: 'working_hours', type: 'jsonb', nullable: true })
+  workingHours!: Record<string, unknown> | null;
 }

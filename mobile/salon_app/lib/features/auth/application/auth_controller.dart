@@ -51,9 +51,39 @@ class AuthController extends Notifier<AuthState> {
         state = const AuthState();
         return;
       }
-      state = AuthState(user: session.user, token: session.accessToken);
+      // The cached user is shown immediately, but `profileCompleted` is the
+      // server's call — a cached copy can be stale from before the account
+      // completed its profile — so the router is held (`isRestoring`) until
+      // `/auth/me` answers.
+      state = AuthState(
+        user: session.user,
+        token: session.accessToken,
+        isRestoring: true,
+      );
+      await refreshUser();
     } catch (_) {
       state = const AuthState();
+    }
+  }
+
+  /// Re-reads the account from `GET /auth/me` and swaps it into the state.
+  ///
+  /// The verify and refresh replies describe the session but not the onboarding
+  /// flag, so this is the only place `profileCompleted` becomes authoritative —
+  /// a freshly invited owner or specialist is precisely the user the flag
+  /// matters for, and their login reply would otherwise read as complete by
+  /// default. A failure leaves the cached user in place: the router fails open
+  /// rather than parking the user on the setup screen, and the next 401 rotates
+  /// the session and re-reads the flag.
+  ///
+  /// The setup screens call this after a successful save, since the flag is
+  /// what the router consults to let them into the panel.
+  Future<void> refreshUser() async {
+    try {
+      final user = await ref.read(authApiProvider).fetchMe();
+      state = AuthState(user: user, token: state.token);
+    } catch (_) {
+      state = AuthState(user: state.user, token: state.token);
     }
   }
 
@@ -97,7 +127,16 @@ class AuthController extends Notifier<AuthState> {
         throw const SalonAccessDeniedException('این حساب به پنل سالن دسترسی ندارد');
       }
       await ref.read(sessionStoreProvider).write(session);
-      state = AuthState(user: session.user, token: session.accessToken);
+      // The verify reply carries no onboarding flag, and a freshly invited
+      // owner or specialist is exactly who the gate is for. Hold the router
+      // (`isRestoring`) until `/auth/me` reports whether a profile is still
+      // owed, so the first navigation goes to the right screen.
+      state = AuthState(
+        user: session.user,
+        token: session.accessToken,
+        isRestoring: true,
+      );
+      await refreshUser();
       return session;
     } catch (_) {
       state = AuthState(user: state.user, token: state.token);

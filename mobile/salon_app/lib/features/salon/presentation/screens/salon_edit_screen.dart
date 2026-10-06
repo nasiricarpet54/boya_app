@@ -43,11 +43,19 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
     // later on a cold entry — cover both without rebuilding from a provider
     // listener during build.
     _seedFrom(ref.read(salonProfileProvider).value);
-    ref.listen(salonProfileProvider, (_, next) => _seedFrom(next.value));
+    // `listenManual` rather than `listen`: the declarative form is only valid
+    // inside `build`, and this is a `ConsumerState`.
+    _profileSubscription = ref.listenManual(
+      salonProfileProvider,
+      (_, next) => _seedFrom(next.value),
+    );
   }
+
+  ProviderSubscription<AsyncValue<SalonProfile>>? _profileSubscription;
 
   @override
   void dispose() {
+    _profileSubscription?.close();
     _nameController.dispose();
     _addressController.dispose();
     _phoneController.dispose();

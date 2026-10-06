@@ -56,8 +56,13 @@ Future<String> _settleLocation(
   return router.routerDelegate.currentConfiguration.uri.path;
 }
 
-AuthState _signedIn(String role) => AuthState(
-      user: SalonUser(id: 'u1', phoneNumber: '09120000000', role: role),
+AuthState _signedIn(String role, {bool profileCompleted = true}) => AuthState(
+      user: SalonUser(
+        id: 'u1',
+        phoneNumber: '09120000000',
+        role: role,
+        profileCompleted: profileCompleted,
+      ),
       token: 'token',
     );
 
@@ -162,6 +167,119 @@ void main() {
       // The token can expire while the forbidden screen is open; landing on the
       // login screen from there is correct, not a loop.
       expect(await _settleLocation(tester, _signedOut, startAt: forbiddenPath), '/auth/forbidden');
+    });
+
+    testWidgets('an owner with an incomplete profile is sent to the salon setup screen',
+        (tester) async {
+      expect(
+        await _settleLocation(tester, _signedIn('salon_owner', profileCompleted: false)),
+        salonSetupPath,
+      );
+    });
+
+    testWidgets('a line manager with an incomplete profile is sent to the salon setup screen',
+        (tester) async {
+      expect(
+        await _settleLocation(tester, _signedIn('line_manager', profileCompleted: false)),
+        salonSetupPath,
+      );
+    });
+
+    testWidgets('a specialist with an incomplete profile is sent to their own setup screen',
+        (tester) async {
+      // The specialist completes a different row (their own `specialists` row,
+      // not the salon's), so their gate has its own target.
+      expect(
+        await _settleLocation(tester, _signedIn('specialist', profileCompleted: false)),
+        specialistSetupPath,
+      );
+    });
+
+    testWidgets('the setup screen does not redirect into a loop', (tester) async {
+      expect(
+        await _settleLocation(
+          tester,
+          _signedIn('salon_owner', profileCompleted: false),
+          startAt: salonSetupPath,
+        ),
+        salonSetupPath,
+      );
+    });
+
+    testWidgets('an incomplete specialist on the salon setup path is moved to their own',
+        (tester) async {
+      expect(
+        await _settleLocation(
+          tester,
+          _signedIn('specialist', profileCompleted: false),
+          startAt: salonSetupPath,
+        ),
+        specialistSetupPath,
+      );
+    });
+
+    testWidgets('an incomplete owner on the specialist setup path is moved to the salon one',
+        (tester) async {
+      expect(
+        await _settleLocation(
+          tester,
+          _signedIn('salon_owner', profileCompleted: false),
+          startAt: specialistSetupPath,
+        ),
+        salonSetupPath,
+      );
+    });
+
+    testWidgets('a specialist who completed onboarding reaches the dashboard',
+        (tester) async {
+      expect(
+        await _settleLocation(tester, _signedIn('specialist', profileCompleted: true)),
+        '/dashboard',
+      );
+    });
+  });
+
+  group('SalonUser.profileCompleted', () {
+    test('is read from the /auth/me payload', () {
+      const user = SalonUser(
+        id: 'u',
+        phoneNumber: '09120000000',
+        role: 'salon_owner',
+        profileCompleted: false,
+      );
+      expect(user.profileCompleted, isFalse);
+    });
+
+    test('fromJson defaults to true when the field is absent', () {
+      // Fail open: a legacy cached session cannot reach /auth/me must not be
+      // parked on the setup screen. The server re-reads the flag on restore.
+      final parsed = SalonUser.fromJson(const {
+        'id': 'u',
+        'phoneNumber': '09120000000',
+        'role': 'salon_owner',
+      });
+      expect(parsed.profileCompleted, isTrue);
+    });
+
+    test('fromJson reads an explicit false', () {
+      final parsed = SalonUser.fromJson(const {
+        'id': 'u',
+        'phoneNumber': '09120000000',
+        'role': 'specialist',
+        'profileCompleted': false,
+      });
+      expect(parsed.profileCompleted, isFalse);
+    });
+
+    test('round-trips through toJson', () {
+      const user = SalonUser(
+        id: 'u',
+        phoneNumber: '09120000000',
+        role: 'specialist',
+        profileCompleted: false,
+      );
+      final reparsed = SalonUser.fromJson(user.toJson());
+      expect(reparsed.profileCompleted, isFalse);
     });
   });
 }

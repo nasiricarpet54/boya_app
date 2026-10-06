@@ -116,6 +116,34 @@ describeIntegration('specialist onboarding (ADR-010): owner invites -> specialis
     }
   });
 
+  // The specs redeem real invites, and `accept` reuses an existing same-phone
+  // account instead of creating a second one — and now also auto-creates the
+  // `specialists` row. Both are keyed by the phone (and cleaned in FK order),
+  // so each spec starts from the state its `nextPhone()` value assumes; without
+  // this the second assertion in a spec sees a row it never created.
+  afterEach(async () => {
+    await deleteSpecialistsForPhones('0912887');
+    await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912887%'`);
+  });
+
+  /**
+   * Removes the `specialists` rows a redemption left behind, in FK order.
+   *
+   * `accept` auto-creates the row for a `specialist` invite (ADR-010), and the
+   * row references the user, so the user delete in [afterAll]/[afterEach] is
+   * refused unless this runs first — the failure the first version of this spec
+   * hit was `update or delete on table "users" violates foreign key constraint
+   * "specialists_user_id_fkey"`.
+   *
+   * Takes a *prefix* (`0912887`), matching every phone the file hands out.
+   */
+  async function deleteSpecialistsForPhones(prefix: string): Promise<void> {
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE user_id IN (SELECT id FROM users WHERE phone LIKE $1)`,
+      [`${prefix}%`],
+    );
+  }
+
   /** Seeds a fresh `salon_owner` for a salon and returns its id (the inviter). */
   async function seedInviter(tenantId: string, phone: string): Promise<string> {
     const rows = await queryAsAdmin<{ id: string }>(

@@ -221,6 +221,13 @@ export interface SalonStaffProfile {
   workingHours: Record<string, unknown>;
   specialistsCount: number;
   servicesCount: number;
+  /**
+   * False while the owner still has to run through the onboarding form
+   * (`tenants.profile_completed`, migration 1730000000033). The salon app
+   * reads this to decide whether to route into `SalonProfileSetupScreen`
+   * instead of the dashboard; it is independent of `status` (moderation).
+   */
+  profileCompleted: boolean;
 }
 
 /** Approval lifecycle of a tenant, mirroring the `approval_status` enum. */
@@ -403,6 +410,7 @@ interface SalonStaffRow {
   working_hours: Record<string, unknown> | null;
   specialists_count: number;
   services_count: number;
+  profile_completed: boolean;
 }
 
 /** Raw shape of the dashboard aggregates. */
@@ -989,6 +997,7 @@ export class SalonService {
                 t.rating,
                 t.review_count,
                 t.working_hours,
+                t.profile_completed,
                 (SELECT COUNT(*)::int FROM specialists s WHERE s.tenant_id = t.id AND s.is_active = true) AS specialists_count,
                 (SELECT COUNT(*)::int FROM services sv WHERE sv.tenant_id = t.id AND sv.is_active = true) AS services_count
          FROM tenants t
@@ -1013,6 +1022,7 @@ export class SalonService {
       workingHours: row.working_hours ?? {},
       specialistsCount: row.specialists_count ?? 0,
       servicesCount: row.services_count ?? 0,
+      profileCompleted: row.profile_completed ?? false,
     };
   }
 
@@ -1060,6 +1070,15 @@ export class SalonService {
    * `tenants.pending_changes` and the tenant flips to 'pending_approval'; the
    * public catalogue therefore keeps serving the previously approved name
    * until an admin merges the change (ApprovalsService.approve).
+   *
+   * The one exception is `profile_completed`, which is set on the live row
+   * right here: it records that the owner has *filled in* the onboarding form,
+   * not that the values are published. Making it wait for admin approval would
+   * leave the owner stuck on the setup screen forever, because the screen is
+   * driven by this flag while the fields it submitted are still queued. The
+   * flag and the staged values therefore move independently — see migration
+   * 1730000000033 for the backfill that keeps pre-existing salons off this
+   * screen.
    */
   async updateStaffProfile(
     user: AuthenticatedUser,
@@ -1110,6 +1129,14 @@ export class SalonService {
    *
    * A resubmission clears `rejection_reason`, since a fresh request supersedes
    * the decision that rejected the previous one.
+   *
+   * `profile_completed` is the deliberate exception and is stamped on the live
+   * row here, because every caller of this method is the owner submitting the
+   * onboarding/profile form — the mixin that stores the field marked the
+   * prompt *submitted*, not the values approved. It is set unconditionally
+   * (including by `PATCH /salon/me/schedule`, which is the same form posting
+   * the schedule half), so the app's routing flag cannot lag a successful
+   * submit.
    */
   private async stagePendingChanges(
     tenantId: string,
@@ -1121,7 +1148,8 @@ export class SalonService {
       `UPDATE tenants
           SET pending_changes = COALESCE(pending_changes, '{}'::jsonb) || $2::jsonb,
               status = 'pending_approval',
-              rejection_reason = NULL
+              rejection_reason = NULL,
+              profile_completed = TRUE
         WHERE id = $1`,
       [tenantId, JSON.stringify(changes)],
     );
@@ -2304,6 +2332,12 @@ export class SalonService {
    * the public catalogue. Nothing here is approval-gated, so the row is
    * re-affirmed `approved` on every edit: a rejected row the salon corrects
    * goes live at once, per the approval policy.
+   *
+   * Any edit also stamps `profile_completed = TRUE`: this is the specialist's
+   * own onboarding form (`SpecialistProfileSetupScreen` posts here), and the
+   * endpoint is the only door that writes a `specialists` profile. A
+   * specialist who never submits it keeps the `false` the invite left behind
+   * (migration 1730000000033) and stays on the setup screen.
    */
   async updatePanelSpecialist(
     user: AuthenticatedUser,
@@ -2330,13 +2364,18 @@ export class SalonService {
         sets.push(`commission_rate = ${push(dto.commissionRate)}`);
       }
       if (dto.isActive !== undefined) sets.push(`is_active = ${push(dto.isActive)}`);
-
-      if (sets.length > 0) {
-        await manager.query(
-          `UPDATE specialists SET ${sets.join(', ')}, status = 'approved' WHERE tenant_id = $1 AND id = $2`,
-          params,
-        );
+      if (dto.workingHours !== undefined) {
+        sets.push(`working_hours = ${push(JSON.stringify(dto.workingHours))}::jsonb`);
       }
+
+      await manager.query(
+        `UPDATE specialists
+            SET ${sets.length > 0 ? `${sets.join(', ')}, ` : ''}
+                status = 'approved',
+                profile_completed = TRUE
+          WHERE tenant_id = $1 AND id = $2`,
+        params,
+      );
       return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
     });
   }

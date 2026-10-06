@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
+import { AuthenticatedUser } from './guards/jwt-auth.guard';
 import { AcceptedInvite, InviteTokenService } from './invite-token.service';
 import { OtpService } from './otp.service';
 import { RefreshTokenService } from './refresh-token.service';
@@ -12,6 +13,23 @@ export interface AuthUser {
   role: string;
   isNewUser: boolean;
   tenantId: string | null;
+}
+
+/** Reply of `GET /auth/me`: the JWT identity plus the onboarding flag. */
+export interface CurrentUserProfile {
+  id: string;
+  phoneNumber: string;
+  fullName: string | null;
+  role: string;
+  tenantId: string | null;
+  /**
+   * False while this account still owes the panel a profile, so the app can
+   * route into the onboarding screens instead of the dashboard. Resolved per
+   * role: a `specialist` reads their own `specialists` row, a salon owner or
+   * line manager reads `tenants.profile_completed` (migration 1730000000033).
+   * Always `true` for roles that have no onboarding form.
+   */
+  profileCompleted: boolean;
 }
 
 export interface AuthResponse {
@@ -132,5 +150,71 @@ export class AuthService {
   ): Promise<AcceptedInvite> {
     await this.otpService.verifyOtp(phone, code, 'invite');
     return this.inviteTokenService.accept(inviteToken, phone);
+  }
+
+  /**
+   * `GET /auth/me` — who the bearer token belongs to, plus the onboarding flag.
+   *
+   * The identity comes straight from the verified JWT (`sub`, `role`,
+   * `tenantId`), so this cannot be pointed at another account. Only the
+   * *profile* half needs a query, and it reads the live row the onboarding
+   * flag lives on:
+   *
+   *  - `specialist` → their own `specialists` row (matched on the JWT user id
+   *    *and* the JWT tenant, so a stale token cannot read a row in a salon the
+   *    person has since left). The row may legitimately be missing — a user
+   *    promoted to `specialist` before the invite auto-created rows — and that
+   *    is treated as "profile incomplete" rather than an error, because the
+   *    setup screen is exactly where that person should go.
+   *  - `salon_owner` / `line_manager` → `tenants.profile_completed` for the
+   *    JWT tenant.
+   *  - anything else (`admin`, and any role with no salon) → `true`: there is no
+   *    onboarding form to send them to.
+   *
+   * The phone and full name are read from `users` on the owner connection. That
+   * table is FORCE ROW LEVEL SECURITY on `app.current_tenant_id`, and an admin
+   * JWT carries no tenant, so a `withTenant`-scoped read would come back empty
+   * for exactly the accounts that need no onboarding. The lookup is keyed by
+   * the verified `sub`, never by a request parameter, which is the same
+   * trade-off `refresh-token.service` documents for its own user lookup.
+   */
+  async currentUser(user: AuthenticatedUser): Promise<CurrentUserProfile> {
+    const rows = await this.dataSource.query<
+      Array<{ phone: string; full_name: string | null }>
+    >(`SELECT phone, full_name FROM users WHERE id = $1`, [user.userId]);
+    const row = rows[0];
+
+    return {
+      id: user.userId,
+      phoneNumber: row?.phone ?? user.phoneNumber,
+      fullName: row?.full_name ?? null,
+      role: user.role,
+      tenantId: user.tenantId ?? null,
+      profileCompleted: await this.isProfileComplete(user),
+    };
+  }
+
+  /** See [currentUser] for why each role reads a different row. */
+  private async isProfileComplete(user: AuthenticatedUser): Promise<boolean> {
+    if (!user.tenantId) return true;
+
+    if (user.role === 'specialist') {
+      const rows = await this.dataSource.query<Array<{ profile_completed: boolean }>>(
+        `SELECT profile_completed FROM specialists WHERE tenant_id = $1 AND user_id = $2`,
+        [user.tenantId, user.userId],
+      );
+      // No row yet means the onboarding form has never been submitted.
+      return rows[0]?.profile_completed ?? false;
+    }
+
+    if (user.role === 'salon_owner' || user.role === 'line_manager') {
+      const rows = await this.dataSource.query<Array<{ profile_completed: boolean }>>(
+        `SELECT profile_completed FROM tenants WHERE id = $1`,
+        [user.tenantId],
+      );
+      return rows[0]?.profile_completed ?? true;
+    }
+
+    return true;
   }
 }

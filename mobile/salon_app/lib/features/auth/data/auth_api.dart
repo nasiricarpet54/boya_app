@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../domain/auth_session.dart';
+import '../domain/salon_user.dart';
 
 class AuthApi {
   AuthApi(this._dio);
@@ -58,6 +59,17 @@ class AuthApi {
     final response = await _dio.post<Map<String, dynamic>>('/auth/logout-all');
     final data = response.data;
     return (data?['revoked'] as num?)?.toInt() ?? 0;
+  }
+
+  /// The signed-in account, with the onboarding flag the router gates on.
+  ///
+  /// `GET /auth/me` resolves `profileCompleted` per role on the server, so this
+  /// — not the login reply — is the authoritative read. The setup screens call
+  /// it through [AuthController.refreshUser] after a save, because the flag is
+  /// what decides whether the router lets them off the setup screen.
+  Future<SalonUser> fetchMe() async {
+    final response = await _dio.get<Map<String, dynamic>>('/auth/me');
+    return SalonUser.fromJson(response.data ?? const {});
   }
 
   /// Confirms the phone and returns the session the API issues with it.

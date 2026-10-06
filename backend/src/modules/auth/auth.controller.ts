@@ -14,13 +14,13 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
-import { AuthService } from './auth.service';
+import { AuthService, CurrentUserProfile } from './auth.service';
 import { SendOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { AcceptInviteDto, CreateInviteDto } from './dto/invite.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
@@ -86,6 +86,17 @@ export class AuthController {
     const user = request.user as AuthenticatedUser;
     const revoked = await this.refreshTokenService.revokeAll(user.userId);
     return { revoked };
+  }
+
+  /**
+   * The signed-in account, plus `profileCompleted` so the app knows whether to
+   * route into the onboarding screens. Behind the JWT guard like `logout-all`:
+   * the tenant and role come from the token, never from the request.
+   */
+  @Get('me')
+  @ApiOperation({ summary: 'اطلاعات کاربر واردشده به همراه وضعیت تکمیل پروفایل' })
+  async me(@CurrentUser() user: AuthenticatedUser): Promise<CurrentUserProfile> {
+    return this.authService.currentUser(user);
   }
 
   // --- Invites (ADR-010) -------------------------------------------------

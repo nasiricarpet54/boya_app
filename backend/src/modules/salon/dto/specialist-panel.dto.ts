@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -63,6 +64,12 @@ export class CreateSpecialistPanelDto {
  * public catalogue. Phone and full name are deliberately absent — the phone
  * is the user-row join key and the name lives on `users`, neither of which
  * this endpoint edits.
+ *
+ * `workingHours` was added for the specialist's own onboarding form. Note it is
+ * *not* the schedule the booking engine uses: bookings are checked against the
+ * salon's `tenants.working_hours`. This is the specialist's stated availability,
+ * stored for the profile and reserved for the Phase 2 slot engine; nothing
+ * reads it for availability yet.
  */
 export class UpdateSpecialistPanelDto {
   @ApiPropertyOptional({ maxLength: 1000, example: 'رنگ، مش و کوتاه کردن' })
@@ -89,6 +96,16 @@ export class UpdateSpecialistPanelDto {
   @ApiPropertyOptional({ example: true, description: 'نمایش متخصص در کاتالوگ عمومی' })
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    example: { saturday: { active: true, start: '09:00', end: '18:00' } },
+    description: 'ساعات کاری اعلامی متخصص (برای پروفایل؛ برای رزرو از ساعات سالن استفاده می‌شود)',
+  })
+  @IsOptional()
+  @IsObject()
+  workingHours?: Record<string, unknown>;
 }
 
 /** Body of `POST /salon/me/portfolio` — one photo on one specialist. */

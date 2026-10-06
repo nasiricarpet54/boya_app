@@ -23,13 +23,21 @@ let phoneCounter = 0;
 const nextPhone = () => `0912888${(++phoneCounter).toString().padStart(4, '0')}`;
 
 /**
- * The inviter. `invite_tokens.invited_by` is `NOT NULL REFERENCES users(id)`, so
- * the admin must be a real row — an admin JWT itself carries no tenant, but the
- * row that issued the invite still has to exist. Seeded once, with `ON CONFLICT`
- * so repeated runs stay green.
+ * The inviter. `invite_tokens.invited_by` is `NOT NULL REFERENCES users(id)` with
+ * `ON DELETE CASCADE`, so the admin must be a real row — an admin JWT itself
+ * carries no tenant, but the row that issued the invite still has to exist, and
+ * deleting it would silently take the tenant's invites with it. Seeded once, with
+ * `ON CONFLICT` so repeated runs stay green.
+ *
+ * Its phone deliberately sits inside this file's `0912888…` range (the seeded
+ * value is fixed and known), which is why every cleanup below excludes
+ * [ADMIN_USER] by id: a bare `phone LIKE '0912888%'` wipe would delete the FK
+ * target mid-suite, and the next invite insert would fail with a raw foreign-key
+ * violation instead of the assertion under test.
  */
 const PLATFORM_TENANT = '0a000000-0000-4000-8000-000000000001';
 const ADMIN_USER = '0a000000-0000-4000-8000-0000000000ad';
+const ADMIN_PHONE = '09128880000';
 
 /**
  * The full ADR-010 onboarding flow, end to end on real Postgres.
@@ -92,7 +100,7 @@ describeIntegration('salon onboarding (ADR-010): create tenant -> invite owner -
     // each run — clear them first so the unique index on `phone` cannot fail an
     // otherwise valid spec. Onboarding tenants are deleted next, but `users`
     // references `tenants` without a cascade, so the owners must go first.
-    await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912888%'`);
+    await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912888%' AND id <> $1`, [ADMIN_USER]);
     await queryAsAdmin(
       `DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'it-onboarding-%')`,
     );
@@ -108,7 +116,7 @@ describeIntegration('salon onboarding (ADR-010): create tenant -> invite owner -
     await queryAsAdmin(
       `INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'admin')
        ON CONFLICT (id) DO NOTHING`,
-      [ADMIN_USER, PLATFORM_TENANT, '09128880000'],
+      [ADMIN_USER, PLATFORM_TENANT, ADMIN_PHONE],
     );
   }, 30_000);
 
@@ -121,6 +129,34 @@ describeIntegration('salon onboarding (ADR-010): create tenant -> invite owner -
     await queryAsAdmin(`DELETE FROM tenants WHERE slug LIKE 'it-onboarding-%'`);
     if (dataSource?.isInitialized) await dataSource.destroy();
   });
+
+  // See `deleteSpecialistsForPhones`: `accept` reuses a same-phone account, so
+  // the fixtures each redemption leaves must go before the next spec's
+  // `nextPhone()` value is assumed to be fresh.
+  //
+  // `id <> ADMIN_USER` is load-bearing: the seeded admin's phone is inside the
+  // `0912888…` range, and `invite_tokens.invited_by` cascades from it. Without
+  // the exclusion the first spec deletes the inviter and every later invite
+  // insert dies on `invite_tokens_invited_by_fkey`.
+  afterEach(async () => {
+    await deleteSpecialistsForPhones('0912888');
+    await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912888%' AND id <> $1`, [ADMIN_USER]);
+  });
+
+  /**
+   * Removes the `specialists` rows a redemption could have left behind.
+   *
+   * These invites are `salon_owner`, so `accept` writes no specialist row — but
+   * `accept` reuses an existing same-phone account, and a row left behind by an
+   * earlier run would make the owner-based specs ambiguous. Clearing it in FK
+   * order keeps the suite re-runnable, matching the sibling specs.
+   */
+  async function deleteSpecialistsForPhones(prefix: string): Promise<void> {
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE user_id IN (SELECT id FROM users WHERE phone LIKE $1)`,
+      [`${prefix}%`],
+    );
+  }
 
   /** One admin, one invite, one redemption — the whole happy path. */
   it('walks create tenant -> invite owner -> accept and binds the owner to the new salon', async () => {
