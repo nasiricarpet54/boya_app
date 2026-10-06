@@ -313,6 +313,19 @@ export class InviteTokenService {
         invite.tenant_id,
       );
 
+      // A `specialist` invite must leave the same footprint as the panel door
+      // (`POST /salon/me/specialists`): a `users` row alone is an account that
+      // no booking can reference, because `bookings.specialist_id` points at
+      // `specialists.id`. Without this the invited specialist can sign in but
+      // the salon never sees them. `status = 'approved'` mirrors the panel
+      // (`salon.service` `createSpecialist`) — the invite already carries the
+      // owner's implicit approval, so there is nothing left to moderate. The
+      // invite carries no profile detail, so the owner fills in `bio`/`skills`
+      // afterwards.
+      if (invite.role === 'specialist') {
+        await this.ensureSpecialistRecord(manager, invite.tenant_id, found.id);
+      }
+
       await manager.query(`UPDATE invite_tokens SET used_at = NOW(), used_by = $1 WHERE id = $2`, [
         found.id,
         invite.id,
@@ -388,5 +401,34 @@ export class InviteTokenService {
       [tenantId, phone, role],
     );
     return { ...inserted[0], is_new: true };
+  }
+
+  /**
+   * Guarantees a `specialists` row for the freshly invited user.
+   *
+   * Idempotent: re-inviting someone who already has a record inside this salon
+   * is a no-op, so a duplicate invite cannot trip the unique pair the panel
+   * relies on. The row is created `status = 'approved'` and `is_active = true`,
+   * exactly like `SalonService.createSpecialist` (the `POST /salon/me/specialists`
+   * door), so an invited specialist is immediately bookable.
+   */
+  private async ensureSpecialistRecord(
+    manager: EntityManager,
+    tenantId: string,
+    userId: string,
+  ): Promise<void> {
+    const existing = await manager.query<Array<{ id: string }>>(
+      `SELECT id FROM specialists WHERE tenant_id = $1 AND user_id = $2`,
+      [tenantId, userId],
+    );
+    if (existing.length > 0) {
+      return;
+    }
+
+    await manager.query(
+      `INSERT INTO specialists (tenant_id, user_id, commission_rate, is_active, status)
+       VALUES ($1, $2, 50, true, 'approved')`,
+      [tenantId, userId],
+    );
   }
 }

@@ -83,7 +83,14 @@ describeIntegration('specialist onboarding (ADR-010): owner invites -> specialis
     // Previous runs leave invitee users behind (there is no tenant to cascade
     // from), and the phone counter restarts, so clear the prefix first. The
     // salons this spec created are removed next; `users` references `tenants`
-    // without a cascade, so those users must go first.
+    // without a cascade, so those users must go first. `specialists` now
+    // references both, so its rows come before the users that own them.
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'it-specialist-%')`,
+    );
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '0912887%')`,
+    );
     await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912887%'`);
     await queryAsAdmin(
       `DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'it-specialist-%')`,
@@ -92,6 +99,12 @@ describeIntegration('specialist onboarding (ADR-010): owner invites -> specialis
   });
 
   afterAll(async () => {
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'it-specialist-%')`,
+    );
+    await queryAsAdmin(
+      `DELETE FROM specialists WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '0912887%')`,
+    );
     await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912887%'`);
     await queryAsAdmin(
       `DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'it-specialist-%')`,
@@ -166,6 +179,29 @@ describeIntegration('specialist onboarding (ADR-010): owner invites -> specialis
     expect(users[0].role).toBe('specialist');
     expect(users[0].tenant_id).toBe(salon.id);
 
+    // …and the accept auto-created the `specialists` row that makes the person
+    // bookable. Without it `bookings.specialist_id` would have nothing to
+    // point at, which is exactly the "orphan user" the fix removes.
+    const specialists = await queryAsAdmin<{
+      id: string;
+      tenant_id: string;
+      user_id: string;
+      status: string;
+      is_active: boolean;
+      skills: unknown;
+    }>(
+      `SELECT id, tenant_id, user_id, status, is_active, skills
+       FROM specialists WHERE user_id = $1`,
+      [users[0].id],
+    );
+    expect(specialists).toHaveLength(1);
+    expect(specialists[0].user_id).toBe(users[0].id);
+    expect(specialists[0].tenant_id).toBe(salon.id);
+    expect(specialists[0].status).toBe('approved');
+    expect(specialists[0].is_active).toBe(true);
+    // The invite carries no profile detail, so the owner fills it in later.
+    expect(specialists[0].skills).toEqual([]);
+
     // …and the invite is spent, pointing at the user it created.
     const spent = await queryAsAdmin<{ used_at: Date | null; used_by: string | null }>(
       `SELECT used_at, used_by FROM invite_tokens WHERE token_hash = $1`,
@@ -197,6 +233,57 @@ describeIntegration('specialist onboarding (ADR-010): owner invites -> specialis
     );
     expect(users[0].tenant_id).toBe(salonB.id);
     expect(users[0].tenant_id).not.toBe(salonA.id);
+  });
+
+  it('does not create a specialist record for a non-specialist invite', async () => {
+    const salon = await tenantService.create({ name: 'Manager Salon', slug: nextSlug() });
+    const managerPhone = nextPhone();
+
+    const invite = await inviteService.create(
+      { role: 'line_manager', phone: managerPhone },
+      await seedInviter(salon.id, nextPhone()),
+      salon.id,
+    );
+    const accepted = await inviteService.accept(invite.token, managerPhone);
+
+    // The `line_manager` has a `users` row but must not appear in the booking
+    // catalogue, so no `specialists` row is written.
+    const rows = await queryAsAdmin<{ id: string }>(
+      `SELECT id FROM specialists WHERE user_id = $1`,
+      [accepted.user.id],
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it('is idempotent: re-inviting an existing specialist does not duplicate the row', async () => {
+    const salon = await tenantService.create({ name: 'Reinvite Salon', slug: nextSlug() });
+    const specialistPhone = nextPhone();
+    const owner = await seedInviter(salon.id, nextPhone());
+
+    const first = await inviteService.create(
+      { role: 'specialist', phone: specialistPhone },
+      owner,
+      salon.id,
+    );
+    await inviteService.accept(first.token, specialistPhone);
+
+    // A second invite for the same number resolves to the same user (accept
+    // treats an existing same-role account as a no-op), so the guard in
+    // `ensureSpecialistRecord` must leave the single row untouched.
+    const second = await inviteService.create(
+      { role: 'specialist', phone: specialistPhone },
+      owner,
+      salon.id,
+    );
+    await inviteService.accept(second.token, specialistPhone);
+
+    const rows = await queryAsAdmin<{ id: string }>(
+      `SELECT id FROM specialists WHERE user_id = (
+         SELECT id FROM users WHERE phone = $1
+       )`,
+      [specialistPhone],
+    );
+    expect(rows).toHaveLength(1);
   });
 
   it('keeps a specialist scoped to their own salon through RLS', async () => {

@@ -181,4 +181,28 @@ hash در DB)، پذیرش با OTP و ساخت کاربر با نقش و tenant
 - **تست:** `backend/test/integration/tenant-onboarding.integration-spec.ts` — کل مسیر روی
   Postgres واقعی + رد slug تکراری + ایزوله‌بودن سالن تازه به‌عنوان مرز RLS.
 
+**افزودنی (2026-10-06):** دو نکته که در پذیرش invite مشخص شد و رفتار را تثبیت کرد:
+
+- **رکورد `specialists` خودکار ساخته می‌شود.** در `InviteTokenService.accept`، اگر
+  `role = 'specialist'`، داخل همان تراکنشِ ساخت کاربر یک ردیف `specialists` هم
+  درج می‌شود (`tenant_id` از خود دعوت، `user_id` تازه، `status = 'approved'`,
+  `is_active = true`) — دقیقاً همان footprintی که در `SalonService.createSpecialist`
+  (`POST /salon/me/specialists`) ساخته می‌شود. دلیل: `bookings.specialist_id` به
+  `specialists.id` اشاره می‌کند، پس کاربرِ بدون این ردیف «یتیم» است — می‌تواند وارد
+  شود ولی هیچ رزروی نمی‌تواند به او ارجاع بدهد و سالن هرگز او را در فهرست نمی‌بیند.
+  `status = 'approved'` انتخاب شد چون دعوت از سمت سالن‌دار حامل تأیید ضمنی است؛
+  `bio`/`skills` بعداً توسط سالن‌دار تکمیل می‌شود.
+  - تابع `ensureSpecialistRecord` **idempotent** است: دعوت مجدد همان شماره، رکورد
+    دوم نمی‌سازد (پذیرشِ کاربرِ موجودِ هم‌نقش هم no-op است).
+  - دعوت با نقش `line_manager`/`salon_owner` هیچ ردیف `specialists` نمی‌سازد.
+  - نکتهٔ اسکیما: جدول `specialists` ستون `line_id` **ندارد**؛ اتصال متخصص به خط
+    خدمات از طریق `services.line_id` انجام می‌شود، نه ستونی روی خود متخصص.
+- **`is_active` در برابر `status` تناقض نیست.** `is_active` کلید خاموش‌کنِ اپراتوری
+  است (روی `tenants`/`specialists`/`services`/`users` یکسان) و `status` + `approved_at`
+  چرخهٔ تأیید/تعلیق است. ویترین عمومی روی
+  `approved_at IS NOT NULL AND status <> 'suspended'` **و** `is_active = true` فیلتر
+  می‌کند (`PUBLIC_SALON_SQL` در `salon.service.ts`)، پس `status = 'draft'` +
+  `is_active = true` در لحظهٔ ساخت، کاملاً درست است. تست پوشش:
+  `backend/test/integration/tenant-visibility.integration-spec.ts`.
+
 

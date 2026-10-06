@@ -28,7 +28,7 @@
 
 ## Onboarding متخصص
 - [x] salon_app: صفحه «دعوت متخصص» (`invite_specialist_screen.dart` + `invite_api.dart`؛ فرم شماره+نقش، نمایش یک‌بارهٔ توکن و دکمهٔ کپی، روت `/specialists/invite`)
-- [x] فرآیند: salon_owner → invite → accept → role=specialist (integration: `specialist-onboarding` — ۳ تست)
+- [x] فرآیند: salon_owner → invite → accept → role=specialist (integration: `specialist-onboarding` — ۵ تست؛ accept خودکار رکورد `specialists` می‌سازد + `tenant-visibility` ۵ تست روی `SalonService.list`)
 - [ ] تست: ورود متخصص + مشاهده رزروها (دستی، پس از پیوستن)
 
 ## مدل کسب‌وکار (فاز ۲)
