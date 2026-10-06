@@ -167,5 +167,18 @@
 **تست:** `backend/test/integration/invite-token.integration-spec.ts` — ساخت دعوت (فقط
 hash در DB)، پذیرش با OTP و ساخت کاربر با نقش و tenant درست، `salon_owner`، توکن
 منقضی/تکراری/ناشناخته رد می‌شوند، امتناع از تصاحب اکانت customer، فهرستِ فقط pending،
-لُوِ توسط سازنده در برابر غیرسازنده، جداسازی tenant در خواندن و نوشتن، و وجود policy.
+لغو توسط سازنده در برابر غیرسازنده، جداسازی tenant در خواندن و نوشتن، و وجود policy.
+
+**تکمیل جریان onboarding (2026-10-06):** زنجیرهٔ کامل «ساخت سالن → دعوت مدیر → پذیرش»
+حالا سرتاسری پیاده و تست شده است:
+- **بک‌اند:** `POST /tenants` در `modules/tenant` (فقط `@Roles('admin')`) با DTO
+  `CreateTenantDto` (`name`+`slug`)؛ سالن در وضعیت `draft` ساخته می‌شود (ساخت ≠ تأیید؛
+  انتشار جداگانه با `PATCH /admin/tenants/:id/status`)، و `slug` تکراری **۴۰۹** می‌دهد.
+  انتخاب اولیه `pending_approval` منتفی شد چون ساخت توسط admin باید در صف تأیید بماند.
+- **پنل:** صفحهٔ `tenants/create` + `TenantForm` — مرحلهٔ ۱ `POST /tenants`، مرحلهٔ ۲
+  `POST /auth/invite` با `role: 'salon_owner'` روی همان `tenantId`؛ توکن یک‌بارمصرف با
+  دکمهٔ کپی نمایش داده می‌شود (پس از ساخت، سالن `draft` است و مدیر باید تأیید شود).
+- **تست:** `backend/test/integration/tenant-onboarding.integration-spec.ts` — کل مسیر روی
+  Postgres واقعی + رد slug تکراری + ایزوله‌بودن سالن تازه به‌عنوان مرز RLS.
+
 

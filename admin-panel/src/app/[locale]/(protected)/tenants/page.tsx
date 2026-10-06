@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Eye } from 'lucide-react';
+import { Eye, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
@@ -50,7 +50,16 @@ export default function TenantsPage() {
     : v === 'pending_approval' ? t('filters.pending') : t('filters.suspended');
   return (
     <>
-      <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
+        <Link
+          href="/tenants/create"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-copper px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-copper-hover"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          {t('newSalon')}
+        </Link>
+      </div>
       <Card className="mb-4">
         <div className="flex flex-col gap-3">
           <Input label={t('searchLabel')} placeholder={t('searchPlaceholder')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />

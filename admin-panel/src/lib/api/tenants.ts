@@ -73,6 +73,21 @@ export interface ListTenantsQuery {
 
 export const TENANTS_PAGE_SIZE = 20;
 
+/** `POST /tenants` — the minimal payload a new salon needs (ADR-010 step 1). */
+export interface CreateTenantBody {
+  name: string;
+  /** URL-safe, lowercase `[a-z0-9-]`; the backend rejects anything else. */
+  slug: string;
+}
+
+/** The created tenant, as `POST /tenants` returns it. A fresh salon is `draft`. */
+export interface CreatedTenant {
+  id: string;
+  name: string;
+  slug: string | null;
+  status: 'draft' | TenantStatus;
+}
+
 export const tenantsApi = {
   /** `GET /admin/tenants` — paginated, newest first. */
   listTenants(query: ListTenantsQuery = {}): Promise<TenantListPage> {
@@ -81,6 +96,15 @@ export const tenantsApi = {
         params: { search: query.search || undefined, status: query.status ?? 'all', page: query.page ?? 1, limit: query.limit ?? TENANTS_PAGE_SIZE },
       })
       .then((r) => r.data);
+  },
+
+  /**
+   * `POST /tenants` — creates a salon. Admin-only; the panel signs in as
+   * `admin`, so no tenant header is needed. The new salon starts in `draft`
+   * and is published only once an admin approves it.
+   */
+  createTenant(body: CreateTenantBody): Promise<CreatedTenant> {
+    return api.post<CreatedTenant>('/tenants', body).then((r) => r.data);
   },
 
   /** `GET /admin/tenants/:id` — full record plus stats and recent bookings. */

@@ -11,9 +11,10 @@
 - [ ] تست end-to-end با SMS واقعی (Kavenegar)
 
 ## Onboarding مدیر سالن
-- [ ] admin-panel: صفحه «ساخت سالن جدید»
-- [ ] فرآیند: admin → invite → accept → role=salon_owner
-- [ ] تست: ورود مدیر + مشاهده پنل
+- [x] Backend: `POST /tenants` (فقط admin، DTO `name`+`slug`، ۴۰۹ برای slug تکراری، وضعیت اولیه `draft`)
+- [x] admin-panel: صفحه «ساخت سالن جدید» (`tenants/create` + `TenantForm`؛ ساخت سالن و صدور دعوت مدیر با نمایش یک‌بارهٔ توکن)
+- [x] فرآیند: admin → invite → accept → role=salon_owner (integration: `tenant-onboarding` — ۳ تست)
+- [ ] تست: ورود مدیر + مشاهده پنل (دستی، پس از تأیید سالن)
 
 ## Onboarding متخصص
 - [ ] salon_app: صفحه «دعوت متخصص»
