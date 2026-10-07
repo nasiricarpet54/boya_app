@@ -246,6 +246,25 @@ verifyOtp: get نبود→OTP_EXPIRED؛ incr(tries)>5→429؛ toLatinDigits مق
 - **خروجی ارسال این دعوت:** SMS نرفت؛ لاگ: `ConfigurationException: Driver 'kavenegar' requires a valid lineNumber` — یعنی `KAVENEGAR_SENDER` هنوز تنظیم نشده. مسیر fail-soft درست کار کرد.
 - **گام بعد برای SMS واقعی:** کلید واقعی + `KAVENEGAR_SENDER` (شماره خط فعال) + قالب‌های تأییدشده در `.env` ریشه، سپس `docker compose -f docker-compose.staging.yml up -d backend` (env فقط با بازسازی کانتینر اعمال می‌شود).
 
+## E2E dry-run کامل (بدون SMS) — ۲۰۲۶-۱۰-۰۷ ✅
+مسیر کامل invite/accept روی staging با `OTP_DEV_MODE=true` (کد از لاگ کانتینر خوانده شد، نه SMS). هیچ کلاینت واقعی درگیر نبود؛ همه چیز HTTP مستقیم روی `:3001`.
+
+- **A/B آماده‌سازی:** هر ۴ کانتینر healthy؛ `OTP_DEV_MODE=true` و `INVITE_BASE_URL=http://192.168.16.100` در `.env` ریشه ست شده. کاربران تستی قدیمی پاک شدند.
+- **C ادمین:** ادمینی وجود نداشت → `09120000001` ساخته شد (admin_id `996fbe62-2c30-43f6-9364-c98b962c7bbc`، `tenant_id NULL`).
+- **D ورود ادمین:** `POST /auth/otp/send` → کد `DEV MODE` از `docker logs` → `POST /auth/otp/verify` → `accessToken`؛ `GET /auth/me` → `role=admin`, `tenantId=null`. ✅
+- **E tenant + invite:** tenant ساخته شد `c2545008-2d96-4858-81f1-10699bf50e90` (`Test Salon E2E` / slug `test-e2e-20261007130719`)؛ سپس `POST /auth/invite` با `{role:'salon_owner', phone:'09120000088', tenantId}` → `201` + توکن plaintext یک‌باره (۶۴ hex) + invite_id `660fbfb5-555d-4f60-9896-7f2a632e559b`. SMS دعوت fail-soft زد (کلید dummy → timeout کاوه‌نگار) ولی دعوت در DB ذخیره شد. ✅
+- **F accept:** `POST /auth/invite/accept` با `{token, phone, otpCode}` → `200` + سشن. `user.role='salon_owner'`، `isNewUser=true`، `tenantId` برابر tenant ساخته‌شده. owner_id `4a1d1bda-9845-46e9-a948-2de98f3b484f`. ✅
+- **F بررسی DB:** `users.tenant_id = c2545008…` ست شده؛ `invite_tokens.used_at` و `used_by = 4a1d1bda…` ست شده. ✅
+- **G یک‌بارمصرف بودن:** replay همان توکن (با OTP invite تازه) → **401** (`این دعوت‌نامه قبلاً استفاده شده است`). ✅
+- **H RLS/API scoping:** `GET /salon/me` با JWT owner → فقط tenant خودش (`c2545008…`)؛ `GET /salon/me?tenantId=<tenant دیگر>` → همان tenant خودش برگردانده شد (پارامتر کاملاً نادیده گرفته شد؛ tenant از JWT می‌آید نه از request). ✅
+- **نتجه نهایی:** E2E dry-run **کامل پاس شد**. بلوکرهای باقی‌مانده برای E2E با SMS واقعی: کلید واقعی Kavenegar + `KAVENEGAR_SENDER` (در BACKLOG.md).
+
+### ۲ باگ حین dry-run پیدا و اصلاح شد
+1. **regex اعتبارسنجی `otpCode` خراب بود** (`dto/invite.dto.ts`): `/^[0-9]{۰-۹0-9]{6}$/` به‌خاطر جای‌گذاری اشتباه `{` هیچ کدی را نمی‌پذیرفت (نه لاتین نه فارسی) → هر `invite/accept` با **400** رد می‌شد. اصلاح به `/^[0-9۰-۹]{6}$/` (۶ رقم لاتین یا فارسی).
+2. **هیچ endpoint ای OTP با purpose `invite` صادر نمی‌کرد:** `verifyInviteOtpAndIssueToken` کد را زیر purpose `'invite'` بررسی می‌کند (نظراً امنیتی: کد ورود نباید برای accept خرج شود)، ولی `POST /auth/otp/send` فقط purpose `'login'` می‌ساخت → accept با کد ورود **401 OTP_EXPIRED** می‌خورد. اصلاح: فیلد اختیاری `purpose` به `SendOtpDto` اضافه شد (default `'login'`، پس همهٔ کلاینت‌های فعلی بدون تغییر کار می‌کنند) و در controller به `otpService.sendOtp` پاس داده شد. این تغییر backward-compatible است.
+
+> نکته RLS در staging: `DATABASE_USER` در `docker-compose.staging.yml` روی `beauty` (master/superuser) است نه `beauty_app` (NOBYPASSRLS)، پس RLS سطح DB در این محیط دور زده می‌شود. ایزوله‌سازی tenant در این تست از طریق **لایهٔ اپلیکیشن** (JWT `tenantId` در `requireStaffTenant`) تضمین شد، نه policy خود Postgres. برای تست رLL واقعی باید اپ به نقش NOBYPASSRLS وصل شود (در BACKLOG.md).
+
 
 
 ## Issues

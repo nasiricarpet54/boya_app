@@ -43,7 +43,7 @@ export class AuthController {
   @Post('otp/send')
   @HttpCode(HttpStatus.OK)
   async sendOtp(@Body() body: SendOtpDto): Promise<{ message: string }> {
-    await this.otpService.sendOtp(body.phoneNumber);
+    await this.otpService.sendOtp(body.phoneNumber, body.purpose ?? 'login');
     return { message: 'کد تأیید ارسال شد.' };
   }
 

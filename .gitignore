@@ -28,6 +28,7 @@ build/
 # or CI. `test-referral.sh` predates this rule and stays tracked.
 backend/scripts/test-invite.sh
 backend/scripts/test-invite-api.sh
+.e2e/
 
 .DS_Store
 Thumbs.db

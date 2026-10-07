@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Matches } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
 
 import { toLatinDigits } from '../../../utils/persian-number.util';
 
@@ -14,6 +14,19 @@ export class SendOtpDto {
   @IsString()
   @Matches(/^09[0-9]{9}$/)
   phoneNumber!: string;
+
+  /**
+   * Which flow the code is for. `OtpService` namespaces the Redis key by this,
+   * so an invite code cannot be spent on the login endpoint or the other way
+   * round. The invite-accept screen asks for `invite`; everything else logs in.
+   *
+   * Optional and defaults to `login` so the existing callers (both apps, the
+   * admin panel) keep working unchanged.
+   */
+  @ApiProperty({ enum: ['login', 'invite'], required: false, default: 'login' })
+  @IsOptional()
+  @IsIn(['login', 'invite'])
+  purpose?: 'login' | 'invite';
 }
 
 export class VerifyOtpDto {

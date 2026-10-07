@@ -194,3 +194,39 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 >
 > **راهنمای کامل:** `docs/report/KAVENEGAR-SETUP.md` — ساخت قالب در پنل کاوه‌نگار
 > (شامل سینتکس تک‌متغیره `%token`)، متغیرهای محیطی، و نحوهٔ اعمال env روی staging.
+
+## Testing — E2E dry-run (بدون SMS)
+
+**وضعیت ۲۰۲۶-۱۰-۰۷ — E2E dry-run کامل ✅ پاس شد:** کل مسیر invite/accept روی
+staging با `OTP_DEV_MODE=true` اجرا شد (کد OTP از لاگ کانتینر خوانده شد).
+ورود ادمین → ساخت tenant → `POST /auth/invite` → `POST /auth/invite/accept` →
+بررسی DB → replay توکن (۴۰۱) → تست scoping tenant. جزئیات کامل در
+`docs/report/STATE.md`. هیچ SMS واقعی ارسال نشد؛ این مورد همچنان به کلید واقعی
+کاوه‌نگار وابسته است.
+
+حین این اجرا **دو باگ مسیریابی/اعتبارسنجی** کشف و رفع شدند (هر دو در همین کامیت):
+
+- [x] ~~**regex خراب `AcceptInviteDto.otpCode`**~~ — `/^[0-9]{۰-۹0-9]{6}$/`
+      هیچ کدی را نمی‌پذیرفت (۴۰۰ روی هر `invite/accept`). اصلاح به
+      `/^[0-9۰-۹]{6}$/`.
+- [x] ~~**OTP با purpose `invite` صادر نمی‌شد**~~ — `verifyInviteOtpAndIssueToken`
+      زیر purpose `'invite'` بررسی می‌کند ولی `POST /auth/otp/send` فقط `'login'`
+      می‌ساخت → ۴۰۱. فیلد اختیاری `purpose` به `SendOtpDto` اضافه شد.
+
+### کارهای باز از این dry-run
+
+- [ ] **کلاینت invite-accept باید `purpose: 'invite'` بفرستد** — حالا که endpoint
+      این پارامتر را می‌پذیرد، صفحهٔ پذیرش دعوت (که هنوز در هیچ کلاینتی وجود ندارد:
+      نه salon_app، نه customer_app، نه admin-panel) باید هنگام درخواست OTP
+      `purpose: 'invite'` بفرستد، وگرنه کد زیر کلید اشتباه ساخته می‌شود و accept
+      با ۴۰۱ رد می‌شود. فعلاً هیچ کلاینتی این مسیر را صدا نمی‌زند.
+- [ ] **تست regression برای مسیر HTTP invite-accept** — integration specهای فعلی
+      (`tenant-onboarding`، `specialist-onboarding`) مستقیماً `inviteService.accept`
+      را صدا می‌زنند و OTP verification را دور می‌زنند، به همین دلیل این دو باگ
+      تا حالا کشف نشدند. یک e2e که `POST /auth/otp/send` + `POST /auth/invite/accept`
+      را با کد واقعی می‌زند، regression هر دو را می‌گرفت.
+- [ ] **staging باید به نقش NOBYPASSRLS وصل شود** — `DATABASE_USER` در
+      `docker-compose.staging.yml` روی `beauty` (master/superuser) است، پس RLS
+      سطح DB در staging دور زده می‌شود و ایزوله‌سازی فقط در لایهٔ اپلیکیشن
+      (JWT `tenantId`) تضمین می‌شود. برای تست RLS واقعی باید به `beauty_app`
+      (مرتبط با آیتم migration با `beauty_app` در بخش Staging بالا) وصل شود.

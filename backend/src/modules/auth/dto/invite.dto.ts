@@ -52,6 +52,6 @@ export class AcceptInviteDto {
 
   @ApiProperty({ example: '123456' })
   @IsString()
-  @Matches(/^[0-9]{۰-۹0-9]{6}$/, { message: 'کد تأیید باید ۶ رقم باشد' })
+  @Matches(/^[0-9۰-۹]{6}$/, { message: 'کد تأیید باید ۶ رقم باشد' })
   otpCode!: string;
 }
