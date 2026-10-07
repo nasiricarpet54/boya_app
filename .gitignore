@@ -27,6 +27,7 @@ build/
 # scaffolding for a developer running an E2E check by hand, not part of the app
 # or CI. `test-referral.sh` predates this rule and stays tracked.
 backend/scripts/test-invite.sh
+backend/scripts/test-invite-api.sh
 
 .DS_Store
 Thumbs.db

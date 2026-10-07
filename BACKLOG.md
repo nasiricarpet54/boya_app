@@ -138,12 +138,17 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 `env.validation.ts` آن‌ها را optional گرفت، تا وقتی مقدار ندارند send سایلنت
 skip شود. این موارد دستی پیش از تحویل به یک شماره واقعی باید انجام شوند:
 
-- [ ] **کلید production در Kavenegar ساخته و نصب شود** — `KAVENEGAR_API_KEY` در
-      `backend/.env` روی کلید واقعی staging تنظیم شود (`change-me` فعلی فقط
-      sandbox است).
+- [ ] **کلید production در Kavenegar ساخته و نصب شود** — `KAVENEGAR_API_KEY` واقعی در
+      **`.env` ریشهٔ پروژه** (که `docker-compose.staging.yml` آن را می‌خواند، نه
+      `backend/.env`) تنظیم شود (`change-me` فعلی فقط sandbox است).
 - [ ] **قالب `invite` در پنل Kavenegar ساخته شود** — نام آن در
       `KAVENEGAR_INVITE_TEMPLATE` می‌رود. این تنها قالب لازم است؛ همهٔ نقش‌ها
       به آن fallback می‌کنند.
+      > **نکته مهم:** قالب باید **دقیقاً یک** متغیر داشته باشد که با سینتکس کاوه‌نگار
+      > به‌صورت `%token` نوشته شود. `sendInviteSms` فقط `tokens: { token: link }` را
+      > می‌فرستد و درایور آن را به پارامتر `token` از `verify/lookup.json` نگاشت می‌کند،
+      > پس قالب دو-متغیره کار نمی‌کند. متن پیشنهادی:
+      > `دعوت به پلتفرم بویا صادر شد. برای پذیرش کلیک کنید: %token`
 - [ ] **قالب `invite-owner` ساخته شود** — `KAVENEGAR_INVITE_OWNER_TEMPLATE`.
       قالبی جدا فقط اگر ورد دعوت مالک سالن باید متفاوت باشد؛ در غیر این صورت
       خالی بگذارید تا generic استفاده شود.
@@ -161,3 +166,9 @@ skip شود. این موارد دستی پیش از تحویل به یک شما�
 > **به‌جای SMS واقعی:** `backend/scripts/test-invite.sh` (که ignore شده و
 > commit نمی‌شود) کل مسیر را در SQL روی دیتابیس dev می‌برد و لینک را چاپ
 > می‌کند، بدون اینکه کاوه‌نگار را صدا بزند.
+> برای تست HTTP واقعی `backend/scripts/test-invite-api.sh` (به همان شکل ignore شده)
+> وجود دارد: `POST /api/v1/auth/invite` را روی پورت ۳۰۰۱ با JWT ادمین صدا می‌زند
+> و توکن یک‌باره را برمی‌گرداند.
+>
+> **راهنمای کامل:** `docs/report/KAVENEGAR-SETUP.md` — ساخت قالب در پنل کاوه‌نگار
+> (شامل سینتکس تک‌متغیره `%token`)، متغیرهای محیطی، و نحوهٔ اعمال env روی staging.
