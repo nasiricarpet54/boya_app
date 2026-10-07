@@ -238,6 +238,15 @@ verifyOtp: get نبود→OTP_EXPIRED؛ incr(tries)>5→429؛ toLatinDigits مق
 - نکتهٔ مسیر: endpoint health با prefix سراسری روی `/api/v1/health` است (`API_PREFIX=api/v1`)؛ `/health` خام 404 برمی‌گرداند.
 - اصلاح حین تست: compose `NODE_ENV: staging` می‌فرستاد ولی `@IsEnum(NodeEnv)` در `env.validation.ts` فقط development/test/production می‌پذیرفت → backend crash-loop می‌کرد. `Staging = 'staging'` به enum اضافه شد.
 - پورت‌های هاست staging (آفست‌دار از dev تا کنار هم run شوند): postgres `5434`، redis `6381`، backend `3001`، caddy `80/443`. جداول روی `beauty_platform`: ۱۹ جدول (شامل tenants/users/bookings/invite_tokens)؛ `count(*) FROM tenants` = ۵ (seed).
+## SMS (Kavenegar) — وضعیت ۲۰۲۶-۱۰-۰۷
+- **Setup (مستندات): ✅** — `docs/report/KAVENEGAR-SETUP.md` (commit `ab8ccfd`): قالب `invite` باید **دقیقاً یک** متغیر `%token` داشته باشد (`sendInviteSms` فقط `tokens:{token:link}` می‌فرستد؛ دو-متغیره کار نمی‌کند)، جدول نام قالب→env، و راهنمای اعمال env روی staging. `test-invite-api.sh` در `.gitignore` است (ابزار دستی) ولی در `BACKLOG.md` مستند شد.
+- **تست SMS واقعی: pending** — `KAVENEGAR_API_KEY` فعلی placeholder/dummy است و `KAVENEGAR_SENDER` (lineNumber) خالی است، پس ارسال واقعی ممکن نیست.
+- **حالت فعلی: `OTP_DEV_MODE=true`** — کدهای OTP در لاگ کانتینر (`===== [DEV MODE] … OTP =====`) چاپ می‌شوند، نه SMS. این فلگ **فقط** OTP ورود/accept را کنترل می‌کند (`otp.service.ts`); SMS دعوت همیشه تلاش به ارسال دارد ولی fail-soft است (دعوت در DB ذخیره و توکن در جواب برمی‌گردد حتی اگر SMS خطا دهد).
+- **تست invite (HTTP): ✅ موفق** — `POST /api/v1/auth/invite` با JWT مالک سالن → `201` + توکن plaintext یک‌بارمصرف + ردیف در `invite_tokens` (فقط `token_hash`، بدون plaintext). برای JWT مالک، یک `salon_owner` در DB ساخته و با کد DEV MODE وارد شد (کد از لاگ کانتینر خوانده شد).
+- **خروجی ارسال این دعوت:** SMS نرفت؛ لاگ: `ConfigurationException: Driver 'kavenegar' requires a valid lineNumber` — یعنی `KAVENEGAR_SENDER` هنوز تنظیم نشده. مسیر fail-soft درست کار کرد.
+- **گام بعد برای SMS واقعی:** کلید واقعی + `KAVENEGAR_SENDER` (شماره خط فعال) + قالب‌های تأییدشده در `.env` ریشه، سپس `docker compose -f docker-compose.staging.yml up -d backend` (env فقط با بازسازی کانتینر اعمال می‌شود).
+
+
 
 ## Issues
 - TODO/FIXME: در src بکند و lib موبایل صفر (جستجوی TODO|FIXME|HACK|XXX: فقط placeholder UI، mock-jest، limitPlaceholder متغیر — هیچ TODO واقعی نیست)
