@@ -220,13 +220,39 @@ staging با `OTP_DEV_MODE=true` اجرا شد (کد OTP از لاگ کانتی�
       نه salon_app، نه customer_app، نه admin-panel) باید هنگام درخواست OTP
       `purpose: 'invite'` بفرستد، وگرنه کد زیر کلید اشتباه ساخته می‌شود و accept
       با ۴۰۱ رد می‌شود. فعلاً هیچ کلاینتی این مسیر را صدا نمی‌زند.
-- [ ] **تست regression برای مسیر HTTP invite-accept** — integration specهای فعلی
-      (`tenant-onboarding`، `specialist-onboarding`) مستقیماً `inviteService.accept`
-      را صدا می‌زنند و OTP verification را دور می‌زنند، به همین دلیل این دو باگ
-      تا حالا کشف نشدند. یک e2e که `POST /auth/otp/send` + `POST /auth/invite/accept`
-      را با کد واقعی می‌زند، regression هر دو را می‌گرفت.
-- [ ] **staging باید به نقش NOBYPASSRLS وصل شود** — `DATABASE_USER` در
-      `docker-compose.staging.yml` روی `beauty` (master/superuser) است، پس RLS
-      سطح DB در staging دور زده می‌شود و ایزوله‌سازی فقط در لایهٔ اپلیکیشن
-      (JWT `tenantId`) تضمین می‌شود. برای تست RLS واقعی باید به `beauty_app`
-      (مرتبط با آیتم migration با `beauty_app` در بخش Staging بالا) وصل شود.
+- [x] ~~**تست regression برای مسیر HTTP invite-accept**~~ — **بسته شد ۲۰۲۶-۱۰-۰۷.**
+      `backend/test/integration/invite-http-flow.integration-spec.ts` (۶ تست) کل
+      مسیر HTTP را با Nest app واقعی، `ValidationPipe` واقعی (همان `main.ts`) و
+      DTOهای واقعی می‌زند؛ فقط `OtpService` با یک double قطعی جایگزین شده. هر دو
+      باگ dry-run را regression می‌گیرد (forward نکردن `purpose`، regex خراب `otpCode`)
+      و افزون بر آن: پیشفرض `login`، جدایی purposeها، replay توکن (۴۰۱) و کد فارسی.
+      کل suite integration: ۱۵ suite / ۶۸ تست همگی سبز.
+- [ ] **staging/prod باید به نقش NOBYPASSRLS (`beauty_app`) وصل شود** —
+      `DATABASE_USER` در `docker-compose.staging.yml` روی `beauty` (master/superuser)
+      است، پس **هیچ policyای RLS در staging اجرا نمی‌شود** و ایزوله‌سازی فقط در
+      لایهٔ اپلیکیشن (JWT `tenantId` در `requireStaffTenant`) است. این شکاف اکنون با
+      بررسی مستقیم روی staging **تأیید** شده است:
+      - `beauty`: `super=true, bypassrls=true`؛ `beauty_app`: `super=false, bypassrls=false`.
+      - `SELECT * FROM users` بدون tenant GUC: `beauty_app` **۰ سطر** می‌بیند، `beauty`
+        **۱۶ سطر** — یعنی policyها واقعی‌اند، فقط اجرا نمی‌شوند.
+      - جدول‌های `FORCE ROW LEVEL SECURITY`: `bookings`, `invite_tokens`,
+        `notifications`, `refresh_tokens`, `service_lines`, `transactions`, `users`.
+        (`tenants` و `specialists` RLS *ندارند*، پس خواندهای پرچم onboarding بی‌خطرند.)
+      - طرح اصلی همین است که اپ با `beauty_app` اجرا شود — به همین دلیل ده‌ها تابع
+        `SECURITY DEFINER` ساخته شده و فقط به `beauty_app` grant اجرا دارند.
+
+      **چرا هنوز flip نشده:** تغییر env یک‌خطی است، ولی اپ هنوز روی اتصال superuser
+      تکیه می‌کند. مسدودکنندهٔ تأییدشده: `AuthService.currentUser` یک
+      `SELECT phone, full_name FROM users WHERE id = $1` **بدون tenant context**
+      می‌زند که فقط روی superuser کار می‌کند (تابع موجود `get_user_phone` فقط
+      `phone` برمی‌گرداند، نه `full_name`). افزون بر آن ۴۸ نقطهٔ query روی جدول‌های
+      FORCE-RLS در auth/invite/refresh/salon وجود دارد که باید یکی‌یکی بررسی شوند
+      که GUC درست را set کنند؛ flip بدون این کار یک regression ساکت روی `GET /auth/me`
+      می‌فرستد. راه درست: migrationها با `beauty` (نیاز به DDL)، اپ با `beauty_app`
+      (DML تحت policy) — دو pool جدا که `data-source.migration.ts` از قبل با
+      متغیرهای `DATABASE_MIGRATION_*` جدا کرده است.
+- [ ] **تست regression برای همهٔ endpointهای invite** — `invite-http-flow` فقط مسیر
+      accept را می‌پوشاند. `POST /auth/invite` (نقش‌ها + `resolveInviteTenant`)،
+      `GET /auth/invite/list` (scoping tenant از JWT در برابر query) و
+      `DELETE /auth/invite/:id` (۴۰۴ یکسان برای not-yours/already-used) باید به همان
+      شکل از طریق HTTP پوشش داده شوند.
