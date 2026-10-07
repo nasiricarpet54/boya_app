@@ -82,6 +82,17 @@ class EnvironmentVariables {
   @IsString()
   KAVENEGAR_API_KEY!: string;
 
+  /**
+   * Kavenegar sender line number ("lineNumber"). Must be set before any real SMS
+   * can be sent — the kavenegar driver rejects an empty value with
+   * `ConfigurationException: Driver 'kavenegar' requires a valid lineNumber`.
+   * Optional only so a fresh checkout still boots; set it wherever SMS is meant
+   * to be delivered, and remember env changes need a container recreate.
+   */
+  @IsOptional()
+  @IsString()
+  KAVENEGAR_SENDER?: string;
+
   @IsOptional()
   @IsString()
   KAVENEGAR_OTP_TEMPLATE?: string;

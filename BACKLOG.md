@@ -131,16 +131,37 @@ postgres/redis واقعی). اینها تصمیم‌های باز قبل از ن
 
 ## Testing — SMS (Kavenegar)
 
+**وضعیت ۲۰۲۶-۱۰-۰۷ — تست staging اجرا شد:** جریان دعوت روی staging با یک شمارهٔ
+تستی اجرا شد: `POST /auth/invite` با JWT مالک سالن → `201` + توکن plaintext یک‌باره،
+ردیف در `invite_tokens` تأیید شد (DB فقط SHA-256 را نگه می‌دارد)، و وقتی ارسال پیامک
+شکست خورد رفتار **fail-soft** درست کار کرد (دعوت ذخیره شد و توکن در جواب بود).
+دو نقص کشف و رفع شدند:
+
+- `KAVENEGAR_SENDER` **اصلاً در `.env` ریشه نبود** → درایور کاوه‌نگار ارسال را با
+  `ConfigurationException: Driver 'kavenegar' requires a valid lineNumber` رد می‌کرد.
+  رفع: `KAVENEGAR_SENDER=10004346` در `.env` + ورودی `@IsOptional() @IsString()` در
+  `env.validation.ts` (قبلاً کلاً تعریف نشده بود).
+- `INVITE_BASE_URL` روی `http://localhost` بود → روی گوشی قابل باز شدن نبود. رفع:
+  `http://192.168.16.100` (IP LAN فعلی؛ ngrok روی این ماشین نصب نیست و
+  `staging.boya.ir` در این شبکه resolve نمی‌شود — برای تست خارج از LAN به دامنهٔ
+  عمومی یا تونل نیاز است).
+
 مسیر دعوتنامه کامل پیاده شده (`invite-token.service.ts`: `create` ردیف را در
 `invite_tokens` ذخیره می‌کند و `sendInviteSms` را صدا می‌زند، `accept` با
-`SELECT ... FOR UPDATE` روی hash آن را خرج می‌کند)، ولی هنوز **هیچ SMS واقعی
-ارسال نشده**. `INVITE_BASE_URL` و قالب‌ها در `.env.example` اضافه شدند و
-`env.validation.ts` آن‌ها را optional گرفت، تا وقتی مقدار ندارند send سایلنت
-skip شود. این موارد دستی پیش از تحویل به یک شماره واقعی باید انجام شوند:
+`SELECT ... FOR UPDATE` روی hash آن را خرج می‌کند). ولی چون `KAVENEGAR_API_KEY`
+هنوز sandbox و `OTP_DEV_MODE=true` است، **هنوز هیچ SMS واقعی ارسال نشده**.
+این موارد دستی پیش از تحویل به یک شماره واقعی باید انجام شوند:
 
 - [ ] **کلید production در Kavenegar ساخته و نصب شود** — `KAVENEGAR_API_KEY` واقعی در
       **`.env` ریشهٔ پروژه** (که `docker-compose.staging.yml` آن را می‌خواند، نه
       `backend/.env`) تنظیم شود (`change-me` فعلی فقط sandbox است).
+- [ ] **شمارهٔ خط واقعی در `KAVENEGAR_SENDER`** — مقدار `10004346` فعلی صرفاً یک
+      placeholder است تا خطای `requires a valid lineNumber` برطرف شود؛ باید با شمارهٔ
+      خط فعالِ حساب کاوه‌نگار جایگزین شود. (این متغیر قبلاً کلاً در `.env` نبود و
+      در `env.validation.ts` هم تعریف نشده بود — هر دو رفع شدند.)
+- [ ] **`OTP_DEV_MODE=false` در `.env` ریشه** — فعلی `true` است و کد OTP را فقط در لاگ
+      چاپ می‌کند به‌جای ارسال واقعی. پیامک دعوت زیر این پرچم نیست (همیشه ارسال واقعی
+      را امتحان می‌کند، ولی fail-soft است).
 - [ ] **قالب `invite` در پنل Kavenegar ساخته شود** — نام آن در
       `KAVENEGAR_INVITE_TEMPLATE` می‌رود. این تنها قالب لازم است؛ همهٔ نقش‌ها
       به آن fallback می‌کنند.
@@ -160,8 +181,9 @@ skip شود. این موارد دستی پیش از تحویل به یک شما�
 
 > **توجه:** `INVITE_BASE_URL` بدنهٔ پیام را تعیین می‌کند — `sendInviteSms`
 > از `${INVITE_BASE_URL}?token=<64hex>` می‌سازد و وقتی ست نیست فقط خود token
-> (یک hex ۶۴ کاراکتری) ارسال می‌شود که چیزی نمی‌تواند باز کند. دامنهٔ staging
-> تا زمانی که دامنهٔ نهایی روشن شود کافی است.
+> (یک hex ۶۴ کاراکتری) ارسال می‌شود که چیزی نمی‌تواند باز کند. فعلاً روی
+> `http://192.168.16.100` (IP LAN) ست شده تا روی گوشیِ همان شبکه باز شود؛ برای
+> تحویل واقعی باید دامنهٔ نهایی روشن شود و این متغیر به همان مقدار تغییر کند.
 >
 > **به‌جای SMS واقعی:** `backend/scripts/test-invite.sh` (که ignore شده و
 > commit نمی‌شود) کل مسیر را در SQL روی دیتابیس dev می‌برد و لینک را چاپ

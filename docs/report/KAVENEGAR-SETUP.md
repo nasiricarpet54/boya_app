@@ -106,7 +106,7 @@
 | متغیر | پیش‌فرض compose | معنی |
 |---|---|---|
 | `KAVENEGAR_API_KEY` | — (اجباری) | کلید کاوه‌نگار |
-| `KAVENEGAR_SENDER` | خالی | شماره خط فرستنده (خالی = خط پیش‌فرض کاوه‌نگار) |
+| `KAVENEGAR_SENDER` | خالی | شمارهٔ خط فرستنده. **خالی مجاز نیست**: درایور ارسال را با `ConfigurationException: ... requires a valid lineNumber` رد می‌کند (دقیقاً خطای تست ۲۰۲۶-۱۰-۰۷). شمارهٔ خط فعال را از پنل کاوه‌نگار بگیرید. |
 | `KAVENEGAR_INVITE_TEMPLATE` | `invite` | قالب generic دعوت |
 | `KAVENEGAR_INVITE_OWNER_TEMPLATE` | `invite-owner` | override دعوت مالک؛ خالی = fallback به generic |
 | `KAVENEGAR_INVITE_SPECIALIST_TEMPLATE` | `invite-specialist` | override دعوت متخصص؛ خالی = fallback به generic |
@@ -149,13 +149,13 @@ docker inspect boya_backend_staging \
   | grep -E 'KAVENEGAR|INVITE_|OTP_'
 ```
 
-> **وضعیت فعلی (بررسی‌شده):** کانتینر در حال اجرا روی کلیدهای حیاتی
-> (`KAVENEGAR_API_KEY`، `KAVENEGAR_OTP_TEMPLATE`، `KAVENEGAR_INVITE_TEMPLATE`،
-> `KAVENEGAR_INVITE_OWNER_TEMPLATE`، `KAVENEGAR_INVITE_SPECIALIST_TEMPLATE`،
-> `INVITE_BASE_URL`، `OTP_PEPPER`) با `.env` فعلی **همخوان** است، ولی روی
-> `KAVENEGAR_SENDER`، `KAVENEGAR_BOOKING_TEMPLATE`، `INVITE_EXPIRY_DAYS` و `OTP_DEV_MODE`
-> **متفاوت** است. یعنی `.env` بعد از ساخته‌شدن کانتینر تغییر کرده و برای اعمال مقدارهای
-> فعلی یک `up -d backend` لازم است.
+> **وضعیت فعلی (۲۰۲۶-۱۰-۰۷):** `.env` ریشه اکنون `KAVENEGAR_SENDER=10004346`
+> و `INVITE_BASE_URL=http://192.168.16.100` را دارد (تست ۲۰۲۶-۱۰-۰۷ روی
+> `http://localhost` و **بدون sender** اجرا شده بود، به همین دلیل `requires a valid
+> lineNumber` داد). مقدارها هنوز واقعی نیستند: `10004346` صرفاً نمونه است،
+> `KAVENEGAR_API_KEY` هنوز sandbox، و `OTP_DEV_MODE=true` است. کانتینر در حال اجرا
+> **هیچ‌کدام از این تغییرها را نمی‌بیند** — برای اعمال، حتماً
+> `up -d --force-recreate backend` بزنید.
 
 ---
 
@@ -216,3 +216,29 @@ docker inspect boya_backend_staging \
 > **رفتار fail-soft عمدی است:** دعوت *قبل از* ارسال SMS در دیتابیس ذخیره می‌شود و
 > plaintext یک‌بار به صادرکننده برمی‌گردد، بنابراین قطعی کاوه‌نگار نباید یک دعوتِ
 > کارا را پشت یک خطای پیام‌رسانی پنهان کند (همان الگوی `KavenegarAlertService`).
+
+---
+
+## ۹. چک‌لیست نهایی (پیش از تست واقعی)
+
+به‌ترتیب. همه چیز در **`.env` ریشهٔ پروژه** ست شود (`backend/.env` خوانده نمی‌شود).
+مقدارها فقط با بازسازی کانتینر اعمال می‌شوند، پس `up -d` در انتها الزامی است.
+
+- [ ] **`KAVENEGAR_API_KEY`** — کلید واقعی، نه `change-me` (بخش ۳).
+- [ ] **`KAVENEGAR_SENDER`** — شمارهٔ خط فعالِ حساب. بدون این مقدار ارسال با
+      `requires a valid lineNumber` رد می‌شود (بخش ۴).
+- [ ] **`KAVENEGAR_INVITE_TEMPLATE`** — قالب `invite` **تأییدشده** با دقیقاً یک متغیر
+      `%token`. تنها قالب الزامی است؛ نقش‌های دیگر به آن fallback می‌کنند (بخش ۲).
+- [ ] `KAVENEGAR_INVITE_OWNER_TEMPLATE` / `KAVENEGAR_INVITE_SPECIALIST_TEMPLATE` —
+      **اختیاری**؛ فقط اگر ورد دعوت هر نقش باید متفاوت باشد، در غیر این صورت خالی
+      بگذارید تا `invite` استفاده شود (بخش ۲).
+- [ ] **`INVITE_BASE_URL`** — قابل دسترس از گوشی. روی LAN فعلی `http://192.168.16.100`
+      کار می‌کند؛ برای تست خارج از LAN به دامنهٔ عمومی یا یک تونل نیاز است (بخش ۴).
+- [ ] **`OTP_DEV_MODE=false`** — وقتی `true` است کد OTP در لاگ چاپ می‌شود به‌جای ارسال
+      واقعی. توجه: پیامک دعوت این پرچم را **نمی‌بیند** و همیشه ارسال واقعی را امتحان
+      می‌کند، ولی چون fail-soft است فقط یک `WARN` می‌اندازد و دعوت سرجایش می‌ماند.
+- [ ] **`docker compose -f docker-compose.staging.yml up -d --force-recreate backend`**
+      — بدون این مرحله هیچ‌کدام از موارد بالا روی کانتینر اعمال نمی‌شوند (بخش ۵).
+- [ ] `GET http://localhost:3001/api/v1/health` باید `200` بدهد (بخش ۱).
+
+بعد از این‌ها: **بخش ۷** — تست E2E با دو شماره واقعی.
