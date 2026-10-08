@@ -1,5 +1,5 @@
 ﻿# STATE — گزارش وضعیت پروژه BOYA برای مشاور فنی
-تاریخ: 2026-10-03 | بدون حدس — هرچه نیست «ندارد»
+تاریخ: 2026-10-08 | بدون حدس — هرچه نیست «ندارد»
 فاز: Phase 1 ویترین رایگان (طبق PROJECT_CHARTER.md) — پرداخت آنلاین خاموش
 
 ## Stack
@@ -267,9 +267,31 @@ verifyOtp: get نبود→OTP_EXPIRED؛ incr(tries)>5→429؛ toLatinDigits مق
 
 
 
+## customer_app: home feed واقعی به جای mock — ۲۰۲۶-۱۰-۰۸
+تا حالا صفحهٔ اصلی مشتری فقط دادهٔ ثابت نشان می‌داد. `SalonsApi` از قبل در
+`data/salon_api.dart` وجود داشت ولی `home_screen.dart` به جای آن `mock_salons.dart`
+می‌خواند.
+
+- **commit:** `8bd56ec` — scope: `mobile/customer_app/` + docs.
+- **حذف:** `mock_salons.dart` (۵ سالن picsum + ۱۳ کتگوری ثابت). صفر import داشت.
+- **تغییر:** `home_screen.dart` حالا یک provider محلی `homeSalonsProvider` را
+  می‌خواند که همان کوئری `SalonsApi.getSalons(location, categorySlug, sort='distance')`
+  را می‌زند ولی برخلاف `nearbySalonsProvider` خطاها را propagate می‌کند تا صفحه
+  بتواند دکمهٔ «تلاش دوباره» نشان دهد. provider جدید ساخته شد به جای تغییر
+  `nearbySalonsProvider`، چون آن خطا را می‌خورد و `[]` برمی‌گرداند و
+  `search_screen.dart` (خارج از اسکوپ) هنوز حالت error ندارد.
+- **UI:** `.when` چهار حالت دارد — shimmer placeholder، پیام + retry، پیام empty
+  («سالنی در این محدوده پیدا نشد»)، و لیست `SalonCard`. طرح‌بندی دست‌نخورده ماند.
+  `RefreshIndicator` با `AlwaysScrollableScrollPhysics` اضافه شد.
+- **تست:** `widget_test.dart` override از `nearbySalonsProvider` به
+  `homeSalonsProvider` عوض شد. `flutter analyze` ۰ issue؛ `flutter test` ۲۲/۲۲ pass.
+- **باقی‌مانده:** دکمهٔ «همه» در `_SectionHeader` فعلاً no-op است (صفحهٔ کامل لیست
+  سالن‌ها هنوز ساخته نشده) — در BACKLOG.md.
+
+
 ## Issues
 - TODO/FIXME: در src بکند و lib موبایل صفر (جستجوی TODO|FIXME|HACK|XXX: فقط placeholder UI، mock-jest، limitPlaceholder متغیر — هیچ TODO واقعی نیست)
-- mock: mobile/customer_app/lib/features/home/data/mock_salons.dart (5 سالن picsum + 13 کategori — «No backend call»)؛ migration 1730000000017 mock CDN portfolio (dev-only)؛ jest mocks در otp.spec؛ admin-panel PlaceholderPage برای settings
+- mock: migration 1730000000017 mock CDN portfolio (dev-only)؛ jest mocks در otp.spec؛ admin-panel PlaceholderPage برای settings (mock_salons.dart حذف شد — ۲۰۲۶-۱۰-۰۸)
 - خطاهای باز: تست جلالی off-by-one روز؛ تست OTP در DEV SMS نمی‌فرستد؛ ناسازگاری پورت README(5432/6379) با compose(5433/6380)؛ دو املای GUC (app.tenant_id در برابر app.current_tenant_id)؛ README ادعای Stripe Connect می‌کند ولی کد Zarinpal است؛ web/ خالی (No login seeded، پنل‌ها ساخته نشده)
 - تست‌های fail: 2 عدد بالا (jalali-date.service.spec، otp.service.spec)؛ test:e2e اجرا نشد (نیاز به DB/Redis واقعی)
 

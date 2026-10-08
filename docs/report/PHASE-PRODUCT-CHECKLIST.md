@@ -1,7 +1,7 @@
 # Phase: محصول — چک‌لیست
 
 > مرجع: ADR-010 (invite tokens) و PROJECT_CHARTER.md
-> آخرین به‌روزرسانی: 2026-10-06
+> آخرین به‌روزرسانی: 2026-10-08
 
 ## Invite System (ADR-010)
 - [x] Backend: service + endpoints
@@ -30,6 +30,11 @@
 - [x] salon_app: صفحه «دعوت متخصص» (`invite_specialist_screen.dart` + `invite_api.dart`؛ فرم شماره+نقش، نمایش یک‌بارهٔ توکن و دکمهٔ کپی، روت `/specialists/invite`)
 - [x] فرآیند: salon_owner → invite → accept → role=specialist (integration: `specialist-onboarding` — ۵ تست؛ accept خودکار رکورد `specialists` می‌سازد + `tenant-visibility` ۵ تست روی `SalonService.list`)
 - [ ] تست: ورود متخصص + مشاهده رزروها (دستی، پس از پیوستن)
+
+## ویترین مشتری (customer_app)
+- [x] home feed به API واقعی وصل شد — حالت‌های loading/error/empty + pull-to-refresh (mock حذف شد، `8bd56ec`)
+- [ ] صفحهٔ کامل لیست سالن‌ها (دکمهٔ «همه» در home فعلاً no-op است)
+- [ ] search screen حالت error بگیرد تا `nearbySalonsProvider` مشترک حذف شود
 
 ## مدل کسب‌وکار (فاز ۲)
 - [ ] PAYMENTS_ENABLED=true
