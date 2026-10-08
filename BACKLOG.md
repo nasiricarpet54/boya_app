@@ -256,3 +256,30 @@ staging با `OTP_DEV_MODE=true` اجرا شد (کد OTP از لاگ کانتی�
       `GET /auth/invite/list` (scoping tenant از JWT در برابر query) و
       `DELETE /auth/invite/:id` (۴۰۴ یکسان برای not-yours/already-used) باید به همان
       شکل از طریق HTTP پوشش داده شوند.
+
+
+## customer_app home: mock removed, feed states made real
+
+`mock_salons.dart` (5 picsum salons + 13 hard-coded categories) is deleted — it
+had zero imports and the home screen was already wired to `SalonsApi`
+(`data/salon_api.dart`) via `nearbySalonsProvider`. The screen now drives the
+feed off a local `homeSalonsProvider` so the states the UI needs to draw are
+actually reachable:
+
+- **Loading** → three shimmer placeholders (the `shimmer` package was already a
+  dependency) shaped like a `SalonCard`, so nothing jumps on arrival.
+- **Error** → message + «تلاش دوباره» button (`ref.invalidate`); the section
+  header stays put, the rest of the screen still renders.
+- **Empty** → «سالنی در این محدوده پیدا نشد».
+- **Success** → unchanged list of `SalonCard`s; layout (one full-width card per
+  row) is untouched.
+- **Pull-to-refresh** → `RefreshIndicator` with `AlwaysScrollableScrollPhysics`
+  so it stays reachable on short lists.
+
+Follow-up worth doing (not blocking): `nearbySalonsProvider` in
+`home_providers.dart` still swallows every error and returns an empty list —
+that behaviour is now only consumed by `search_screen.dart`. The two providers
+duplicate the same query (same `locationProvider`/`selectedCategoryProvider`/
+`sort: distance`); once the search screen gets its own error state, that
+provider can be dropped and the shared one can propagate errors for both.
+

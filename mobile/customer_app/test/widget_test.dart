@@ -1,6 +1,7 @@
 ﻿import 'package:customer_app/features/home/application/home_providers.dart';
 import 'package:customer_app/features/home/domain/salon_summary.dart';
 import 'package:customer_app/features/home/domain/service_category.dart';
+import 'package:customer_app/features/home/presentation/screens/home_screen.dart';
 import 'package:customer_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          nearbySalonsProvider.overrideWith((ref) async => const <SalonSummary>[]),
+          homeSalonsProvider.overrideWith((ref) async => const <SalonSummary>[]),
           homeCategoriesProvider.overrideWith((ref) async => const <ServiceCategory>[]),
         ],
         child: const CustomerApp(),
