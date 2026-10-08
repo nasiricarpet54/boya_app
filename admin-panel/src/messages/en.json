@@ -127,6 +127,14 @@
     "statusSuspended": "Suspended",
     "statusRejected": "Rejected",
     "newSalon": "New salon",
+    "actions": {
+      "approve": "Approve",
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "approveToast": "Salon approved.",
+      "suspendToast": "Salon suspended.",
+      "actionFailed": "The action failed. Please try again."
+    },
     "create": {
       "title": "Add a new salon",
       "subtitle": "Create the salon and invite its owner right away — every invite is single-use.",

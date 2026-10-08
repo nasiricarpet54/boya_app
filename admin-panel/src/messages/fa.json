@@ -127,6 +127,14 @@
     "statusSuspended": "تعلیق‌شده",
     "statusRejected": "ردشده",
     "newSalon": "سالن جدید",
+    "actions": {
+      "approve": "تایید",
+      "suspend": "تعلیق",
+      "reactivate": "فعال‌سازی مجدد",
+      "approveToast": "سالن تایید شد.",
+      "suspendToast": "سالن تعلیق شد.",
+      "actionFailed": "انجام عملیات ناموفق بود. دوباره تلاش کنید."
+    },
     "create": {
       "title": "افزودن سالن جدید",
       "subtitle": "سالن را بسازید و همان‌جا مدیرش را دعوت کنید — دعوت یک‌بار مصرف است.",

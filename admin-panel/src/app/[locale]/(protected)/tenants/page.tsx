@@ -1,13 +1,14 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Eye, Plus } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/providers/ToastProvider';
 import { Link } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { tenantsApi, type TenantStatus, type TenantStatusFilter } from '@/lib/api/tenants';
@@ -41,6 +42,26 @@ export default function TenantsPage() {
   const items = query.data?.data ?? [];
   const totalPages = query.data?.totalPages ?? 0;
   const currentPage = query.data?.page ?? page;
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const tActions = useTranslations('tenants.actions');
+
+  /** Refresh the list (and the detail page cache) after a status change. */
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['admin-tenants'] }).then(() =>
+      queryClient.invalidateQueries({ queryKey: ['admin-tenant'] }));
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => tenantsApi.updateStatus(id, { status: 'approved' }),
+    onSuccess: async () => { await invalidate(); toast({ title: tActions('approveToast'), variant: 'success' }); },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
+  });
+  const suspendMutation = useMutation({
+    mutationFn: (id: string) => tenantsApi.updateStatus(id, { status: 'suspended' }),
+    onSuccess: async () => { await invalidate(); toast({ title: tActions('suspendToast'), variant: 'success' }); },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
+  });
+  const pendingId = approveMutation.variables ?? suspendMutation.variables;
   const statusLabels: Record<TenantStatus, string> = {
     approved: t('statusApproved'), pending_approval: t('statusPending'),
     suspended: t('statusSuspended'), rejected: t('statusRejected'),
@@ -116,10 +137,33 @@ export default function TenantsPage() {
                       <td className="px-3 py-3 text-body text-ink">{faNumber(item.specialistsCount)}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-body text-ink">{faDigits(item.rating.toFixed(1))} <span className="text-overline text-ink-muted">({faNumber(item.reviewCount)})</span></td>
                       <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{jalaliDate(item.createdAt)}</td>
-                      <td className="px-3 py-3">
-                        <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
-                          <Eye className="h-4 w-4" aria-hidden />{t('table.view')}
-                        </Link>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
+                            <Eye className="h-4 w-4" aria-hidden />{t('table.view')}
+                          </Link>
+                          {item.status === 'approved' ? (
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              aria-label={`${tActions('suspend')}: ${item.name}`}
+                              disabled={pendingId === item.id}
+                              onClick={() => suspendMutation.mutate(item.id)}
+                            >
+                              <Ban className="h-4 w-4" aria-hidden />{tActions('suspend')}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              aria-label={`${tActions('approve')}: ${item.name}`}
+                              disabled={pendingId === item.id}
+                              onClick={() => approveMutation.mutate(item.id)}
+                            >
+                              <CheckCircle2 className="h-4 w-4" aria-hidden />
+                              {item.status === 'suspended' ? tActions('reactivate') : tActions('approve')}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
