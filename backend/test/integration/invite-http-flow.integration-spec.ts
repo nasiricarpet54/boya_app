@@ -8,7 +8,7 @@ import { DataSource } from 'typeorm';
 
 import { AuthController } from '../../src/modules/auth/auth.controller';
 import { AuthService } from '../../src/modules/auth/auth.service';
-import { AcceptedInvite, InviteTokenService } from '../../src/modules/auth/invite-token.service';
+import { AcceptedInvite, InviteTokenService, IssuedInvite, PendingInvite } from '../../src/modules/auth/invite-token.service';
 import { OtpService } from '../../src/modules/auth/otp.service';
 import type { OtpPurpose } from '../../src/modules/auth/otp.service';
 import { RefreshTokenService } from '../../src/modules/auth/refresh-token.service';
@@ -74,6 +74,7 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
   let app: INestApplication;
   let baseUrl: string;
   let inviteService: InviteTokenService;
+  let jwtService: JwtService;
 
   /**
    * The inviter and its salon. `invite_tokens.invited_by` is
@@ -87,6 +88,16 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
   const ADMIN_PHONE = '09127770000';
   const SLUG = `it-invite-http-${Date.now()}`;
 
+  /**
+   * A `salon_owner` inside `TENANT_ID`, plus a second salon the owner never
+   * belongs to. The owner row is what `invited_by` points at; the second salon
+   * is what the cross-tenant DELETE/list assertions must not see.
+   */
+  const OWNER_ID = '0b000000-0000-4000-8000-000000000011';
+  const OWNER_PHONE = '09127779999';
+  const OTHER_TENANT_ID = '0b000000-0000-4000-8000-000000000002';
+  const OTHER_SLUG = `it-invite-http-other-${Date.now()}`;
+
   let phoneCounter = 0;
   const nextPhone = () => `0912777${(++phoneCounter).toString().padStart(4, '0')}`;
 
@@ -96,9 +107,18 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
       'HTTP Invite Salon',
       SLUG,
     ]);
+    await queryAsAdmin(`INSERT INTO tenants (id, name, slug) VALUES ($1, $2, $3)`, [
+      OTHER_TENANT_ID,
+      'HTTP Invite Salon (other)',
+      OTHER_SLUG,
+    ]);
     await queryAsAdmin(
       `INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, NULL, $2, 'admin')`,
       [ADMIN_ID, ADMIN_PHONE],
+    );
+    await queryAsAdmin(
+      `INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'salon_owner')`,
+      [OWNER_ID, TENANT_ID, OWNER_PHONE],
     );
 
     const moduleRef = await Test.createTestingModule({
@@ -140,6 +160,9 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
     await app.listen(0);
     baseUrl = await app.getUrl();
     inviteService = app.get(InviteTokenService);
+    // The same instance the provider registered, so `signToken` below verifies
+    // against the same secret `JwtAuthGuard` reads via ConfigService.
+    jwtService = app.get(JwtService);
   }, 30_000);
 
   afterAll(async () => {
@@ -154,8 +177,10 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
       `DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '0912777%')`,
     );
     await queryAsAdmin(`DELETE FROM invite_tokens WHERE tenant_id = $1`, [TENANT_ID]);
+    await queryAsAdmin(`DELETE FROM invite_tokens WHERE tenant_id = $1`, [OTHER_TENANT_ID]);
     await queryAsAdmin(`DELETE FROM users WHERE phone LIKE '0912777%'`);
     await queryAsAdmin(`DELETE FROM tenants WHERE id = $1`, [TENANT_ID]);
+    await queryAsAdmin(`DELETE FROM tenants WHERE id = $1`, [OTHER_TENANT_ID]);
   });
 
   beforeEach(() => {
@@ -304,6 +329,142 @@ describeIntegration('invite flow over HTTP (DTO + controller layer)', () => {
     expect(body.user.tenantId).toBe(TENANT_ID);
   });
 
+  // --- invite RBAC over HTTP ------------------------------------------------
+  // `invite-token.integration-spec` covers the service-level rules; this block
+  // is the guard chain itself. The route admits only `salon_owner`,
+  // `line_manager` and `admin`, and each test below exercises one layer
+  // through the real APP_GUARD registration: no header → JwtAuthGuard's 401,
+  // wrong role → RolesGuard's 403, right role → 201/200/204.
 
+  const signToken = (role: string, tenantId: string | null, subject: string) =>
+    jwtService.sign({ sub: subject, phone: ADMIN_PHONE, role, tenantId });
+
+  it('POST /auth/invite without a JWT → 401 (guard rejects before the service)', async () => {
+    const response = await call('/auth/invite', {
+      method: 'POST',
+      body: JSON.stringify({ role: 'specialist', phone: nextPhone() }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it('POST /auth/invite with a customer JWT → 403 (role not in @Roles)', async () => {
+    const response = await call('/auth/invite', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${signToken('customer', TENANT_ID, ADMIN_ID)}` },
+      body: JSON.stringify({ role: 'specialist', phone: nextPhone() }),
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('POST /auth/invite with a salon_owner JWT → 201 and a one-time token', async () => {
+    const phone = nextPhone();
+    const response = await call('/auth/invite', {
+      method: 'POST',
+      // A staff JWT names its own salon; the body tenantId below is ignored by
+      // `resolveInviteTenant`, so this proves the tenant really comes from the
+      // token and cannot be spoofed by the body.
+      headers: { Authorization: `Bearer ${signToken('salon_owner', TENANT_ID, OWNER_ID)}` },
+      body: JSON.stringify({ role: 'specialist', phone, tenantId: OTHER_TENANT_ID }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as IssuedInvite;
+    expect(body.role).toBe('specialist');
+    expect(body.tenantId).toBe(TENANT_ID);
+    expect(body.token).toEqual(expect.any(String));
+
+    // Stored against the JWT salon, not the spoofed one, by the real inviter.
+    const rows = await queryAsAdmin<{ tenant_id: string; invited_by: string }>(
+      `SELECT tenant_id, invited_by FROM invite_tokens WHERE id = $1`,
+      [body.id],
+    );
+    expect(rows[0].tenant_id).toBe(TENANT_ID);
+    expect(rows[0].invited_by).toBe(OWNER_ID);
+  });
+
+  it('GET /auth/invite/list without a JWT → 401', async () => {
+    const response = await call('/auth/invite/list');
+
+    expect(response.status).toBe(401);
+  });
+
+  it("GET /auth/invite/list with a salon_owner JWT → 200, only that salon's open invites", async () => {
+    // One open invite in the owner's salon, one already spent in the same
+    // salon, and one in a *different* salon. Only the first should appear: the
+    // SQL filters `used_at IS NULL AND expires_at > NOW()`, and the GUC scope
+    // guards the read to the JWT tenant, so the other salon's row can never
+    // leak in.
+    const mine = await inviteService.create(
+      { role: 'specialist', phone: nextPhone() },
+      OWNER_ID,
+      TENANT_ID,
+    );
+    const other = await inviteService.create(
+      { role: 'specialist', phone: nextPhone() },
+      ADMIN_ID,
+      OTHER_TENANT_ID,
+    );
+    const spent = await inviteService.create(
+      { role: 'specialist', phone: nextPhone() },
+      OWNER_ID,
+      TENANT_ID,
+    );
+    await queryAsAdmin(`UPDATE invite_tokens SET used_at = NOW() WHERE id = $1`, [spent.id]);
+
+    const response = await call('/auth/invite/list', {
+      headers: { Authorization: `Bearer ${signToken('salon_owner', TENANT_ID, OWNER_ID)}` },
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as PendingInvite[];
+    const ids = body.map((row) => row.id);
+    expect(ids).toContain(mine.id);
+    expect(ids).not.toContain(spent.id);
+    expect(ids).not.toContain(other.id);
+  });
+
+  it('DELETE /auth/invite/:id with a salon_owner JWT revokes its own invite → 204', async () => {
+    const invite = await inviteService.create(
+      { role: 'specialist', phone: nextPhone() },
+      OWNER_ID,
+      TENANT_ID,
+    );
+
+    const response = await call(`/auth/invite/${invite.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${signToken('salon_owner', TENANT_ID, OWNER_ID)}` },
+    });
+
+    expect(response.status).toBe(204);
+    const rows = await queryAsAdmin<{ used_at: Date | null }>(
+      `SELECT used_at FROM invite_tokens WHERE id = $1`,
+      [invite.id],
+    );
+    expect(rows[0].used_at).not.toBeNull();
+  });
+
+  it('DELETE /auth/invite/:id for another salon invite → 404 (no leak of which id exists)', async () => {
+    const other = await inviteService.create(
+      { role: 'specialist', phone: nextPhone() },
+      ADMIN_ID,
+      OTHER_TENANT_ID,
+    );
+
+    const response = await call(`/auth/invite/${other.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${signToken('salon_owner', TENANT_ID, OWNER_ID)}` },
+    });
+
+    // 404, not 403: "not yours" and "does not exist" must be indistinguishable,
+    // so the endpoint cannot be used to enumerate other salons' invite ids.
+    expect(response.status).toBe(404);
+    const rows = await queryAsAdmin<{ used_at: Date | null }>(
+      `SELECT used_at FROM invite_tokens WHERE id = $1`,
+      [other.id],
+    );
+    expect(rows[0].used_at).toBeNull();
+  });
 });
 

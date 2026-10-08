@@ -62,7 +62,11 @@ export function isReady(): boolean {
 }
 
 export async function canReachPostgres(): Promise<boolean> {
-  const client = createPgClient({ ...adminConfig, database: 'postgres', connectionTimeoutMillis: 3000 });
+  // Generous on purpose: on Windows the Docker Desktop / WSL relay can take a
+  // few seconds to accept the *first* TCP connection of a process. A probe
+  // timeout here silently skips the whole integration suite (68 tests), which
+  // looks identical to a genuinely broken database — see int-baseline.txt.
+  const client = createPgClient({ ...adminConfig, database: 'postgres', connectionTimeoutMillis: 15000 });
   try {
     await client.connect();
     await client.query('SELECT 1');
