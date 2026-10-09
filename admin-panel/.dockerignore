@@ -1,0 +1,11 @@
+# Keep the build context small and — critically — keep the HOST node_modules
+# out: `COPY . .` runs AFTER `npm ci` and would overwrite the linux install
+# with Windows binaries from the dev machine.
+node_modules
+.next
+.env*
+*.tsbuildinfo
+npm-debug.log*
+Dockerfile
+.dockerignore
+.git

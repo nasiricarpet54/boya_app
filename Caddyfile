@@ -1,19 +1,57 @@
-# BOYA platform — staging reverse proxy (Caddy)
+# BOYA platform — reverse proxy (Caddy)
 #
-# Fronts the NestJS backend for SMS/OTP staging tests.
-#   docker compose -f docker-compose.staging.yml up -d
+# One file serves BOTH compose stacks (both mount ./Caddyfile:ro):
+#   - production (docker-compose.production.yml): boya.bcshopir.ir, auto HTTPS
+#   - staging   (docker-compose.staging.yml)   : plain :80 on a LAN / local box
 #
-# Serves plain HTTP on :80 so it works on a LAN / local box with no domain name.
-# For automatic HTTPS, replace ":80" with your staging host and keep the body,
-# for example:
-#
-#   staging.boyaplatform.com {
-#       encode zstd gzip
-#       reverse_proxy backend:3000
-#   }
+# The admin panel is a Next.js app with `basePath: '/admin'` (next.config.js),
+# so every /admin* path — pages and /admin/_next/* assets alike — proxies to
+# the admin container on :3001.
 #
 # Caddy sets X-Forwarded-For / -Proto / -Host on the upstream automatically.
 
+boya.bcshopir.ir {
+	encode zstd gzip
+
+	# API + Swagger (NestJS, global prefix /api/v1)
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+	handle /docs* {
+		reverse_proxy backend:3000
+	}
+
+	# Admin panel (Next.js, basePath /admin).
+	# `/admin*` (not `/admin/*`) so the bare /admin path matches too.
+	#
+	# Next's middleware matcher requires a path *after* the basePath, so the
+	# bare `/admin` never reaches the next-intl middleware and 404s. Same for
+	# `/admin/`, which Next 308s back to the 404ing `/admin`. Redirect both to
+	# the default locale up front; every other /admin* path proxies straight
+	# through (pages and /admin/_next/* assets alike).
+	#
+	# NOTE: inside a `handle` block, `redir`'s first arg is read as a request
+	# matcher — so a bare `redir /admin/fa 308` would match on path `/admin/fa`
+	# and redirect to the literal "308". The explicit `*` matcher keeps
+	# `/admin/fa` as the target; 308 preserves the method (permanent).
+	handle /admin {
+		redir * /admin/fa 308
+	}
+	handle /admin/ {
+		redir * /admin/fa 308
+	}
+	handle /admin* {
+		reverse_proxy admin:3001
+	}
+
+	# Fallback: anything else lands on the admin panel. `/admin/fa` (not the
+	# bare `/admin/`, which Next 308s back to a 404ing `/admin`).
+	handle {
+		redir * /admin/fa 308
+	}
+}
+
+# Staging / local box: plain HTTP on :80, everything to the backend.
 :80 {
 	# Compress responses.
 	encode zstd gzip
