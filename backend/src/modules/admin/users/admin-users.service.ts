@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import { DataSource } from 'typeorm';
 
 import { UserRole } from '../../user/entities/user.entity';
 import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
+import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 
 export const ADMIN_USER_ROLES: readonly UserRole[] = [
@@ -117,6 +119,18 @@ export interface UserUpdateResult {
   role: UserRole;
   tenantId: string | null;
   isActive: boolean;
+}
+
+/** Contract of `POST /admin/users`. */
+export interface UserCreateResult {
+  id: string;
+  phoneNumber: string;
+  fullName: string | null;
+  role: UserRole;
+  tenantId: string | null;
+  isActive: boolean;
+  /** True when a `specialists` row was auto-created alongside the user. */
+  specialistCreated: boolean;
 }
 
 /**
@@ -420,6 +434,109 @@ export class AdminUsersService {
     );
 
     return { id, role: target.role, tenantId: target.tenant_id, isActive };
+  }
+
+  /**
+   * Create a user of any role. `users` is FORCE RLS and an admin carries no
+   * tenant, so the write goes through the SECURITY DEFINER
+   * `admin_create_user`, which also auto-creates the `specialists` row for a
+   * `specialist` created with a tenant (the auto-add pattern). The duplicate
+   * phone (a global unique index, migration 1730000000002) surfaces as the
+   * `23505` code and is mapped to 409 rather than a raw 500.
+   */
+  async create(user: AuthenticatedUser, dto: CreateUserDto): Promise<UserCreateResult> {
+    this.requireAdmin(user);
+    const role = AdminUsersService.assertRole(dto.role);
+
+    // A tenant-scoped role must name a real salon; a customer/admin ignores it.
+    let tenantId: string | null = null;
+    if (TENANT_SCOPED_ROLES.includes(role)) {
+      if (!dto.tenantId) {
+        throw new BadRequestException('برای این نقش انتخاب سالن الزامی است');
+      }
+      const tenants = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM tenants WHERE id = $1::uuid`,
+        [dto.tenantId],
+      );
+      if (tenants.length === 0) throw new NotFoundException('سالن مورد نظر یافت نشد');
+      tenantId = dto.tenantId;
+    }
+
+    const specialistCreated = role === 'specialist' && tenantId !== null;
+
+    let id: string;
+    try {
+      const inserted = await this.dataSource.query<Array<{ admin_create_user: string }>>(
+        `SELECT admin_create_user($1, $2, $3, $4::uuid)`,
+        [dto.phone, role, dto.fullName ?? null, tenantId],
+      );
+      id = inserted[0].admin_create_user;
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') {
+        throw new ConflictException('این شماره قبلاً ثبت شده است');
+      }
+      throw error;
+    }
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, reason)
+       VALUES ($1::uuid, $2::uuid, $3, $4)`,
+      [
+        user.userId,
+        tenantId,
+        'user.created',
+        `user:${id} role=${role} tenant=${tenantId ?? 'null'}${specialistCreated ? ' specialist=created' : ''}`,
+      ],
+    );
+
+    return { id, phoneNumber: dto.phone, fullName: dto.fullName ?? null, role, tenantId, isActive: true, specialistCreated };
+  }
+
+  /**
+   * Soft-delete a user: `is_active = false` on the user and, when they are a
+   * specialist, on their `specialists` row too. Self-delete is refused (an
+   * admin locking themselves out has no recovery path). The write goes through
+   * the SECURITY DEFINER `admin_soft_delete_user` for the same RLS reason as
+   * `create`, and the boolean it returns distinguishes a missing user (404)
+   * from a real flip.
+   */
+  async softDelete(user: AuthenticatedUser, id: string): Promise<{ success: true }> {
+    this.requireAdmin(user);
+    if (user.userId === id) {
+      throw new BadRequestException('نمیتوانید حساب خودتان را حذف کنید');
+    }
+
+    const current = await this.dataSource.query<
+      Array<{ id: string; role: UserRole; tenant_id: string | null }>
+    >(
+      `SELECT u.id, u.role, u.tenant_id
+         FROM admin_users_all() u
+        WHERE u.id = $1::uuid`,
+      [id],
+    );
+    const target = current[0];
+    if (!target) throw new NotFoundException('کاربر مورد نظر یافت نشد');
+
+    const applied = await this.dataSource.query<Array<{ admin_soft_delete_user: boolean }>>(
+      `SELECT admin_soft_delete_user($1::uuid)`,
+      [id],
+    );
+    if (!applied[0]?.admin_soft_delete_user) {
+      throw new NotFoundException('کاربر مورد نظر یافت نشد');
+    }
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, reason)
+       VALUES ($1::uuid, $2::uuid, $3, $4)`,
+      [
+        user.userId,
+        target.tenant_id,
+        'user.deleted',
+        `user:${id} role=${target.role}${target.role === 'specialist' ? ' specialist=deactivated' : ''}`,
+      ],
+    );
+
+    return { success: true };
   }
 }
 

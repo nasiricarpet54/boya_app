@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -8,8 +20,10 @@ import {
   AdminUsersService,
   ADMIN_USER_ROLES,
   AdminUserListPage,
+  UserCreateResult,
   UserUpdateResult,
 } from './admin-users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
@@ -19,6 +33,21 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 @Controller('admin/users')
 export class AdminUsersController {
   constructor(private readonly users: AdminUsersService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'ساخت کاربر',
+    description:
+      `شماره تکراری → 409. برای نقش specialist همراه tenantId، ردیف متخصص هم ساخته می‌شود. ` +
+      `ثبت در audit_logs. نقش‌ها: ${ADMIN_USER_ROLES.join(', ')}.`,
+  })
+  create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateUserDto,
+  ): Promise<UserCreateResult> {
+    return this.users.create(user, dto);
+  }
 
   @Get()
   @ApiOperation({
@@ -68,5 +97,19 @@ export class AdminUsersController {
     @Body() dto: UpdateUserStatusDto,
   ): Promise<UserUpdateResult> {
     return this.users.updateStatus(user, id, dto.isActive, dto.reason);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'حذف نرم کاربر',
+    description:
+      'is_active=false روی کاربر و (اگر متخصص باشد) ردیف متخصص. حذف حساب خود → 400. ثبت در audit_logs.',
+  })
+  remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ success: true }> {
+    return this.users.softDelete(user, id);
   }
 }
