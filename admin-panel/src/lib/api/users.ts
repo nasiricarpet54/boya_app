@@ -62,6 +62,28 @@ export interface UserUpdateResult {
   isActive: boolean;
 }
 
+/** Contract of `POST /admin/users`. */
+export interface UserCreateResult {
+  id: string;
+  phoneNumber: string;
+  fullName: string | null;
+  role: UserRole;
+  tenantId: string | null;
+  isActive: boolean;
+  /** True when a `specialists` row was auto-created alongside the user. */
+  specialistCreated: boolean;
+}
+
+/** Body of `POST /admin/users`. */
+export interface CreateUserBody {
+  /** Iranian mobile in `09XXXXXXXXX` form; the backend normalises and rejects dupes with 409. */
+  phone: string;
+  role: UserRole;
+  fullName?: string;
+  /** Required for `salon_owner` / `line_manager` / `specialist`; ignored otherwise. */
+  tenantId?: string;
+}
+
 export interface ListUsersQuery {
   search?: string;
   role?: UserRole | 'all';
@@ -100,5 +122,21 @@ export const usersApi = {
   /** `PATCH /admin/users/:id/status` — activate / deactivate. */
   updateStatus(id: string, body: { isActive: boolean; reason?: string }): Promise<UserUpdateResult> {
     return api.patch<UserUpdateResult>(`/admin/users/${id}/status`, body).then((r) => r.data);
+  },
+
+  /**
+   * `POST /admin/users` — create a user. A duplicate phone answers 409. For
+   * `specialist` the backend also creates the `specialists` row.
+   */
+  createUser(body: CreateUserBody): Promise<UserCreateResult> {
+    return api.post<UserCreateResult>('/admin/users', body).then((r) => r.data);
+  },
+
+  /**
+   * `DELETE /admin/users/:id` — soft delete (`is_active = false`, plus the
+   * specialist row). Self-delete is refused with 400; a missing id is 404.
+   */
+  deleteUser(id: string): Promise<{ success: true }> {
+    return api.delete<{ success: true }>(`/admin/users/${id}`).then((r) => r.data);
   },
 };

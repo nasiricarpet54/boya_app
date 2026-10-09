@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { ArrowRight, RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw, Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -11,11 +11,12 @@ import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { useToast } from '@/components/providers/ToastProvider';
-import { Link } from '@/lib/navigation';
+import { Link, useRouter } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { usersApi, type UserDetail } from '@/lib/api/users';
+import { authApi } from '@/lib/api/auth';
 import { tenantsApi } from '@/lib/api/tenants';
-import type { UserRole } from '@/lib/stores/auth';
+import { useAuthStore, type UserRole } from '@/lib/stores/auth';
 import { jalaliDateTime } from '@/lib/utils/jalali';
 import { faCurrency, faDigits, faNumber } from '@/lib/utils/persian';
 
@@ -49,11 +50,16 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  // The signed-in admin: the backend refuses self status/role/delete, so those
+  // actions are hidden on this page when viewing your own account.
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   const [roleOpen, setRoleOpen] = useState(false);
   const [nextRole, setNextRole] = useState<UserRole>('customer');
   const [nextTenantId, setNextTenantId] = useState('');
   const [tenantError, setTenantError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ['admin-user', params.id],
@@ -89,6 +95,30 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     onSuccess: async () => {
       await invalidate();
       toast({ title: td('statusUpdatedToast'), variant: 'success' });
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, td('actionFailed')), variant: 'error' }),
+  });
+
+  // Soft delete: flips is_active on the user (and their specialist row). On
+  // success we bounce back to the list, since this page's subject is gone.
+  const deleteMutation = useMutation({
+    mutationFn: () => usersApi.deleteUser(params.id),
+    onSuccess: async () => {
+      setDeleteOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({ title: td('deletedToast'), variant: 'success' });
+      router.push('/users');
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, td('actionFailed')), variant: 'error' }),
+  });
+
+  // Re-send the sign-in OTP to this user's phone via the public endpoint. The
+  // new user activates their account with this code, so an admin can nudge it
+  // when the first SMS never arrived.
+  const resendOtpMutation = useMutation({
+    mutationFn: (phoneNumber: string) => authApi.sendOtp(phoneNumber),
+    onSuccess: () => {
+      toast({ title: td('resendOtpToast'), variant: 'success' });
     },
     onError: (e) => toast({ title: getApiErrorMessage(e, td('actionFailed')), variant: 'error' }),
   });
@@ -188,12 +218,29 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
           </Button>
           <Button
             size="sm"
+            variant="secondary"
+            disabled={resendOtpMutation.isPending}
+            onClick={() => resendOtpMutation.mutate(user.phoneNumber)}
+          >
+            <Send className="h-4 w-4" aria-hidden />
+            {td('resendOtp')}
+          </Button>
+          <Button
+            size="sm"
             variant={user.isActive ? 'danger' : 'primary'}
             disabled={statusMutation.isPending}
             onClick={() => statusMutation.mutate(!user.isActive)}
           >
             {user.isActive ? td('deactivate') : td('activate')}
           </Button>
+          {/* Self role/status/delete are refused by the backend, so delete is
+              hidden on the signed-in admin's own profile. */}
+          {user.id !== currentUserId ? (
+            <Button size="sm" variant="ghost" className="text-error hover:bg-error/10" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4" aria-hidden />
+              {td('delete')}
+            </Button>
+          ) : null}
         </span>
       </div>
 
@@ -370,6 +417,35 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             />
           ) : null}
         </div>
+      </Dialog>
+
+      {/* Delete-confirm dialog (soft delete). */}
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleteOpen(false);
+        }}
+        title={td('deleteTitle')}
+        description={td('deleteDescription')}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button variant="danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()}>
+              {deleteMutation.isPending ? tCommon('loading') : td('deleteConfirm')}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink" dir="ltr">
+          {faDigits(user.phoneNumber)}
+          {user.fullName ? ` — ${user.fullName}` : ''}
+        </p>
       </Dialog>
     </>
   );

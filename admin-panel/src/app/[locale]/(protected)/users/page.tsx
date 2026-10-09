@@ -1,18 +1,22 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Eye } from 'lucide-react';
+import { Ban, CheckCircle2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle } from '@/components/ui/Card';
+import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Select, type SelectOption } from '@/components/ui/Select';
+import { useToast } from '@/components/providers/ToastProvider';
 import { Link } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
-import { usersApi, type UserStatusFilter } from '@/lib/api/users';
-import type { UserRole } from '@/lib/stores/auth';
+import { usersApi, type UserListItem, type UserStatusFilter } from '@/lib/api/users';
+import { tenantsApi } from '@/lib/api/tenants';
+import { useAuthStore, type UserRole } from '@/lib/stores/auth';
 import { jalaliDate } from '@/lib/utils/jalali';
 import { faDigits, faNumber } from '@/lib/utils/persian';
 import { cn } from '@/lib/utils/cn';
@@ -26,6 +30,9 @@ const ROLE_FILTERS: Array<UserRole | 'all'> = [
   'admin',
 ];
 const STATUS_FILTERS: UserStatusFilter[] = ['all', 'active', 'inactive'];
+const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'];
+/** Roles bound to a tenant — the role dialog shows the salon dropdown for these. */
+const TENANT_ROLES: UserRole[] = ['salon_owner', 'line_manager', 'specialist'];
 
 function roleTone(role: UserRole): BadgeTone {
   if (role === 'admin') return 'brand';
@@ -80,12 +87,110 @@ export default function UsersPage() {
     admin: t('filters.admin'),
   };
 
+  const tActions = useTranslations('users.actions');
+  const tConfirm = useTranslations('users.confirm');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // The signed-in admin: the backend refuses self role/status/delete changes, so
+  // this row shows only the edit link (an admin cannot act on their own account
+  // here — a second admin must do it).
+  const currentUserId = useAuthStore((state) => state.user?.id);
+
+  // Role-change dialog state.
+  const [roleTarget, setRoleTarget] = useState<UserListItem | null>(null);
+  const [nextRole, setNextRole] = useState<UserRole>('customer');
+  const [nextTenantId, setNextTenantId] = useState('');
+  const [tenantError, setTenantError] = useState<string | null>(null);
+
+  // Delete-confirm state.
+  const [deleteTarget, setDeleteTarget] = useState<UserListItem | null>(null);
+
+  // Salon dropdown source for the role dialog — fetched only while it is open.
+  const tenantsQuery = useQuery({
+    queryKey: ['admin-tenants', 'users-list'],
+    queryFn: () => tenantsApi.listTenants({ limit: 100 }),
+    enabled: roleTarget !== null,
+  });
+
+  const tenantOptions: SelectOption[] = (tenantsQuery.data?.data ?? []).map((tenant) => ({
+    value: tenant.id,
+    label: tenant.name,
+  }));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+
+  const statusMutation = useMutation({
+    mutationFn: (v: { id: string; isActive: boolean }) =>
+      usersApi.updateStatus(v.id, { isActive: v.isActive }),
+    onSuccess: async () => {
+      await invalidate();
+      toast({ title: tActions('statusUpdatedToast'), variant: 'success' });
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: (v: { id: string; role: UserRole; tenantId?: string }) =>
+      usersApi.updateRole(v.id, { role: v.role, tenantId: v.tenantId }),
+    onSuccess: async () => {
+      setRoleTarget(null);
+      await invalidate();
+      toast({ title: tActions('roleUpdatedToast'), variant: 'success' });
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => usersApi.deleteUser(id),
+    onSuccess: async () => {
+      setDeleteTarget(null);
+      await invalidate();
+      toast({ title: tActions('deleteToast'), variant: 'success' });
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
+  });
+
+  const openRoleDialog = (item: UserListItem) => {
+    setRoleTarget(item);
+    setNextRole(item.role);
+    setNextTenantId(item.tenantId ?? '');
+    setTenantError(null);
+  };
+
+  const submitRole = () => {
+    if (!roleTarget) return;
+    if (TENANT_ROLES.includes(nextRole) && !nextTenantId) {
+      setTenantError(t('detail.tenantRequired'));
+      return;
+    }
+    roleMutation.mutate({
+      id: roleTarget.id,
+      role: nextRole,
+      // customer/admin must clear the tenant; the backend enforces it too.
+      tenantId: TENANT_ROLES.includes(nextRole) ? nextTenantId : undefined,
+    });
+  };
+
+  const statusPendingId = statusMutation.isPending ? (statusMutation.variables?.id ?? null) : null;
+  const rolePendingId = roleMutation.isPending ? (roleMutation.variables?.id ?? null) : null;
+  const deletePendingId = deleteMutation.isPending ? (deleteMutation.variables ?? null) : null;
+
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        subtitle={`${faNumber(total)} ${t('countSuffix')} · ${t('subtitle')}`}
-      />
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <PageHeader
+          title={t('title')}
+          subtitle={`${faNumber(total)} ${t('countSuffix')} · ${t('subtitle')}`}
+        />
+        <Link
+          href="/users/new"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-copper px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-copper-hover"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          {t('newUser')}
+        </Link>
+      </div>
 
       <Card className="mb-4">
         <div className="flex flex-col gap-3">
@@ -202,13 +307,60 @@ export default function UsersPage() {
                         {jalaliDate(item.createdAt)}
                       </td>
                       <td className="px-3 py-3">
-                        <Link
-                          href={`/users/${item.id}`}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle"
-                        >
-                          <Eye className="h-4 w-4" aria-hidden />
-                          {t('table.view')}
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/users/${item.id}`}
+                            aria-label={`${tActions('edit')}: ${item.phoneNumber}`}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />
+                            {tActions('edit')}
+                          </Link>
+
+                          {/* The backend refuses self role/status/delete, so those
+                              actions are hidden on the signed-in admin's own row. */}
+                          {item.id !== currentUserId ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                aria-label={`${tActions('changeRole')}: ${item.phoneNumber}`}
+                                disabled={rolePendingId === item.id}
+                                onClick={() => openRoleDialog(item)}
+                              >
+                                <RefreshCw className="h-4 w-4" aria-hidden />
+                                {tActions('changeRole')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={item.isActive ? 'danger' : 'primary'}
+                                aria-label={`${item.isActive ? tActions('deactivate') : tActions('activate')}: ${item.phoneNumber}`}
+                                disabled={statusPendingId === item.id}
+                                onClick={() =>
+                                  statusMutation.mutate({ id: item.id, isActive: !item.isActive })
+                                }
+                              >
+                                {item.isActive ? (
+                                  <Ban className="h-4 w-4" aria-hidden />
+                                ) : (
+                                  <CheckCircle2 className="h-4 w-4" aria-hidden />
+                                )}
+                                {item.isActive ? tActions('deactivate') : tActions('activate')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-error hover:bg-error/10"
+                                aria-label={`${tActions('delete')}: ${item.phoneNumber}`}
+                                disabled={deletePendingId === item.id}
+                                onClick={() => setDeleteTarget(item)}
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden />
+                                {tActions('delete')}
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -242,6 +394,91 @@ export default function UsersPage() {
           </>
         )}
       </Card>
+
+      {/* Role-change dialog: tenant dropdown appears for tenant-scoped roles. */}
+      <Dialog
+        open={roleTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !roleMutation.isPending) setRoleTarget(null);
+        }}
+        title={t('detail.changeRoleTitle')}
+        description={t('detail.changeRoleDescription')}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setRoleTarget(null)}
+              disabled={roleMutation.isPending}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button onClick={submitRole} disabled={roleMutation.isPending}>
+              {roleMutation.isPending ? tCommon('loading') : t('detail.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <Select
+            label={t('detail.roleLabel')}
+            value={nextRole}
+            onValueChange={(value) => {
+              setNextRole(value as UserRole);
+              setTenantError(null);
+            }}
+            options={ALL_ROLES.map((role) => ({ value: role, label: roleLabels[role] }))}
+          />
+
+          {TENANT_ROLES.includes(nextRole) ? (
+            <Select
+              label={t('detail.tenantLabel')}
+              value={nextTenantId}
+              onValueChange={(value) => {
+                setNextTenantId(value);
+                setTenantError(null);
+              }}
+              options={tenantOptions}
+              placeholder={tenantsQuery.isLoading ? tCommon('loading') : t('detail.tenantPlaceholder')}
+              error={tenantError ?? undefined}
+            />
+          ) : null}
+        </div>
+      </Dialog>
+
+      {/* Delete-confirm dialog (soft delete). */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+        title={tConfirm('deleteTitle')}
+        description={tConfirm('deleteDescription')}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              {deleteMutation.isPending ? tCommon('loading') : tConfirm('deleteConfirm')}
+            </Button>
+          </>
+        }
+      >
+        {deleteTarget ? (
+          <p className="text-body text-ink" dir="ltr">
+            {faDigits(deleteTarget.phoneNumber)}
+            {deleteTarget.fullName ? ` — ${deleteTarget.fullName}` : ''}
+          </p>
+        ) : null}
+      </Dialog>
     </>
   );
 }
