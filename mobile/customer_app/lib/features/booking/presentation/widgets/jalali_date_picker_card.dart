@@ -86,40 +86,20 @@ class _JalaliDatePickerCardState extends ConsumerState<JalaliDatePickerCard> {
     return !day.isAfter(_lastDate);
   }
 
-  /// Opens the month calendar. `showParsiDatePicker` is the primary path; a
-  /// plain month grid dialog takes over if the package cannot render.
+  /// TEMP (A/B test): bypasses `showParsiDatePicker` and opens the custom
+  /// [_MonthPickerDialog] directly, to isolate whether the parsi package is
+  /// what fails to open on web. Revert to the original body after the test.
   Future<void> _openCalendar() async {
     final start = _firstDate;
     final end = _lastDate;
     final initial = _clamp(widget.selectedDate, start, end);
-    DateTime? picked;
-    debugPrint('date-button tapped → opening calendar (initial: $initial)');
-    try {
-      final result = await showParsiDatePicker(
-        context: context,
-        initialDate: ParsiDate.fromDateTime(initial),
-        firstDate: ParsiDate.fromDateTime(start),
-        lastDate: ParsiDate.fromDateTime(end),
-        helpText: 'انتخاب تاریخ',
-        cancelText: 'انصراف',
-        confirmText: 'تأیید',
-        holidayDates: _fridays(start, end),
-      );
-      picked = result?.toDateTime();
-      debugPrint('showParsiDatePicker → picked: $picked');
-    } catch (error, stackTrace) {
-      // The package could not show its dialog: print the failure so it is
-      // visible in the console, then hand the customer a month grid instead
-      // of leaving the button dead.
-      debugPrint('Calendar error: $error');
-      debugPrint('$stackTrace');
-      if (!mounted) return;
-      picked = await showDialog<DateTime>(
-        context: context,
-        builder: (_) => _MonthPickerDialog(initial: initial, start: start, end: end),
-      );
-      debugPrint('_MonthPickerDialog → picked: $picked');
-    }
+
+    // موقت: مستقیم از custom dialog استفاده کن
+    final picked = await showDialog<DateTime>(
+      context: context,
+      builder: (_) => _MonthPickerDialog(initial: initial, start: start, end: end),
+    );
+
     if (picked == null || !mounted) return;
     final day = DateTime(picked.year, picked.month, picked.day);
     if (!_isBookable(day)) return;
