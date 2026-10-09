@@ -36,7 +36,6 @@ class BookingController extends Notifier<BookingState> {
       final response = await dio.post<Map<String, dynamic>>(
         '/bookings',
         data: {
-          'tenantId': draft.salonId,
           'specialistId': draft.specialistId,
           'serviceId': draft.serviceId,
           'startsAt': (draft.slotStart ?? draft.date).toUtc().toIso8601String(),
