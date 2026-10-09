@@ -283,3 +283,26 @@ duplicate the same query (same `locationProvider`/`selectedCategoryProvider`/
 `sort: distance`); once the search screen gets its own error state, that
 provider can be dropped and the shared one can propagate errors for both.
 
+
+## Production Server — Port Plan
+سرور مقصد پورتهای 3000-3020 را اشغال دارد (پروژه دیگر روی Docker).
+
+### پورتهای فعلی (staging لوکال)
+- backend: 3001  ← تعارض با سرور
+- postgres: 5433
+- redis: 6381
+- caddy: 80, 443
+
+### پورتهای پیشنهادی برای production
+- backend: 3021
+- postgres: 5434 (فقط داخلی، expose نشه)
+- redis: 6382 (فقط داخلی، expose نشه)
+- caddy: 80, 443 (یا اگر اشغال، 8080, 8443 + reverse proxy بیرونی)
+
+### تغییرات لازم قبل از استقرار
+1. در docker-compose.staging.yml (یا production):
+   - ports: "3021:3000" برای backend
+2. در .env ریشه:
+   - INVITE_BASE_URL به دامنه واقعی
+   - API_BASE_URL flutter به 3021
+3. Caddyfile: reverse_proxy backend:3000 (داخلی، نیازی به تغییر ندارد)
