@@ -51,6 +51,7 @@ import {
   SalonPanelSpecialistItem,
   SalonPendingUpdate,
   SalonPortfolio,
+  SalonCatalogServices,
   SalonService,
   SalonServiceItem,
   SalonServiceLineItem,
@@ -118,15 +119,38 @@ export class SalonController {
     return this.salons.availableSlots(id, query);
   }
 
-  /** Active specialists of a salon, the booking form's specialist picker. */
+  /**
+   * Active specialists of a salon, the booking form's specialist picker.
+   * `?mobile=true` keeps only the ones who travel to the customer (ADR-011).
+   */
   @Get(':id/specialists')
   @Public()
   @ApiOperation({
     summary: 'متخصصان فعال یک سالن',
-    description: 'برای فرم رزرو، پیش از ورود کاربر.',
+    description: 'برای فرم رزرو، پیش از ورود کاربر. با ?mobile=true فقط متخصصان سیار.',
   })
-  specialists(@Param('id', ParseUUIDPipe) id: string): Promise<SalonSpecialists> {
-    return this.salons.specialists(id);
+  specialists(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: SalonQueryDto,
+  ): Promise<SalonSpecialists> {
+    return this.salons.specialists(id, query.mobile);
+  }
+
+  /**
+   * Services of a salon, the booking form's service picker (ADR-011).
+   * `?mobile=true` keeps only the ones that can be delivered away from the salon.
+   */
+  @Get(':id/services')
+  @Public()
+  @ApiOperation({
+    summary: 'خدمات یک سالن',
+    description: 'برای فرم رزرو. با ?mobile=true فقط خدماتی که سیار ارائه می‌شوند.',
+  })
+  services(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: SalonQueryDto,
+  ): Promise<SalonCatalogServices> {
+    return this.salons.services(id, query.mobile);
   }
 
   /**

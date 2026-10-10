@@ -32,6 +32,14 @@ export class Service {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  /**
+   * On-site services (ADR-011): this service can be delivered away from the
+   * salon. Decided per service (some need fixed equipment and never can be),
+   * and independent of any individual specialist's willingness to travel.
+   */
+  @Column({ name: 'is_mobile_available', type: 'boolean', default: false })
+  isMobileAvailable!: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 }

@@ -25,6 +25,14 @@ export class Specialist {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  /**
+   * On-site services (ADR-011): this specialist travels to the customer. Set by
+   * the specialist/owner; a service can only be booked on-site when *both* this
+   * and `services.is_mobile_available` are true.
+   */
+  @Column({ name: 'offers_mobile_service', type: 'boolean', default: false })
+  offersMobileService!: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

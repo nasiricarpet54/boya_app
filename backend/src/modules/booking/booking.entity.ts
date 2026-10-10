@@ -75,6 +75,28 @@ export class Booking {
   @Column({ type: 'text', nullable: true })
   notes!: string | null;
 
+  /**
+   * On-site services (ADR-011): the customer asked the specialist to come to
+   * them. Requires `specialists.offers_mobile_service` *and*
+   * `services.is_mobile_available`, and an address.
+   */
+  @Column({ name: 'is_mobile', type: 'boolean', default: false })
+  isMobile!: boolean;
+
+  /** Free-form; the address the specialist travels to when `is_mobile`. */
+  @Column({ name: 'customer_address', type: 'text', nullable: true })
+  customerAddress!: string | null;
+
+  /**
+   * Optional coordinates of `customer_address`. `numeric` arrives from Postgres
+   * as a string, hence the entity type; the caller sends numbers.
+   */
+  @Column({ name: 'customer_latitude', type: 'numeric', precision: 10, scale: 7, nullable: true })
+  customerLatitude!: string | null;
+
+  @Column({ name: 'customer_longitude', type: 'numeric', precision: 10, scale: 7, nullable: true })
+  customerLongitude!: string | null;
+
   /** When the "your visit is coming up" reminder was sent. Set by the cron job. */
   @Column({ name: 'booking_reminder_sent_at', type: 'timestamptz', nullable: true })
   bookingReminderSentAt!: Date | null;

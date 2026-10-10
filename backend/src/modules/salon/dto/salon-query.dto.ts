@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
@@ -22,6 +23,21 @@ export enum SalonSort {
 function toOptionalNumber({ value }: { value: unknown }): unknown {
   if (value === undefined || value === null || value === '') return undefined;
   return typeof value === 'string' ? Number(value.trim()) : Number(value);
+}
+
+/**
+ * Query booleans arrive as strings and class-transformer does not coerce them
+ * implicitly, so `?mobile=true` is parsed here. An unrecognised value is passed
+ * through untouched for `@IsBoolean()` to reject, instead of being silently
+ * treated as "no filter".
+ */
+function toOptionalBoolean({ value }: { value: unknown }): unknown {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'boolean') return value;
+  const trimmed = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (trimmed === 'true' || trimmed === '1') return true;
+  if (trimmed === 'false' || trimmed === '0') return false;
+  return value;
 }
 
 export class SalonQueryDto {
@@ -73,4 +89,18 @@ export class SalonQueryDto {
   @Min(1)
   @Max(50)
   limit: number = 20;
+
+  /**
+   * ADR-011: keep only salons that can actually deliver on-site — at least one
+   * active specialist who travels *and* at least one active service that can
+   * leave the salon.
+   */
+  @ApiPropertyOptional({
+    example: true,
+    description: 'فقط سالن‌هایی که خدمات سیار ارائه می‌دهند',
+  })
+  @Transform(toOptionalBoolean)
+  @IsOptional()
+  @IsBoolean()
+  mobile?: boolean;
 }

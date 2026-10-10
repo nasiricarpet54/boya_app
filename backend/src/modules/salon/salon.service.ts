@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -150,6 +150,8 @@ export interface SalonCatalogServiceItem {
   name: string;
   description: string | null;
   price: number;
+  /** ADR-011: can this service be delivered away from the salon? */
+  isMobileAvailable: boolean;
 }
 
 /** One active specialist of a salon, as shown on the booking form. */
@@ -160,11 +162,18 @@ export interface SalonSpecialist {
   bio: string | null;
   skills: string[];
   commissionRate: number;
+  /** ADR-011: does this specialist travel to the customer? */
+  offersMobileService: boolean;
 }
 
 /** Response of `GET /salons/:id/specialists`. */
 export interface SalonSpecialists {
   data: SalonSpecialist[];
+}
+
+/** Response of `GET /salons/:id/services`. */
+export interface SalonCatalogServices {
+  data: SalonCatalogServiceItem[];
 }
 
 /** One portfolio photo of one specialist, from `GET /salons/:id/portfolio`. */
@@ -273,6 +282,8 @@ export interface SalonServiceItem {
   depositRequired: boolean;
   depositAmount: number | null;
   isActive: boolean;
+  /** ADR-011: can this service leave the salon? */
+  isMobileAvailable: boolean;
   createdAt: string;
 }
 
@@ -293,6 +304,8 @@ export interface SalonPanelSpecialistItem {
   skills: string[];
   commissionRate: number;
   isActive: boolean;
+  /** ADR-011: does this specialist travel to the customer? */
+  offersMobileService: boolean;
   bookingsCount: number;
 }
 
@@ -476,6 +489,7 @@ interface SalonServiceRow {
   deposit_required: boolean;
   deposit_amount: string | null;
   is_active: boolean;
+  is_mobile_available: boolean;
   created_at: Date;
 }
 
@@ -518,6 +532,31 @@ export class SalonService {
     // suspended; see PUBLIC_SALON_SQL for why `status` alone is not the test.
     const where: string[] = ['t.is_active = true', PUBLIC_SALON_SQL];
     if (categorySlug) where.push(`c.slug = ${bind(categorySlug)}`);
+
+    // `?mobile=true` (ADR-011): a salon qualifies only while it has *both* a
+    // travelling specialist and a travel-capable service. Either alone is
+    // useless to a customer booking on-site, so the filter is the conjunction.
+    // No bound parameters, so it lands in the shared `whereSql` that the count
+    // query reuses as-is.
+    if (query.mobile) {
+      where.push(
+        `EXISTS (
+           SELECT 1 FROM specialists s
+           WHERE s.tenant_id = t.id
+             AND s.offers_mobile_service = true
+             AND s.is_active = true
+         )`,
+      );
+      where.push(
+        `EXISTS (
+           SELECT 1 FROM services sv
+           WHERE sv.tenant_id = t.id
+             AND sv.is_mobile_available = true
+             AND sv.is_active = true
+         )`,
+      );
+    }
+
     // The count query is a separate statement that only needs the filters, and
     // those are bound first, so its placeholders still line up.
     const whereParams = [...params];
@@ -712,9 +751,9 @@ export class SalonService {
     if (!row) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
 
     const serviceRows = await this.dataSource.query<
-      Array<{ id: string; name: string; description: string | null; price: string }>
+      Array<{ id: string; name: string; description: string | null; price: string; is_mobile_available: boolean }>
     >(
-      `SELECT id, name, description, price
+      `SELECT id, name, description, price, is_mobile_available
        FROM services
        WHERE tenant_id = $1
        ORDER BY price ASC, name ASC`,
@@ -738,21 +777,69 @@ export class SalonService {
         name: service.name,
         description: service.description,
         price: toNumber(service.price) ?? 0,
+        isMobileAvailable: service.is_mobile_available === true,
       })),
       specialists: await this.loadSpecialists(id),
       portfolio: await this.loadPortfolio(id),
     };
   }
 
-  /** Active specialists of one salon, for the booking form's specialist picker. */
-  async specialists(id: string): Promise<SalonSpecialists> {
+  /**
+   * Active specialists of one salon, for the booking form's specialist picker.
+   * With `mobile`, only the ones who travel to the customer (ADR-011).
+   */
+  async specialists(id: string, mobile?: boolean): Promise<SalonSpecialists> {
     const [tenant] = await this.dataSource.query<Array<{ id: string }>>(
       `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
       [id],
     );
     if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
 
-    return { data: await this.loadSpecialists(id) };
+    const specialists = await this.loadSpecialists(id);
+
+    // Filtered in memory rather than in SQL: the flag comes from a second round
+    // trip off `specialists` (see loadSpecialists), so there is no single
+    // statement to hang a WHERE on.
+    return { data: mobile === true ? specialists.filter((s) => s.offersMobileService) : specialists };
+  }
+
+  /**
+   * Services of one salon, for the booking form's service picker. With `mobile`,
+   * only the ones that can be delivered away from the salon (ADR-011).
+   */
+  async services(id: string, mobile?: boolean): Promise<SalonCatalogServices> {
+    const [tenant] = await this.dataSource.query<Array<{ id: string }>>(
+      `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
+      [id],
+    );
+    if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+
+    const serviceRows = await this.dataSource.query<
+      Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        price: string;
+        is_mobile_available: boolean;
+      }>
+    >(
+      `SELECT id, name, description, price, is_mobile_available
+       FROM services
+       WHERE tenant_id = $1 AND is_active = true
+       ${mobile ? 'AND is_mobile_available = true' : ''}
+       ORDER BY price ASC, name ASC`,
+      [id],
+    );
+
+    return {
+      data: serviceRows.map((service) => ({
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        price: toNumber(service.price) ?? 0,
+        isMobileAvailable: service.is_mobile_available === true,
+      })),
+    };
   }
 
   /**
@@ -1454,6 +1541,7 @@ export class SalonService {
                 s.deposit_required,
                 s.deposit_amount,
                 s.is_active,
+                s.is_mobile_available,
                 s.created_at
            FROM services s
           WHERE s.tenant_id = $1 AND s.line_id = $2
@@ -1471,6 +1559,7 @@ export class SalonService {
       depositRequired: row.deposit_required,
       depositAmount: toNumber(row.deposit_amount),
       isActive: row.is_active,
+      isMobileAvailable: row.is_mobile_available,
       createdAt: row.created_at.toISOString(),
     }));
   }
@@ -1541,6 +1630,9 @@ export class SalonService {
         sets.push(`deposit_amount = ${push(dto.depositAmount)}`);
       }
       if (dto.isActive !== undefined) sets.push(`is_active = ${push(dto.isActive)}`);
+      if (dto.isMobileAvailable !== undefined) {
+        sets.push(`is_mobile_available = ${push(dto.isMobileAvailable)}`);
+      }
 
       if (sets.length > 0) {
         await manager.query(
@@ -1588,6 +1680,7 @@ export class SalonService {
                 sp.skills,
                 sp.commission_rate,
                 sp.is_active,
+                sp.offers_mobile_service,
                 (SELECT COUNT(*)::int FROM bookings b WHERE b.specialist_id = sp.id) AS bookings_count
            FROM specialists sp
            LEFT JOIN users u ON u.id = sp.user_id
@@ -1607,6 +1700,7 @@ export class SalonService {
       skills: row.skills ?? [],
       commissionRate: toNumber(row.commission_rate) ?? 50,
       isActive: row.is_active,
+      offersMobileService: row.offers_mobile_service,
       bookingsCount: row.bookings_count,
     }));
   }
@@ -2378,6 +2472,9 @@ export class SalonService {
         sets.push(`commission_rate = ${push(dto.commissionRate)}`);
       }
       if (dto.isActive !== undefined) sets.push(`is_active = ${push(dto.isActive)}`);
+      if (dto.offersMobileService !== undefined) {
+        sets.push(`offers_mobile_service = ${push(dto.offersMobileService)}`);
+      }
       if (dto.workingHours !== undefined) {
         sets.push(`working_hours = ${push(JSON.stringify(dto.workingHours))}::jsonb`);
       }
@@ -2635,6 +2732,22 @@ export class SalonService {
       [salonId],
     );
 
+    // ADR-011: `get_public_salon_specialists()` is deliberately NOT redefined
+    // to carry the mobile flag (migration 1730000000016 pins its RETURNS TABLE
+    // shape and every caller that depends on it), so the flag is read straight
+    // off `specialists`. That table carries no RLS policy, unlike `users`, so a
+    // public connection can read it directly and a second round trip is all it
+    // costs.
+    const flags = await this.dataSource.query<
+      Array<{ id: string; offers_mobile_service: boolean }>
+    >(
+      `SELECT id, offers_mobile_service
+       FROM specialists
+       WHERE tenant_id = $1 AND is_active = true`,
+      [salonId],
+    );
+    const flagById = new Map(flags.map((flag) => [flag.id, flag.offers_mobile_service]));
+
     return rows.map((row) => ({
       id: row.id,
       fullName: row.full_name,
@@ -2642,6 +2755,7 @@ export class SalonService {
       bio: row.bio,
       skills: row.skills ?? [],
       commissionRate: toNumber(row.commission_rate) ?? 0,
+      offersMobileService: flagById.get(row.id) === true,
     }));
   }
 
@@ -2813,6 +2927,7 @@ interface PanelSpecialistRow {
   skills: string[] | null;
   commission_rate: string | null;
   is_active: boolean;
+  offers_mobile_service: boolean;
   bookings_count: number;
 }
 

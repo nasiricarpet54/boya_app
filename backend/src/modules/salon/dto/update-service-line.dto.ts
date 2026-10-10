@@ -88,6 +88,16 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  /**
+   * ADR-011: this service can be delivered away from the salon. Freely
+   * editable like the rest of this DTO — it is an operational fact about the
+   * service, not a detail the admin needs to vet.
+   */
+  @ApiPropertyOptional({ example: true, description: 'این خدمت سیار ارائه می‌شود' })
+  @IsOptional()
+  @IsBoolean()
+  isMobileAvailable?: boolean;
 }
 
 /** Body of `POST /salon/me/lines/:lineId/services`. All fields, freely editable. */

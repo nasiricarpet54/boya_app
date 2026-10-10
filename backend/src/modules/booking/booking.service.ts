@@ -27,6 +27,11 @@ export interface CreateBookingInput {
   customerId: string;
   startsAt: Date;
   notes?: string | null;
+  /** ADR-011: request the specialist come to the customer. */
+  isMobile?: boolean;
+  customerAddress?: string | null;
+  customerLatitude?: number;
+  customerLongitude?: number;
 }
 
 /** One row of `GET /bookings`. */
@@ -82,6 +87,22 @@ export class BookingService {
     const service = await this.catalog.findById(input.tenantId, input.serviceId);
     const specialist = await this.specialists.findById(input.tenantId, input.specialistId);
     if (!service.isActive || !specialist.isActive) throw new BadRequestException('خدمت یا متخصص انتخاب‌شده غیرفعال است');
+
+    // On-site booking (ADR-011): an address is the one thing the specialist
+    // cannot do without, and both the *person* and the *service* must be
+    // willing to travel — neither flag implies the other.
+    if (input.isMobile) {
+      if (!input.customerAddress || input.customerAddress.trim().length === 0) {
+        throw new BadRequestException('آدرس مشتری الزامی است');
+      }
+      if (!specialist.offersMobileService) {
+        throw new BadRequestException('این متخصص خدمات سیار ارائه نمی‌دهد');
+      }
+      if (!service.isMobileAvailable) {
+        throw new BadRequestException('این خدمت به‌صورت سیار ارائه نمی‌شود');
+      }
+    }
+
     if (input.startsAt.getTime() <= Date.now()) throw new BadRequestException('زمان رزرو باید در آینده باشد');
     await this.assertWithinWorkingHours(input.tenantId, input.startsAt, service.durationMinutes);
 
@@ -106,6 +127,14 @@ export class BookingService {
             status: BookingStatus.Pending,
             totalPrice: service.price,
             notes: input.notes ?? null,
+            isMobile: input.isMobile ?? false,
+            // The address only belongs on the row when the booking is on-site;
+            // a regular booking never carries one.
+            customerAddress: input.isMobile ? input.customerAddress ?? null : null,
+            // `numeric` column: the caller sends numbers, the column stores
+            // decimal text, so the value is stringified on the way in.
+            customerLatitude: input.customerLatitude != null ? String(input.customerLatitude) : null,
+            customerLongitude: input.customerLongitude != null ? String(input.customerLongitude) : null,
           }),
         );
       });

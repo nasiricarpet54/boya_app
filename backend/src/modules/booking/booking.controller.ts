@@ -1,6 +1,15 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
@@ -35,6 +44,24 @@ class CreateBookingDto {
   @MaxLength(280)
   @MinLength(1)
   notes?: string;
+
+  /** ADR-011: ask the specialist to come to the customer's address. */
+  @IsOptional()
+  @IsBoolean()
+  isMobile?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  customerAddress?: string;
+
+  @IsOptional()
+  @IsNumber()
+  customerLatitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  customerLongitude?: number;
 }
 
 /**
@@ -67,6 +94,10 @@ export class BookingController {
       customerId: user.userId,
       startsAt: new Date(dto.startsAt),
       notes: dto.notes ?? null,
+      isMobile: dto.isMobile ?? false,
+      customerAddress: dto.customerAddress,
+      customerLatitude: dto.customerLatitude,
+      customerLongitude: dto.customerLongitude,
     });
   }
 

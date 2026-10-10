@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsNumber,
   IsObject,
   IsOptional,
@@ -96,6 +97,15 @@ export class UpdateSpecialistPanelDto {
   @ApiPropertyOptional({ example: true, description: 'نمایش متخصص در کاتالوگ عمومی' })
   @IsOptional()
   isActive?: boolean;
+
+  /**
+   * ADR-011: this specialist travels to the customer. Not approval-gated: it is
+   * an operational detail, no more than the commission rate.
+   */
+  @ApiPropertyOptional({ example: true, description: 'این متخصص خدمات سیار ارائه می‌دهد' })
+  @IsOptional()
+  @IsBoolean()
+  offersMobileService?: boolean;
 
   @ApiPropertyOptional({
     type: 'object',
