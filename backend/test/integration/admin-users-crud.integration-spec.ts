@@ -123,6 +123,13 @@ describeIntegration('admin users CRUD (POST + DELETE /admin/users)', () => {
       headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` },
     });
 
+  const adminPatch = (id: string, body: unknown) =>
+    call(`/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` },
+      body: JSON.stringify(body),
+    });
+
   it('admin → POST /admin/users with role=specialist → 201, and the specialist row is auto-created', async () => {
     const phone = nextPhone();
     const response = await adminPost({ phone, role: 'specialist', fullName: 'مریم رضایی', tenantId: TENANT_ID });
@@ -213,6 +220,53 @@ describeIntegration('admin users CRUD (POST + DELETE /admin/users)', () => {
     expect(response.status).toBe(400);
     const body = (await response.json()) as { message: string };
     expect(body.message).toContain('حساب خودتان');
+  });
+
+  it('admin → PATCH /admin/users/:id {fullName} → 200 and the row is updated', async () => {
+    const phone = nextPhone();
+    const created = await adminPost({ phone, role: 'customer' });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: string };
+
+    const response = await adminPatch(id, { fullName: 'نام جدید' });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { id: string; fullName: string | null };
+    expect(body.id).toBe(id);
+    expect(body.fullName).toBe('نام جدید');
+
+    // Confirmed in the database, not just the response body — proving the
+    // SECURITY DEFINER write reaches the row under the RLS-subject role.
+    const users = await queryAsAdmin<{ full_name: string | null }>(
+      `SELECT full_name FROM users WHERE id = $1`,
+      [id],
+    );
+    expect(users[0].full_name).toBe('نام جدید');
+  });
+
+  it('customer → PATCH /admin/users/:id → 403 (the service refuses a non-admin)', async () => {
+    const phone = nextPhone();
+    const created = await adminPost({ phone, role: 'customer' });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: string };
+
+    const response = await call(`/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tokenFor('customer', ADMIN_ID)}` },
+      body: JSON.stringify({ fullName: 'تلاش غیرمجاز' }),
+    });
+
+    expect(response.status).toBe(403);
+    const body = (await response.json()) as { message: string };
+    expect(body.message).toContain('مدیر سامانه');
+  });
+
+  it('admin → PATCH a non-existent user → 404', async () => {
+    const response = await adminPatch('0c999999-9999-4999-8999-999999999999', { fullName: 'چیزی' });
+
+    expect(response.status).toBe(404);
+    const body = (await response.json()) as { message: string };
+    expect(body.message).toContain('یافت نشد');
   });
 });
 

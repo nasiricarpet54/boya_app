@@ -25,6 +25,7 @@ import {
 } from './admin-users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
@@ -97,6 +98,16 @@ export class AdminUsersController {
     @Body() dto: UpdateUserStatusDto,
   ): Promise<UserUpdateResult> {
     return this.users.updateStatus(user, id, dto.isActive, dto.reason);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'ویرایش نام کاربر', description: 'ویرایش full_name؛ نقش/وضعیت/tenant endpoint جداگانه دارند. ثبت در audit_logs.' })
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+  ): Promise<AdminUserDetail> {
+    return this.users.update(user, id, dto);
   }
 
   @Delete(':id')

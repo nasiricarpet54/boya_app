@@ -55,3 +55,11 @@
 - microservice، Kubernetes، Elasticsearch
 
 پیش از هر تغییر معماری ابتدا PROJECT_CHARTER.md، README.md و DECISIONS.md را بخوان.
+
+## UI Completeness Rule
+- هر دکمه/لینک در UI باید به یک عملکرد واقعی متصل باشد
+- اگر endpoint backend برای آن عملکرد وجود ندارد: اول endpoint بساز، بعد دکمه
+- دکمه بدون عملکرد ممنوع (مگر با tooltip «به‌زودی» و disabled)
+- هر فرم ویرایش باید endpoint PATCH/PUT متناظر داشته باشد
+- هر صفحه detail باید حداقل: مشاهده + ویرایش + حذف داشته باشد
+

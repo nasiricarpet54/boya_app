@@ -11,6 +11,7 @@ import { UserRole } from '../../user/entities/user.entity';
 import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 export const ADMIN_USER_ROLES: readonly UserRole[] = [
   'customer',
@@ -537,6 +538,57 @@ export class AdminUsersService {
     );
 
     return { success: true };
+  }
+
+  /**
+   * Edit a user's display name. `users` is FORCE ROW LEVEL SECURITY and an
+   * admin JWT carries no tenant, so the write goes through the SECURITY
+   * DEFINER `admin_update_user_full_name` (migration 1730000000035) — the same
+   * reason `create`, `updateRole`, `updateStatus` and `softDelete` all use a
+   * definer rather than raw SQL. The boolean it returns distinguishes a
+   * missing user (404) from a real edit, so a wrong id can never look like a
+   * success. `role`, `is_active` and `tenant_id` are deliberately out of scope:
+   * each has its own endpoint with its own guardrails. The transition is
+   * audited and the refreshed detail is returned so the caller sees the same
+   * shape as `findOne`.
+   */
+  async update(user: AuthenticatedUser, id: string, dto: UpdateUserDto): Promise<AdminUserDetail> {
+    this.requireAdmin(user);
+
+    const current = await this.dataSource.query<
+      Array<{ id: string; full_name: string | null; tenant_id: string | null }>
+    >(
+      `SELECT u.id, u.full_name, u.tenant_id
+         FROM admin_users_all() u
+        WHERE u.id = $1::uuid`,
+      [id],
+    );
+    const target = current[0];
+    if (!target) throw new NotFoundException('کاربر مورد نظر یافت نشد');
+
+    // Only write when a name was actually sent; an absent property is
+    // `undefined` and must not null out the column the client never touched.
+    if (dto.fullName !== undefined) {
+      const applied = await this.dataSource.query<
+        Array<{ admin_update_user_full_name: boolean }>
+      >(`SELECT admin_update_user_full_name($1::uuid, $2)`, [id, dto.fullName]);
+      if (!applied[0]?.admin_update_user_full_name) {
+        throw new NotFoundException('کاربر مورد نظر یافت نشد');
+      }
+    }
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, reason)
+       VALUES ($1::uuid, $2::uuid, $3, $4)`,
+      [
+        user.userId,
+        target.tenant_id,
+        'user.updated',
+        `user:${id} fullName=${target.full_name ?? 'null'}=>${dto.fullName ?? 'unchanged'}`,
+      ],
+    );
+
+    return this.findOne(user, id);
   }
 }
 
