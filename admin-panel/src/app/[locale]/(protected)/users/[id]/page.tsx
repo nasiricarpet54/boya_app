@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight, RefreshCw, Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -18,7 +18,7 @@ import { usersApi, type UserDetail } from '@/lib/api/users';
 import { authApi } from '@/lib/api/auth';
 import { tenantsApi } from '@/lib/api/tenants';
 import { useAuthStore, type UserRole } from '@/lib/stores/auth';
-import { jalaliDateTime } from '@/lib/utils/jalali';
+import { formatDateTime } from '@/lib/utils/format-date';
 import { faCurrency, faDigits, faNumber } from '@/lib/utils/persian';
 
 const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'];
@@ -50,6 +50,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const te = useTranslations('users.edit');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const locale = useLocale();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -300,10 +301,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
               value={user.isActive ? t('statusActive') : t('statusInactive')}
             />
             <InfoRow label={td('tenant')} value={user.tenantName ?? td('noTenant')} />
-            <InfoRow label={td('joined')} value={jalaliDateTime(user.createdAt)} />
+            <InfoRow label={td('joined')} value={formatDateTime(user.createdAt, locale)} />
             <InfoRow
               label={td('lastLogin')}
-              value={user.lastLoginAt ? jalaliDateTime(user.lastLoginAt) : td('noLastLogin')}
+              value={user.lastLoginAt ? formatDateTime(user.lastLoginAt, locale) : td('noLastLogin')}
             />
           </dl>
         </Card>
@@ -367,7 +368,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                           {booking.tenantName ?? '—'}
                         </td>
                         <td className="whitespace-nowrap px-2 py-2.5 text-caption text-ink-muted">
-                          {jalaliDateTime(booking.startAt)}
+                          {formatDateTime(booking.startAt, locale)}
                         </td>
                         <td className="px-2 py-2.5">
                           <Badge tone="neutral">{booking.status}</Badge>
@@ -401,7 +402,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     ) : null}
                   </div>
                   <time className="whitespace-nowrap text-caption text-ink-muted">
-                    {jalaliDateTime(entry.createdAt)}
+                    {formatDateTime(entry.createdAt, locale)}
                   </time>
                 </li>
               ))}

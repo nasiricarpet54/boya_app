@@ -1,10 +1,12 @@
 import { Mail, Trash2 } from 'lucide-react';
 
+import { useLocale } from 'next-intl';
+
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { faDigits, faNumber } from '@/lib/utils/persian';
-import { jalaliDate } from '@/lib/utils/jalali';
+import { faDigits } from '@/lib/utils/persian';
+import { formatDate } from '@/lib/utils/format-date';
 import type { PendingInvite, InviteRole } from '@/lib/api/invites';
 
 function roleTone(role: InviteRole): BadgeTone {
@@ -36,6 +38,7 @@ export function InviteTable({
   onRevoke,
   emptyLabel,
 }: InviteTableProps) {
+  const locale = useLocale();
   if (items.length === 0) {
     return (
       <Card>
@@ -68,7 +71,7 @@ export function InviteTable({
                 <Badge tone={roleTone(item.role)}>{roleLabels[item.role]}</Badge>
               </td>
               <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">
-                {faNumber(jalaliDate(item.expiresAt))}
+                {formatDate(item.expiresAt, locale)}
               </td>
               <td className="px-3 py-3">
                 <Button

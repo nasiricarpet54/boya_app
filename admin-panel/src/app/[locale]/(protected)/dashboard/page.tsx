@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Building2, CalendarCheck, ClipboardCheck, Wallet } from 'lucide-react';
 import {
   Bar,
@@ -21,7 +21,22 @@ import { dashboardApi } from '@/lib/api/dashboard';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { faCurrency, faDigits } from '@/lib/utils/persian';
 
+/**
+ * `admin_dashboard_weekly()` labels each column with the Persian weekday name
+ * (`شنبه`…`جمعه`). The chart in `locale=en` shows the English name instead.
+ */
+const WEEKDAY_EN: Record<string, string> = {
+  'شنبه': 'Sat',
+  'یکشنبه': 'Sun',
+  'دوشنبه': 'Mon',
+  'سه‌شنبه': 'Tue',
+  'چهارشنبه': 'Wed',
+  'پنجشنبه': 'Thu',
+  'جمعه': 'Fri',
+};
+
 export default function DashboardPage() {
+  const locale = useLocale();
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
@@ -96,7 +111,8 @@ export default function DashboardPage() {
   }
 
   const chartData = weeklyBookings.map((entry) => ({
-    day: entry.day,
+    // `admin_dashboard_weekly()` always labels in Persian; remap for `en`.
+    day: locale === 'fa' ? entry.day : (WEEKDAY_EN[entry.day] ?? entry.day),
     bookings: entry.count,
   }));
 
@@ -146,7 +162,7 @@ export default function DashboardPage() {
                     borderRadius: 12,
                     fontSize: 14,
                   }}
-                  formatter={(value: number) => [faDigits(value), '']}
+                  formatter={(value: number) => [locale === 'fa' ? faDigits(value) : String(value), '']}
                 />
                 <Bar dataKey="bookings" fill="rgb(var(--color-brand-copper))" radius={8} maxBarSize={48} />
               </BarChart>

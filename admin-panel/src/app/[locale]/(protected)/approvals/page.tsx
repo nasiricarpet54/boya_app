@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Check, Eye, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/providers/ToastProvider';
 import { approvalsApi, type ApprovalItem, type ApprovalType } from '@/lib/api/approvals';
 import { getApiErrorMessage } from '@/lib/api/errors';
-import { jalaliDateTime } from '@/lib/utils/jalali';
+import { formatDateTime } from '@/lib/utils/format-date';
 import { faDigits } from '@/lib/utils/persian';
 
 const TABS: Array<{ key: string; type: ApprovalType }> = [
@@ -72,6 +72,7 @@ function PendingChangesTable({
 }
 
 export default function ApprovalsPage() {
+  const locale = useLocale();
   const tNav = useTranslations('nav');
   const t = useTranslations('approvals');
   const tCommon = useTranslations('common');
@@ -229,7 +230,7 @@ export default function ApprovalsPage() {
                     {item.name ?? t('unknownName')}
                   </p>
                   <p className="mt-0.5 text-overline text-ink-muted" dir="ltr">
-                    {item.createdAt ? jalaliDateTime(item.createdAt) : '—'}
+                    {item.createdAt ? formatDateTime(item.createdAt, locale) : '—'}
                   </p>
                 </div>
 
@@ -305,7 +306,7 @@ export default function ApprovalsPage() {
               <div>
                 <dt className="text-overline text-ink-muted">{t('date')}</dt>
                 <dd className="mt-0.5 text-body text-ink" dir="ltr">
-                  {selected.createdAt ? jalaliDateTime(selected.createdAt) : '—'}
+                  {selected.createdAt ? formatDateTime(selected.createdAt, locale) : '—'}
                 </dd>
               </div>
 

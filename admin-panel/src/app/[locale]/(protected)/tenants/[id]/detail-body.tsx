@@ -1,11 +1,11 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { jalaliDate, jalaliDateTime } from '@/lib/utils/jalali';
+import { formatDate, formatDateTime } from '@/lib/utils/format-date';
 import { faDigits, faNumber } from '@/lib/utils/persian';
 import type { TenantDetail } from '@/lib/api/tenants';
 const WEEK_DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
@@ -35,6 +35,7 @@ export function DetailBody({ detail, hours, stats, suspendOpen, setSuspendOpen, 
 }) {
   const td = useTranslations('tenants.detail');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   return (
     <>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -47,7 +48,7 @@ export function DetailBody({ detail, hours, stats, suspendOpen, setSuspendOpen, 
             <div><dt className="text-overline text-ink-muted">{td('rating')}</dt><dd className="mt-0.5 text-body text-ink">{faDigits(detail.rating.toFixed(1))}</dd></div>
             <div><dt className="text-overline text-ink-muted">{td('reviews')}</dt><dd className="mt-0.5 text-body text-ink">{faNumber(detail.reviewCount)}</dd></div>
             <div><dt className="text-overline text-ink-muted">{td('slug')}</dt><dd className="mt-0.5 text-caption text-ink-muted" dir="ltr">{detail.slug ?? '—'}</dd></div>
-            <div><dt className="text-overline text-ink-muted">{td('bookingTime')}</dt><dd className="mt-0.5 text-caption text-ink-muted">{jalaliDate(detail.createdAt)}</dd></div>
+            <div><dt className="text-overline text-ink-muted">{td('bookingTime')}</dt><dd className="mt-0.5 text-caption text-ink-muted">{formatDate(detail.createdAt, locale)}</dd></div>
           </dl>
         </Card>
         <Card>
@@ -97,7 +98,7 @@ export function DetailBody({ detail, hours, stats, suspendOpen, setSuspendOpen, 
                   <tr key={b.id}>
                     <td className="px-3 py-2.5 text-body text-ink">{b.serviceName ?? '—'}</td>
                     <td className="px-3 py-2.5 text-caption text-ink">{b.customerName ?? '—'}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-caption text-ink-muted">{jalaliDateTime(b.startAt)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-caption text-ink-muted">{formatDateTime(b.startAt, locale)}</td>
                     <td className="px-3 py-2.5"><Badge tone="neutral">{b.status}</Badge></td>
                   </tr>
                 ))}

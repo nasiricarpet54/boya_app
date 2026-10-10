@@ -1,6 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { auditApi, type AuditActionFilter, type AuditTargetFilter } from '@/lib/api/audit';
-import { jalaliDateTime } from '@/lib/utils/jalali';
+import { formatDateTime } from '@/lib/utils/format-date';
 import { faDigits } from '@/lib/utils/persian';
 import { cn } from '@/lib/utils/cn';
 
@@ -19,6 +19,7 @@ export default function AuditLogsPage() {
   const t = useTranslations('auditLogs');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const locale = useLocale();
 
   const [action, setAction] = useState<AuditActionFilter>('all');
   const [targetType, setTargetType] = useState<AuditTargetFilter>('all');
@@ -111,7 +112,7 @@ export default function AuditLogsPage() {
                 <tbody className="divide-y divide-line">
                   {items.map((item) => (
                     <tr key={item.id} className="transition-colors hover:bg-cream/40">
-                      <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{jalaliDateTime(item.createdAt)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{formatDateTime(item.createdAt, locale)}</td>
                       <td className="max-w-44 truncate px-3 py-3 text-body text-ink">
                         {item.actorName ?? (item.actorPhone ? faDigits(item.actorPhone) : '—')}
                       </td>

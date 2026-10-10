@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Ban, CheckCircle2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -17,7 +17,7 @@ import { getApiErrorMessage } from '@/lib/api/errors';
 import { usersApi, type UserListItem, type UserStatusFilter } from '@/lib/api/users';
 import { tenantsApi } from '@/lib/api/tenants';
 import { useAuthStore, type UserRole } from '@/lib/stores/auth';
-import { jalaliDate } from '@/lib/utils/jalali';
+import { formatDate } from '@/lib/utils/format-date';
 import { faDigits, faNumber } from '@/lib/utils/persian';
 import { cn } from '@/lib/utils/cn';
 
@@ -91,6 +91,7 @@ export default function UsersPage() {
   const tConfirm = useTranslations('users.confirm');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const locale = useLocale();
 
   // The signed-in admin: the backend refuses self role/status/delete changes, so
   // this row shows only the edit link (an admin cannot act on their own account
@@ -145,6 +146,11 @@ export default function UsersPage() {
     mutationFn: (id: string) => usersApi.deleteUser(id),
     onSuccess: async () => {
       setDeleteTarget(null);
+      // Soft delete only flips `is_active`: the row still matches the `all`
+      // filter, so it would sit in the table looking untouched. Reset to the
+      // default filter set so the deleted row disappears after the refetch.
+      setStatusFilter('active');
+      setPage(1);
       await invalidate();
       toast({ title: tActions('deleteToast'), variant: 'success' });
     },
@@ -304,7 +310,7 @@ export default function UsersPage() {
                         </Badge>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">
-                        {jalaliDate(item.createdAt)}
+                        {formatDate(item.createdAt, locale)}
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center justify-end gap-1">

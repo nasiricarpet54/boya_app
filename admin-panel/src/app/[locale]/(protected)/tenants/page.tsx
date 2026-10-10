@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Ban, CheckCircle2, Eye, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -12,7 +12,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { Link } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { tenantsApi, type TenantStatus, type TenantStatusFilter } from '@/lib/api/tenants';
-import { jalaliDate } from '@/lib/utils/jalali';
+import { formatDate } from '@/lib/utils/format-date';
 import { faDigits, faNumber } from '@/lib/utils/persian';
 import { cn } from '@/lib/utils/cn';
 const FILTERS: TenantStatusFilter[] = ['all', 'approved', 'pending_approval', 'suspended'];
@@ -26,6 +26,7 @@ export default function TenantsPage() {
   const t = useTranslations('tenants');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const locale = useLocale();
   const [filter, setFilter] = useState<TenantStatusFilter>('all');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -136,7 +137,7 @@ export default function TenantsPage() {
                       <td className="px-3 py-3 text-body text-ink">{faNumber(item.bookingsCount)}</td>
                       <td className="px-3 py-3 text-body text-ink">{faNumber(item.specialistsCount)}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-body text-ink">{faDigits(item.rating.toFixed(1))} <span className="text-overline text-ink-muted">({faNumber(item.reviewCount)})</span></td>
-                      <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{jalaliDate(item.createdAt)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{formatDate(item.createdAt, locale)}</td>
                       <td className="whitespace-nowrap px-3 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
