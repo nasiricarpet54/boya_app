@@ -125,6 +125,14 @@ export const usersApi = {
   },
 
   /**
+   * `PATCH /admin/users/:id` — edit the user's display name. The backend
+   * answers with the full `UserDetail`, so callers can refresh in place.
+   */
+  updateUser(id: string, body: { fullName?: string }): Promise<UserDetail> {
+    return api.patch<UserDetail>(`/admin/users/${id}`, body).then((r) => r.data);
+  },
+
+  /**
    * `POST /admin/users` — create a user. A duplicate phone answers 409. For
    * `specialist` the backend also creates the `specialists` row.
    */

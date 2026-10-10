@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Link, useRouter } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
@@ -46,6 +47,7 @@ function InfoRow({ label, value, ltr = false }: { label: string; value: string; 
 export default function UserDetailPage({ params }: { params: { id: string } }) {
   const t = useTranslations('users');
   const td = useTranslations('users.detail');
+  const te = useTranslations('users.edit');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
@@ -60,6 +62,9 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const [nextTenantId, setNextTenantId] = useState('');
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // Draft for the inline name editor. `null` means pristine: the field follows
+  // the server value until the admin types.
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['admin-user', params.id],
@@ -108,6 +113,19 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast({ title: td('deletedToast'), variant: 'success' });
       router.push('/users');
+    },
+    onError: (e) => toast({ title: getApiErrorMessage(e, td('actionFailed')), variant: 'error' }),
+  });
+
+  // Inline name edit: the field mirrors the server value until the admin types,
+  // then PATCHes `full_name` through the dedicated endpoint. Empty drafts are
+  // rejected client-side (the backend allows 1–100 chars).
+  const nameMutation = useMutation({
+    mutationFn: (fullName: string) => usersApi.updateUser(params.id, { fullName }),
+    onSuccess: async () => {
+      setNameDraft(null);
+      await invalidate();
+      toast({ title: te('saved'), variant: 'success' });
     },
     onError: (e) => toast({ title: getApiErrorMessage(e, td('actionFailed')), variant: 'error' }),
   });
@@ -248,8 +266,33 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         {/* Basic info */}
         <Card>
           <CardTitle className="mb-3">{td('basicInfo')}</CardTitle>
+          {/* Display name doubles as an inline editor wired to PATCH /admin/users/:id. */}
+          <div className="mb-3 flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Input
+                label={te('name')}
+                value={nameDraft ?? user.fullName ?? ''}
+                placeholder={td('noName')}
+                maxLength={100}
+                disabled={nameMutation.isPending}
+                onChange={(e) => setNameDraft(e.target.value)}
+              />
+            </div>
+            <Button
+              size="md"
+              variant="secondary"
+              disabled={
+                nameMutation.isPending ||
+                nameDraft === null ||
+                nameDraft.trim().length === 0 ||
+                nameDraft === (user.fullName ?? '')
+              }
+              onClick={() => nameMutation.mutate(nameDraft!.trim())}
+            >
+              {nameMutation.isPending ? tCommon('loading') : te('save')}
+            </Button>
+          </div>
           <dl className="grid grid-cols-2 gap-3">
-            <InfoRow label={td('name')} value={user.fullName ?? td('noName')} />
             <InfoRow label={td('phone')} value={faDigits(user.phoneNumber)} ltr />
             <InfoRow label={td('role')} value={roleLabels[user.role]} />
             <InfoRow

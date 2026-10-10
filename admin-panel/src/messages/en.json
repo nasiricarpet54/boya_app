@@ -280,6 +280,11 @@
       "createdToast": "User created.",
       "actionFailed": "The action failed. Please try again."
     },
+    "edit": {
+      "name": "Name",
+      "save": "Save",
+      "saved": "User name updated."
+    },
     "detail": {
       "back": "Back to list",
       "basicInfo": "Basic info",
