@@ -106,7 +106,8 @@
       "all": "All",
       "approved": "Active",
       "pending": "Pending",
-      "suspended": "Suspended"
+      "suspended": "Suspended",
+      "archived": "Archived"
     },
     "table": {
       "name": "Name",
@@ -126,13 +127,19 @@
     "statusPending": "Pending",
     "statusSuspended": "Suspended",
     "statusRejected": "Rejected",
+    "statusArchived": "Archived",
     "newSalon": "New salon",
     "actions": {
       "approve": "Approve",
       "suspend": "Suspend",
       "reactivate": "Reactivate",
+      "archive": "Archive Salon",
+      "restore": "Restore",
+      "restoreDesc": "Restore from archive",
       "approveToast": "Salon approved.",
       "suspendToast": "Salon suspended.",
+      "restoreToast": "Salon restored.",
+      "restoreFailed": "Restore failed",
       "actionFailed": "The action failed. Please try again."
     },
     "create": {
@@ -194,6 +201,10 @@
       "reasonPlaceholder": "E.g.: pricing policy violation",
       "approvedToast": "Salon approved.",
       "suspendedToast": "Salon suspended.",
+      "restoredToast": "Salon restored.",
+      "restoreFailed": "Restore failed",
+      "restore": "Restore",
+      "archivedBanner": "This salon is archived",
       "actionFailed": "The action failed. Please try again.",
       "noAddress": "No address recorded.",
       "noHours": "No working hours recorded.",
@@ -225,12 +236,12 @@
       "slugInvalid": "Slug must use lowercase letters, digits or hyphens.",
       "phoneInvalid": "That mobile number is not valid. Correct example: 09120000000",
       "discountInvalid": "Discount must be an integer between 0 and 100.",
-      "deleteButton": "Delete Salon",
-      "deleteTitle": "Delete salon",
-      "deleteConfirm": "Are you sure?",
-      "deleteConfirmDesc": "The salon will be deactivated but data is preserved.",
-      "deleted": "Salon deleted",
-      "deleteFailed": "Delete failed"
+      "deleteButton": "Archive Salon",
+      "deleteTitle": "Archive Salon",
+      "deleteConfirm": "Archive",
+      "deleteConfirmDesc": "The salon will be hidden from the main list but data is preserved. Are you sure?",
+      "deleted": "Salon archived",
+      "deleteFailed": "Archive failed"
     }
   },
   "users": {

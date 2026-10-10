@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { ArrowRight, Ban, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -20,6 +20,7 @@ function statusTone(s: TenantStatus): BadgeTone {
   if (s === 'approved') return 'success';
   if (s === 'pending_approval') return 'warning';
   if (s === 'suspended') return 'error';
+  if (s === 'archived') return 'neutral';
   return 'neutral';
 }
 
@@ -69,7 +70,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     onSuccess: async () => { setEditing(false); setFormError(null); await invalidate(); toast({ title: te('saved'), variant: 'success' }); },
     onError: (e) => toast({ title: getApiErrorMessage(e, te('saveFailed')), variant: 'error' }),
   });
-  // Soft delete: deactivates the salon (is_active=false). On success bounce to the list.
+  // Archive: hides the salon from the main list (status=archived). On success bounce to the list.
   const deleteMutation = useMutation({
     mutationFn: () => tenantsApi.deleteTenant(params.id),
     onSuccess: async () => {
@@ -80,10 +81,15 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     },
     onError: (e) => toast({ title: getApiErrorMessage(e, te('deleteFailed')), variant: 'error' }),
   });
+  const restoreMutation = useMutation({
+    mutationFn: () => tenantsApi.restoreTenant(params.id),
+    onSuccess: async () => { await invalidate(); toast({ title: td('restoredToast'), variant: 'success' }); },
+    onError: (e) => toast({ title: getApiErrorMessage(e, td('restoreFailed')), variant: 'error' }),
+  });
   const detail = query.data;
   const statusLabels: Record<TenantStatus, string> = {
     approved: t('statusApproved'), pending_approval: t('statusPending'),
-    suspended: t('statusSuspended'), rejected: t('statusRejected'),
+    suspended: t('statusSuspended'), rejected: t('statusRejected'), archived: t('statusArchived'),
   };
   // Edit-form values: the seeded server value until the admin types.
   const nameValue = nameDraft ?? detail?.name ?? '';
@@ -177,9 +183,20 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
         <ArrowRight className="h-4 w-4 rotate-180" aria-hidden />{td('back')}
       </Link>
       <PageHeader title={detail.name} subtitle={detail.slug ?? undefined} />
+      {detail.status === 'archived' ? (
+        <Card className="mb-4 border-line bg-cream/60">
+          <CardTitle>{td('archivedBanner')}</CardTitle>
+          <div className="mt-3">
+            <Button size="sm" onClick={() => restoreMutation.mutate()} disabled={restoreMutation.isPending}>
+              <RotateCcw className="h-4 w-4" aria-hidden />
+              {restoreMutation.isPending ? tCommon('loading') : td('restore')}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge tone={statusTone(detail.status)}>{statusLabels[detail.status]}</Badge>
-        {detail.status !== 'approved' ? (
+        {detail.status === 'archived' ? null : detail.status !== 'approved' ? (
           <Button size="sm" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
             <CheckCircle2 className="h-4 w-4" aria-hidden />{detail.status === 'suspended' ? td('reactivate') : td('approve')}
           </Button>
@@ -188,7 +205,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
             <Ban className="h-4 w-4" aria-hidden />{td('suspend')}
           </Button>
         )}
-        <Button size="sm" variant="secondary" onClick={startEdit} disabled={editing}>
+        <Button size="sm" variant="secondary" onClick={startEdit} disabled={editing || detail.status === 'archived'}>
           <Pencil className="h-4 w-4" aria-hidden />{te('button')}
         </Button>
       </div>
@@ -238,6 +255,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
         </Card>
       ) : null}
       <DetailBody detail={detail} hours={hours} stats={stats} suspendOpen={suspendOpen} setSuspendOpen={setSuspendOpen} reason={reason} setReason={setReason} suspendPending={suspendMutation.isPending} onSuspend={() => suspendMutation.mutate(reason.trim())} />
+      {detail.status === 'archived' ? null : (
       <Card className="mt-4 border-error/40">
         <CardTitle>{te('deleteTitle')}</CardTitle>
         <CardCaption className="mt-1">{te('deleteConfirmDesc')}</CardCaption>
@@ -247,6 +265,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
           </Button>
         </div>
       </Card>
+      )}
       <Dialog
         open={deleteOpen}
         onOpenChange={(o) => { if (!o && !deleteMutation.isPending) setDeleteOpen(false); }}

@@ -59,7 +59,7 @@ export interface TenantDetail {
 }
 
 /** `all` is a panel-only filter value; the wire type is the approval_status subset. */
-export type TenantStatus = 'approved' | 'pending_approval' | 'rejected' | 'suspended';
+export type TenantStatus = 'approved' | 'pending_approval' | 'rejected' | 'suspended' | 'archived';
 export type TenantStatusFilter = TenantStatus | 'all';
 export type TenantStatusUpdate = 'approved' | 'suspended';
 
@@ -134,8 +134,13 @@ export const tenantsApi = {
     return api.patch<TenantDetail>(`/admin/tenants/${id}`, body).then((r) => r.data);
   },
 
-  /** `DELETE /admin/tenants/:id` — soft delete (is_active=false, status=suspended). */
+  /** `DELETE /admin/tenants/:id` — archive (is_active=false, status=archived). */
   deleteTenant(id: string): Promise<{ success: boolean; message: string }> {
     return api.delete<{ success: boolean; message: string }>(`/admin/tenants/${id}`).then((r) => r.data);
+  },
+
+  /** `POST /admin/tenants/:id/restore` — restore an archived salon. */
+  restoreTenant(id: string): Promise<{ success: boolean; message: string }> {
+    return api.post<{ success: boolean; message: string }>(`/admin/tenants/${id}/restore`).then((r) => r.data);
   },
 };

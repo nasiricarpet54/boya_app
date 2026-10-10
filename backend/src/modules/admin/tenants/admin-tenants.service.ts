@@ -75,7 +75,14 @@ export class AdminTenantsService {
     const filters: string[] = [];
     const params: unknown[] = [];
     let bind = 1;
-    if (status !== 'all') {
+    if (status === 'all') {
+      // The main list hides archived salons; they live behind status=archived.
+      filters.push(`t.status <> $${bind++}::approval_status`);
+      params.push('archived');
+    } else if (status === 'archived') {
+      filters.push(`t.status = $${bind++}::approval_status`);
+      params.push(status);
+    } else {
       if (!(APPROVAL_STATUSES as readonly string[]).includes(status)) {
         throw new BadRequestException(`status باید یکی از ${[...APPROVAL_STATUSES, 'all'].join('، ')} باشد`);
       }
@@ -263,10 +270,12 @@ export class AdminTenantsService {
   }
 
   /**
-   * Soft-delete a salon: flip `is_active = false` and `status = 'suspended'`
+   * Archive a salon: flip `is_active = false` and `status = 'archived'`
    * rather than removing the row, so its bookings/history stay intact and the
-   * action is reversible. Like `update`, `tenants` has no RLS so the write is
-   * a plain UPDATE. The transition is audited with the before/after status.
+   * action is reversible via `restore`. Archived salons are hidden from the
+   * default list (`list` filters them out unless `status=archived`). Like
+   * `update`, `tenants` has no RLS so the write is a plain UPDATE. The
+   * transition is audited with the before/after status.
    */
   async softDelete(user: AuthenticatedUser, id: string): Promise<{ success: true; message: string }> {
     this.requireAdmin(user);
@@ -278,16 +287,43 @@ export class AdminTenantsService {
     const oldStatus = current[0]!.status;
 
     await this.dataSource.query(
-      `UPDATE tenants SET is_active = false, status = 'suspended' WHERE id = $1::uuid`,
+      `UPDATE tenants SET is_active = false, status = 'archived' WHERE id = $1::uuid`,
       [id],
     );
 
     await this.dataSource.query(
       `INSERT INTO audit_logs (actor_id, tenant_id, action, old_status, new_status)
-       VALUES ($1::uuid, $2::uuid, $3, $4::approval_status, 'suspended')`,
-      [user.userId, id, 'tenant.suspended', oldStatus],
+       VALUES ($1::uuid, $2::uuid, $3, $4::approval_status, 'archived')`,
+      [user.userId, id, 'tenant.archived', oldStatus],
     );
 
-    return { success: true, message: 'سالن غیرفعال شد' };
+    return { success: true, message: 'سالن آرشیو شد و از لیست اصلی ناپدید میشود' };
+  }
+
+  /**
+   * Restore an archived salon: only `archived` rows can come back, and they
+   * return as `approved` + `is_active = true` with a fresh `approved_at`.
+   */
+  async restore(user: AuthenticatedUser, id: string): Promise<{ success: true; message: string }> {
+    this.requireAdmin(user);
+    const current = await this.dataSource.query<Array<{ id: string; status: ApprovalStatus }>>(
+      `SELECT id, status FROM tenants WHERE id = $1::uuid`,
+      [id],
+    );
+    if (current.length === 0) throw new NotFoundException('سالن مورد نظر یافت نشد');
+    if (current[0]!.status !== 'archived') throw new BadRequestException('این سالن آرشیو نشده');
+
+    await this.dataSource.query(
+      `UPDATE tenants SET status = 'approved', is_active = true, approved_at = NOW() WHERE id = $1::uuid`,
+      [id],
+    );
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, old_status, new_status)
+       VALUES ($1::uuid, $2::uuid, $3, 'archived', 'approved')`,
+      [user.userId, id, 'tenant.restored'],
+    );
+
+    return { success: true, message: 'سالن بازگردانی شد' };
   }
 }

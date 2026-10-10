@@ -19,6 +19,7 @@ export const APPROVAL_STATUSES = [
   'approved',
   'rejected',
   'suspended',
+  'archived',
 ] as const;
 
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];

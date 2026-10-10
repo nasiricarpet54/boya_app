@@ -35,7 +35,7 @@ const TENANT_ID = '0b000000-0000-4000-8000-000000000001';
 const OTHER_TENANT_ID = '0b000000-0000-4000-8000-000000000002';
 const DELETE_TENANT_ID = '0b000000-0000-4000-8000-000000000003';
 const ADMIN_ID = '0b000000-0000-4000-8000-0000000000ad';
-const ADMIN_PHONE = '09128880000';
+const ADMIN_PHONE = '09125550000';
 
 /** A well-formed v4 UUID that is guaranteed not to exist as a category/tenant. */
 const MISSING_UUID = '0b999999-9999-4999-8999-999999999999';
@@ -184,11 +184,11 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
     expect(body.message).toContain('مدیر سامانه');
   });
 
-  it('admin → DELETE /admin/tenants/:id → 200 and the salon soft-deletes', async () => {
+  it('admin → DELETE /admin/tenants/:id → 200 and the salon is archived', async () => {
     const response = await adminDelete(DELETE_TENANT_ID);
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ success: true, message: 'سالن غیرفعال شد' });
+    expect(await response.json()).toEqual({ success: true, message: 'سالن آرشیو شد و از لیست اصلی ناپدید میشود' });
 
     // Confirmed in the database, not just the response body.
     const tenants = await queryAsAdmin<{ is_active: boolean; status: string }>(
@@ -196,7 +196,45 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
       [DELETE_TENANT_ID],
     );
     expect(tenants[0].is_active).toBe(false);
-    expect(tenants[0].status).toBe('suspended');
+    expect(tenants[0].status).toBe('archived');
+  });
+
+  it('admin → GET /admin/tenants → archived is hidden from the default list', async () => {
+    await adminDelete(DELETE_TENANT_ID);
+
+    const response = await call('/admin/tenants?status=all', {
+      headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` },
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: Array<{ id: string }> };
+    expect(body.data.some((t) => t.id === DELETE_TENANT_ID)).toBe(false);
+  });
+
+  it('admin → POST /admin/tenants/:id/restore → restores an archived salon to approved', async () => {
+    await adminDelete(DELETE_TENANT_ID);
+
+    const response = await call(`/admin/tenants/${DELETE_TENANT_ID}/restore`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, message: 'سالن بازگردانی شد' });
+
+    const rows = await queryAsAdmin<{ status: string; is_active: boolean }>(
+      `SELECT status, is_active FROM tenants WHERE id = $1`, [DELETE_TENANT_ID],
+    );
+    expect(rows[0].status).toBe('approved');
+    expect(rows[0].is_active).toBe(true);
+  });
+
+  it('admin → POST /admin/tenants/:id/restore → 400 when the salon is not archived', async () => {
+    const response = await call(`/admin/tenants/${TENANT_ID}/restore`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` },
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { message: string };
+    expect(body.message).toContain('آرشیو نشده');
   });
 });
 

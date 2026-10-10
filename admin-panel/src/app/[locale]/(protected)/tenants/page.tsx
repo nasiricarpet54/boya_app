@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { Ban, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
@@ -16,11 +16,12 @@ import { tenantsApi, type TenantStatus, type TenantStatusFilter } from '@/lib/ap
 import { formatDate } from '@/lib/utils/format-date';
 import { faDigits, faNumber } from '@/lib/utils/persian';
 import { cn } from '@/lib/utils/cn';
-const FILTERS: TenantStatusFilter[] = ['all', 'approved', 'pending_approval', 'suspended'];
+const FILTERS: TenantStatusFilter[] = ['all', 'approved', 'pending_approval', 'suspended', 'archived'];
 function statusTone(s: TenantStatus): BadgeTone {
   if (s === 'approved') return 'success';
   if (s === 'pending_approval') return 'warning';
   if (s === 'suspended') return 'error';
+  if (s === 'archived') return 'neutral';
   return 'neutral';
 }
 export default function TenantsPage() {
@@ -65,20 +66,26 @@ export default function TenantsPage() {
     onSuccess: async () => { await invalidate(); toast({ title: tActions('suspendToast'), variant: 'success' }); },
     onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
   });
-  // Soft delete from the list: confirm first, then deactivate.
+  // Archive from the list: confirm first, then hide from the main list.
   const deleteMutation = useMutation({
     mutationFn: (id: string) => tenantsApi.deleteTenant(id),
     onSuccess: async () => { setDeleteTarget(null); await invalidate(); toast({ title: te('deleted'), variant: 'success' }); },
     onError: (e) => toast({ title: getApiErrorMessage(e, te('deleteFailed')), variant: 'error' }),
   });
-  const pendingId = approveMutation.variables ?? suspendMutation.variables ?? deleteMutation.variables;
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => tenantsApi.restoreTenant(id),
+    onSuccess: async () => { await invalidate(); toast({ title: tActions('restoreToast'), variant: 'success' }); },
+    onError: (e) => toast({ title: getApiErrorMessage(e, tActions('restoreFailed')), variant: 'error' }),
+  });
+  const pendingId = approveMutation.variables ?? suspendMutation.variables ?? deleteMutation.variables ?? restoreMutation.variables;
   const statusLabels: Record<TenantStatus, string> = {
     approved: t('statusApproved'), pending_approval: t('statusPending'),
-    suspended: t('statusSuspended'), rejected: t('statusRejected'),
+    suspended: t('statusSuspended'), rejected: t('statusRejected'), archived: t('statusArchived'),
   };
   const filterLabel = (v: TenantStatusFilter) =>
     v === 'all' ? t('filters.all') : v === 'approved' ? t('filters.approved')
-    : v === 'pending_approval' ? t('filters.pending') : t('filters.suspended');
+    : v === 'pending_approval' ? t('filters.pending') : v === 'suspended' ? t('filters.suspended')
+    : t('filters.archived');
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -152,43 +159,56 @@ export default function TenantsPage() {
                           <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
                             <Eye className="h-4 w-4" aria-hidden />{t('table.view')}
                           </Link>
-                          <Link
-                            href={`/tenants/${item.id}?edit=true`}
-                            aria-label={`${te('button')}: ${item.name}`}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-ink-muted transition-colors hover:bg-brand-subtle hover:text-ink"
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden />{te('button')}
-                          </Link>
-                          {item.status === 'approved' ? (
+                          {item.status === 'archived' ? (
                             <Button
                               size="sm"
-                              variant="danger"
-                              aria-label={`${tActions('suspend')}: ${item.name}`}
+                              aria-label={`${tActions('restore')}: ${item.name}`}
                               disabled={pendingId === item.id}
-                              onClick={() => suspendMutation.mutate(item.id)}
+                              onClick={() => restoreMutation.mutate(item.id)}
                             >
-                              <Ban className="h-4 w-4" aria-hidden />{tActions('suspend')}
+                              <RotateCcw className="h-4 w-4" aria-hidden />{tActions('restore')}
                             </Button>
                           ) : (
-                            <Button
-                              size="sm"
-                              aria-label={`${tActions('approve')}: ${item.name}`}
-                              disabled={pendingId === item.id}
-                              onClick={() => approveMutation.mutate(item.id)}
-                            >
-                              <CheckCircle2 className="h-4 w-4" aria-hidden />
-                              {item.status === 'suspended' ? tActions('reactivate') : tActions('approve')}
-                            </Button>
+                            <>
+                              <Link
+                                href={`/tenants/${item.id}?edit=true`}
+                                aria-label={`${te('button')}: ${item.name}`}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-ink-muted transition-colors hover:bg-brand-subtle hover:text-ink"
+                              >
+                                <Pencil className="h-4 w-4" aria-hidden />{te('button')}
+                              </Link>
+                              {item.status === 'approved' ? (
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  aria-label={`${tActions('suspend')}: ${item.name}`}
+                                  disabled={pendingId === item.id}
+                                  onClick={() => suspendMutation.mutate(item.id)}
+                                >
+                                  <Ban className="h-4 w-4" aria-hidden />{tActions('suspend')}
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  aria-label={`${tActions('approve')}: ${item.name}`}
+                                  disabled={pendingId === item.id}
+                                  onClick={() => approveMutation.mutate(item.id)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" aria-hidden />
+                                  {item.status === 'suspended' ? tActions('reactivate') : tActions('approve')}
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                aria-label={`${te('deleteButton')}: ${item.name}`}
+                                disabled={pendingId === item.id}
+                                onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden />
+                              </Button>
+                            </>
                           )}
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            aria-label={`${te('deleteButton')}: ${item.name}`}
-                            disabled={pendingId === item.id}
-                            onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden />
-                          </Button>
                         </div>
                       </td>
                     </tr>

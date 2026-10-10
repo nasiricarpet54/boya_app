@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -48,11 +48,21 @@ export class AdminTenantsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'غیرفعال‌سازی سالن', description: 'soft delete: is_active=false و status=suspended + ثبت در audit_logs.' })
+  @ApiOperation({ summary: 'آرشیو سالن', description: 'archive: is_active=false و status=archived + ثبت در audit_logs.' })
   remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ success: true; message: string }> {
     return this.tenants.softDelete(user, id);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'بازگردانی سالن از آرشیو', description: 'فقط status=archived: approved + is_active=true + approved_at=NOW().' })
+  restore(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ success: true; message: string }> {
+    return this.tenants.restore(user, id);
   }
 }

@@ -11,12 +11,12 @@ export class ListTenantsQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    enum: ['approved', 'pending_approval', 'rejected', 'suspended', 'all'],
+    enum: ['approved', 'pending_approval', 'rejected', 'suspended', 'archived', 'all'],
     example: 'all',
   })
   @IsOptional()
-  @IsIn(['approved', 'pending_approval', 'rejected', 'suspended', 'all'], {
-    message: 'status باید یکی از approved، pending_approval، rejected، suspended یا all باشد',
+  @IsIn(['approved', 'pending_approval', 'rejected', 'suspended', 'archived', 'all'], {
+    message: 'status باید یکی از approved، pending_approval، rejected، suspended، archived یا all باشد',
   })
   status?: string;
 
