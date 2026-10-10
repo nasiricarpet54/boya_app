@@ -206,6 +206,31 @@
       "bookingCustomer": "مشتری",
       "bookingTime": "زمان",
       "bookingStatus": "وضعیت"
+    },
+    "edit": {
+      "button": "ویرایش",
+      "save": "ذخیره",
+      "saving": "در حال ذخیره...",
+      "cancel": "انصراف",
+      "saved": "ذخیره شد",
+      "saveFailed": "خطا در ذخیره",
+      "nameLabel": "نام سالن",
+      "nameEnLabel": "نام انگلیسی",
+      "slugLabel": "اسلاگ",
+      "addressLabel": "آدرس",
+      "phoneLabel": "تلفن",
+      "discountLabel": "درصد تخفیف (۰ تا ۱۰۰)",
+      "featuredLabel": "سالن ویژه",
+      "nameRequired": "نام سالن الزامی است (حداقل ۲ حرف).",
+      "slugInvalid": "اسلاگ فقط حروف کوچک انگلیسی، عدد و خط تیره باشد.",
+      "phoneInvalid": "شماره موبایل معتبر نیست. نمونه درست: ۰۹۱۲۰۰۰۰۰۰۰",
+      "discountInvalid": "درصد تخفیف باید عدد صحیح بین ۰ تا ۱۰۰ باشد.",
+      "deleteButton": "حذف سالن",
+      "deleteTitle": "حذف سالن",
+      "deleteConfirm": "آیا مطمئن هستید؟",
+      "deleteConfirmDesc": "سالن غیرفعال میشود ولی دادهها حفظ میشوند.",
+      "deleted": "سالن حذف شد",
+      "deleteFailed": "خطا در حذف"
     }
   },
   "users": {

@@ -63,6 +63,18 @@ export type TenantStatus = 'approved' | 'pending_approval' | 'rejected' | 'suspe
 export type TenantStatusFilter = TenantStatus | 'all';
 export type TenantStatusUpdate = 'approved' | 'suspended';
 
+/** Body of `PATCH /admin/tenants/:id` (edit of the public salon fields). */
+export interface UpdateTenantBody {
+  name?: string;
+  nameEn?: string;
+  slug?: string;
+  address?: string;
+  phone?: string;
+  categoryId?: string;
+  discountPercent?: number;
+  isFeatured?: boolean;
+}
+
 export interface ListTenantsQuery {
   search?: string;
   status?: TenantStatusFilter;
@@ -115,5 +127,15 @@ export const tenantsApi = {
   /** `PATCH /admin/tenants/:id/status` — approve / suspend / reactivate. */
   updateStatus(id: string, body: { status: TenantStatusUpdate; reason?: string }): Promise<TenantDetail> {
     return api.patch<TenantDetail>(`/admin/tenants/${id}/status`, body).then((r) => r.data);
+  },
+
+  /** `PATCH /admin/tenants/:id` — edit public salon fields (name, slug, address, phone, category, discount, featured). */
+  updateTenant(id: string, body: UpdateTenantBody): Promise<TenantDetail> {
+    return api.patch<TenantDetail>(`/admin/tenants/${id}`, body).then((r) => r.data);
+  },
+
+  /** `DELETE /admin/tenants/:id` — soft delete (is_active=false, status=suspended). */
+  deleteTenant(id: string): Promise<{ success: boolean; message: string }> {
+    return api.delete<{ success: boolean; message: string }>(`/admin/tenants/${id}`).then((r) => r.data);
   },
 };

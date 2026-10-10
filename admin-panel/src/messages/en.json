@@ -206,6 +206,31 @@
       "bookingCustomer": "Customer",
       "bookingTime": "Time",
       "bookingStatus": "Status"
+    },
+    "edit": {
+      "button": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "saved": "Saved",
+      "saveFailed": "Save failed",
+      "nameLabel": "Salon name",
+      "nameEnLabel": "English name",
+      "slugLabel": "Slug",
+      "addressLabel": "Address",
+      "phoneLabel": "Phone",
+      "discountLabel": "Discount percent (0-100)",
+      "featuredLabel": "Featured salon",
+      "nameRequired": "Salon name is required (at least 2 characters).",
+      "slugInvalid": "Slug must use lowercase letters, digits or hyphens.",
+      "phoneInvalid": "That mobile number is not valid. Correct example: 09120000000",
+      "discountInvalid": "Discount must be an integer between 0 and 100.",
+      "deleteButton": "Delete Salon",
+      "deleteTitle": "Delete salon",
+      "deleteConfirm": "Are you sure?",
+      "deleteConfirmDesc": "The salon will be deactivated but data is preserved.",
+      "deleted": "Salon deleted",
+      "deleteFailed": "Delete failed"
     }
   },
   "users": {

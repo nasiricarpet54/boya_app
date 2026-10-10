@@ -1,12 +1,13 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { Ban, CheckCircle2, Eye, Plus } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
+import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Link } from '@/lib/navigation';
@@ -47,6 +48,8 @@ export default function TenantsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const tActions = useTranslations('tenants.actions');
+  const te = useTranslations('tenants.edit');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   /** Refresh the list (and the detail page cache) after a status change. */
   const invalidate = () =>
@@ -62,7 +65,13 @@ export default function TenantsPage() {
     onSuccess: async () => { await invalidate(); toast({ title: tActions('suspendToast'), variant: 'success' }); },
     onError: (e) => toast({ title: getApiErrorMessage(e, tActions('actionFailed')), variant: 'error' }),
   });
-  const pendingId = approveMutation.variables ?? suspendMutation.variables;
+  // Soft delete from the list: confirm first, then deactivate.
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tenantsApi.deleteTenant(id),
+    onSuccess: async () => { setDeleteTarget(null); await invalidate(); toast({ title: te('deleted'), variant: 'success' }); },
+    onError: (e) => toast({ title: getApiErrorMessage(e, te('deleteFailed')), variant: 'error' }),
+  });
+  const pendingId = approveMutation.variables ?? suspendMutation.variables ?? deleteMutation.variables;
   const statusLabels: Record<TenantStatus, string> = {
     approved: t('statusApproved'), pending_approval: t('statusPending'),
     suspended: t('statusSuspended'), rejected: t('statusRejected'),
@@ -143,6 +152,13 @@ export default function TenantsPage() {
                           <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
                             <Eye className="h-4 w-4" aria-hidden />{t('table.view')}
                           </Link>
+                          <Link
+                            href={`/tenants/${item.id}?edit=true`}
+                            aria-label={`${te('button')}: ${item.name}`}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-ink-muted transition-colors hover:bg-brand-subtle hover:text-ink"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />{te('button')}
+                          </Link>
                           {item.status === 'approved' ? (
                             <Button
                               size="sm"
@@ -164,6 +180,15 @@ export default function TenantsPage() {
                               {item.status === 'suspended' ? tActions('reactivate') : tActions('approve')}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            aria-label={`${te('deleteButton')}: ${item.name}`}
+                            disabled={pendingId === item.id}
+                            onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -181,6 +206,28 @@ export default function TenantsPage() {
           </>
         )}
       </Card>
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o && !deleteMutation.isPending) setDeleteTarget(null); }}
+        title={te('deleteTitle')}
+        description={te('deleteConfirmDesc')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteMutation.isPending || !deleteTarget}
+              onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id); }}
+            >
+              {deleteMutation.isPending ? tCommon('loading') : te('deleteConfirm')}
+            </Button>
+          </>
+        }
+      >
+        {deleteTarget ? <p className="text-body font-semibold text-ink">{deleteTarget.name}</p> : null}
+      </Dialog>
     </>
   );
 }
