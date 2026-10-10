@@ -9,10 +9,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class ArchiveTenantStatus1730000000036 implements MigrationInterface {
   name = 'ArchiveTenantStatus1730000000036';
 
+  transaction = false; // ALTER TYPE ADD VALUE cannot run inside a transaction block
+
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TYPE approval_status ADD VALUE IF NOT EXISTS 'archived'`,
-    );
+    await queryRunner.query(`ALTER TYPE approval_status ADD VALUE IF NOT EXISTS 'archived'`);
   }
 
   public async down(): Promise<void> {
