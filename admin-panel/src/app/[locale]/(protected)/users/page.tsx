@@ -48,7 +48,7 @@ export default function UsersPage() {
   const tErrors = useTranslations('errors');
 
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<UserStatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<UserStatusFilter>('active');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -254,6 +254,37 @@ export default function UsersPage() {
       </Card>
 
       <Card>
+        <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
+          <label
+            className="inline-flex cursor-pointer items-center gap-2 text-body text-ink"
+            title={t('softDeleteHint')}
+          >
+            <button
+              type="button"
+              role="switch"
+              aria-checked={statusFilter !== 'active'}
+              aria-label={t('showInactive')}
+              title={t('softDeleteHint')}
+              onClick={() => {
+                setStatusFilter(statusFilter !== 'active' ? 'active' : 'all');
+                setPage(1);
+              }}
+              className={cn(
+                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+                statusFilter !== 'active' ? 'bg-brand-copper' : 'bg-line',
+              )}
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  'absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-1 transition-all',
+                  statusFilter !== 'active' ? 'right-0.5' : 'right-[22px]',
+                )}
+              />
+            </button>
+            {t('showInactive')}
+          </label>
+        </div>
         {query.isLoading ? (
           <div className="flex flex-col gap-3" aria-busy="true">
             {[0, 1, 2, 3, 4].map((i) => (
@@ -291,7 +322,13 @@ export default function UsersPage() {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {items.map((item) => (
-                    <tr key={item.id} className="transition-colors hover:bg-cream/40">
+                    <tr
+                      key={item.id}
+                      className={cn(
+                        'transition-colors hover:bg-cream/40',
+                        !item.isActive && 'opacity-60',
+                      )}
+                    >
                       <td className="max-w-56 truncate px-3 py-3 text-body font-semibold text-ink">
                         {item.fullName ?? t('detail.noName')}
                       </td>
@@ -305,9 +342,11 @@ export default function UsersPage() {
                         {item.tenantName ?? '—'}
                       </td>
                       <td className="px-3 py-3">
-                        <Badge tone={item.isActive ? 'success' : 'error'}>
-                          {item.isActive ? t('statusActive') : t('statusInactive')}
-                        </Badge>
+                        <span title={item.isActive ? undefined : t('softDeleteHint')}>
+                          <Badge tone={item.isActive ? 'success' : 'error'}>
+                            {item.isActive ? t('statusActive') : t('statusInactive')}
+                          </Badge>
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">
                         {formatDate(item.createdAt, locale)}

@@ -229,6 +229,8 @@
     },
     "statusActive": "فعال",
     "statusInactive": "غیرفعال",
+    "showInactive": "نمایش غیرفعال‌ها",
+    "softDeleteHint": "کاربران غیرفعال حذف نشده‌اند، فقط غیرفعال شده‌اند",
     "table": {
       "name": "نام",
       "phone": "تلفن",

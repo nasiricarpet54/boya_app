@@ -229,6 +229,8 @@
     },
     "statusActive": "Active",
     "statusInactive": "Inactive",
+    "showInactive": "Show inactive",
+    "softDeleteHint": "Inactive users are not deleted, only deactivated",
     "table": {
       "name": "Name",
       "phone": "Phone",
