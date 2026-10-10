@@ -1,9 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
 import { APPROVAL_STATUSES, ApprovalStatus } from '../../../common/approval-status';
 import { ListTenantsQueryDto } from './dto/list-tenants-query.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 
 export type TenantStatusTransition = 'approved' | 'suspended';
 
@@ -182,5 +183,111 @@ export class AdminTenantsService {
       [user.userId, id, status === 'approved' ? 'tenant.approved' : 'tenant.suspended', oldStatus, status, reason ?? null],
     );
     return this.findOne(user, id);
+  }
+
+  /**
+   * Edit the public fields of a salon. `tenants` carries no RLS (see the
+   * migration note on 1730000000023), so the write is a plain UPDATE — the
+   * same reason `updateStatus` above does not need a SECURITY DEFINER helper.
+   *
+   * Only fields the caller actually sent are written: an absent property is
+   * `undefined`, and folding those into the SET clause would null out columns
+   * the client never meant to touch. A new `slug` is uniqueness-checked first
+   * (the global `uq_tenants_slug` constraint surfaces as a 409 rather than a
+   * raw 23505), and a supplied `categoryId` must name a real
+   * `service_categories` row. The transition is audited, then the refreshed
+   * detail is returned so the caller sees the same shape as `findOne`.
+   */
+  async update(user: AuthenticatedUser, id: string, dto: UpdateTenantDto): Promise<TenantDetail> {
+    this.requireAdmin(user);
+    const current = await this.dataSource.query<Array<{ id: string; slug: string | null }>>(
+      `SELECT id, slug FROM tenants WHERE id = $1::uuid`,
+      [id],
+    );
+    if (current.length === 0) throw new NotFoundException('سالن مورد نظر یافت نشد');
+
+    // Only a *changed* slug needs the uniqueness probe; re-sending the current
+    // one would 409 against its own row.
+    if (dto.slug !== undefined && dto.slug !== current[0]!.slug) {
+      const clash = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM tenants WHERE slug = $1 AND id <> $2::uuid`,
+        [dto.slug, id],
+      );
+      if (clash.length > 0) throw new ConflictException('این اسلاگ قبلاً استفاده شده است');
+    }
+
+    if (dto.categoryId !== undefined) {
+      const categories = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM service_categories WHERE id = $1::uuid`,
+        [dto.categoryId],
+      );
+      if (categories.length === 0) throw new NotFoundException('دسته‌بندی مورد نظر یافت نشد');
+    }
+
+    // Build the SET list from only the defined fields; bind parameters in order.
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    let bind = 1;
+    const set = (column: string, value: unknown): void => {
+      sets.push(`${column} = $${bind++}`);
+      params.push(value);
+    };
+    if (dto.name !== undefined) set('name', dto.name);
+    if (dto.nameEn !== undefined) set('name_en', dto.nameEn);
+    if (dto.slug !== undefined) set('slug', dto.slug);
+    if (dto.address !== undefined) set('address', dto.address);
+    if (dto.phone !== undefined) set('phone', dto.phone);
+    if (dto.categoryId !== undefined) set('category_id', dto.categoryId);
+    if (dto.discountPercent !== undefined) set('discount_percent', dto.discountPercent);
+    if (dto.isFeatured !== undefined) set('is_featured', dto.isFeatured);
+
+    if (sets.length > 0) {
+      await this.dataSource.query(
+        `UPDATE tenants SET ${sets.join(', ')} WHERE id = $${bind}::uuid`,
+        [...params, id],
+      );
+    }
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, reason)
+       VALUES ($1::uuid, $2::uuid, $3, $4)`,
+      [
+        user.userId,
+        id,
+        'tenant.updated',
+        `fields:${Object.keys(dto).join(',') || 'none'}`,
+      ],
+    );
+
+    return this.findOne(user, id);
+  }
+
+  /**
+   * Soft-delete a salon: flip `is_active = false` and `status = 'suspended'`
+   * rather than removing the row, so its bookings/history stay intact and the
+   * action is reversible. Like `update`, `tenants` has no RLS so the write is
+   * a plain UPDATE. The transition is audited with the before/after status.
+   */
+  async softDelete(user: AuthenticatedUser, id: string): Promise<{ success: true; message: string }> {
+    this.requireAdmin(user);
+    const current = await this.dataSource.query<Array<{ id: string; status: ApprovalStatus }>>(
+      `SELECT id, status FROM tenants WHERE id = $1::uuid`,
+      [id],
+    );
+    if (current.length === 0) throw new NotFoundException('سالن مورد نظر یافت نشد');
+    const oldStatus = current[0]!.status;
+
+    await this.dataSource.query(
+      `UPDATE tenants SET is_active = false, status = 'suspended' WHERE id = $1::uuid`,
+      [id],
+    );
+
+    await this.dataSource.query(
+      `INSERT INTO audit_logs (actor_id, tenant_id, action, old_status, new_status)
+       VALUES ($1::uuid, $2::uuid, $3, $4::approval_status, 'suspended')`,
+      [user.userId, id, 'tenant.suspended', oldStatus],
+    );
+
+    return { success: true, message: 'سالن غیرفعال شد' };
   }
 }
