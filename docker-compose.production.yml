@@ -113,6 +113,17 @@ services:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://boya.bcshopir.ir/api/v1
 
+  # Customer Flutter Web app — the prebuilt web release served by nginx under
+  # the /app subpath. Only reachable on the compose network; Caddy proxies
+  # /app* to it. The web build must be produced with --base-href /app/.
+  customer-web:
+    build:
+      context: ./mobile/customer_app
+    container_name: boya_customer_web
+    restart: unless-stopped
+    expose:
+      - "80"
+
   caddy:
     image: caddy:2-alpine
     container_name: boya_caddy_production

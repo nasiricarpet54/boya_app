@@ -44,6 +44,22 @@ boya.bcshopir.ir {
 		reverse_proxy admin:3001
 	}
 
+	# Customer Flutter Web app (prebuilt static web build served by nginx).
+	# handle_path (not handle) strips the /app prefix before proxying, so nginx
+	# serves the build from its own root while the browser still sees /app/*
+	# URLs — the web build is produced with --base-href /app/, so every asset
+	# URL resolves back here. Bare /app 308s to /app/ so the trailing-slash-
+	# relative asset URLs in index.html resolve correctly.
+	# NOTE: inside a handle block, redir's first arg is read as a request
+	# matcher, so the explicit * keeps /app/ as the target; 308 preserves the
+	# method (permanent).
+	handle_path /app/* {
+		reverse_proxy customer-web:80
+	}
+	handle /app {
+		redir * /app/ 308
+	}
+
 	# Fallback: anything else lands on the admin panel. `/admin/fa` (not the
 	# bare `/admin/`, which Next 308s back to a 404ing `/admin`).
 	handle {
