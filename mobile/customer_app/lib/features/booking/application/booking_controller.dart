@@ -40,6 +40,14 @@ class BookingController extends Notifier<BookingState> {
           'serviceId': draft.serviceId,
           'startsAt': (draft.slotStart ?? draft.date).toUtc().toIso8601String(),
           if (draft.notes != null && draft.notes!.isNotEmpty) 'notes': draft.notes,
+          // ADR-011: on-site flags. The backend drops an address that arrives
+          // without isMobile, so the fields travel together.
+          if (draft.isMobile) ...{
+            'isMobile': true,
+            'customerAddress': draft.customerAddress,
+            if (draft.customerLatitude != null) 'customerLatitude': draft.customerLatitude,
+            if (draft.customerLongitude != null) 'customerLongitude': draft.customerLongitude,
+          },
         },
       );
       final record = BookingRecord.fromJson(response.data ?? const <String, dynamic>{});

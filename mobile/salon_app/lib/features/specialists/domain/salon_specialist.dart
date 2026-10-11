@@ -18,6 +18,7 @@ class SalonSpecialist {
     this.skills = const [],
     this.commissionRate = 50,
     this.isActive = true,
+    this.offersMobileService = false,
     this.bookingsCount = 0,
   });
 
@@ -35,6 +36,7 @@ class SalonSpecialist {
       ],
       commissionRate: (json['commissionRate'] as num?)?.toDouble() ?? 50,
       isActive: json['isActive'] as bool? ?? true,
+      offersMobileService: json['offersMobileService'] as bool? ?? false,
       bookingsCount: (json['bookingsCount'] as num?)?.toInt() ?? 0,
     );
   }
@@ -48,6 +50,11 @@ class SalonSpecialist {
   final List<String> skills;
   final double commissionRate;
   final bool isActive;
+
+  /// ADR-011: whether this specialist travels to the customer. Independent of
+  /// any one service's own flag — both must be true for an on-site booking.
+  final bool offersMobileService;
+
   final int bookingsCount;
 
   /// First letter of the display name, for the avatar tile when there is no

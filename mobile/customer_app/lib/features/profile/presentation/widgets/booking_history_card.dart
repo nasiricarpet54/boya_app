@@ -2,6 +2,7 @@ import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/widgets/mobile_badge.dart';
 import '../../domain/booking_record.dart';
 import 'review_dialog.dart';
 
@@ -24,6 +25,9 @@ class BookingHistoryCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(child: Text(title, style: BoyaTypography.title)),
+                // ADR-011: the car badge sits next to the status chip so a
+                // mobile booking reads as one at a glance.
+                if (booking.isMobile) ...[const MobileBadge(), const SizedBox(width: 8)],
                 _StatusBadge(status: booking.status),
               ],
             ),
@@ -34,6 +38,34 @@ class BookingHistoryCard extends ConsumerWidget {
             Text(formatJalaliTime(booking.start), style: BoyaTypography.caption.copyWith(color: BoyaColors.ink)),
             const SizedBox(height: 12),
             Text(formatPrice(booking.totalPrice), style: BoyaTypography.title.copyWith(color: BoyaColors.primary)),
+            // ADR-011: on-site visits have no salon to show up at, so the card
+            // carries the address the specialist was sent to instead.
+            if (booking.isMobile) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: BoyaColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 16, color: BoyaColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        booking.customerAddress?.isNotEmpty == true
+                            ? booking.customerAddress!
+                            : 'محل اجرا: آدرس ثبت‌شده شما',
+                        style: BoyaTypography.caption.copyWith(color: BoyaColors.ink),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (booking.needsReview) ...[
               const SizedBox(height: 12),
               SizedBox(

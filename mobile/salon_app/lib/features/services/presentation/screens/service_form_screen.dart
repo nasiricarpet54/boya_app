@@ -33,6 +33,10 @@ class _ServiceFormScreenState extends ConsumerState<ServiceFormScreen> {
   String? _lineId;
   bool _depositRequired = false;
   bool _isActive = true;
+
+  /// ADR-011: edited per service, because some services need fixed equipment
+  /// and can never leave the salon no matter who offers them.
+  bool _isMobileAvailable = false;
   bool _seeded = false;
   bool _saving = false;
 
@@ -59,6 +63,7 @@ class _ServiceFormScreenState extends ConsumerState<ServiceFormScreen> {
       _depositController.text =
           extra.depositAmount == null ? '' : toPersianDigits(extra.depositAmount!.round());
       _isActive = extra.isActive;
+      _isMobileAvailable = extra.isMobileAvailable;
     } else if (extra is String) {
       _lineId = extra;
     }
@@ -100,6 +105,7 @@ class _ServiceFormScreenState extends ConsumerState<ServiceFormScreen> {
           depositRequired: _depositRequired,
           depositAmount: deposit,
           isActive: _isActive,
+          isMobileAvailable: _isMobileAvailable,
         );
       } else {
         await api.createService(
@@ -121,6 +127,29 @@ class _ServiceFormScreenState extends ConsumerState<ServiceFormScreen> {
       messenger.showSnackBar(SnackBar(content: Text(messageFromDio(error))));
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Toggles ADR-011's on-site flag and persists it immediately (see the
+  /// specialist form for the same rationale): the switch is a property of the
+  /// service itself, not of the name/price draft the save button commits, so it
+  /// is saved on its own and rolled back if the write fails.
+  Future<void> _toggleMobileService(bool value) async {
+    if (!_isEditing) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final previous = _isMobileAvailable;
+    setState(() => _isMobileAvailable = value);
+    try {
+      await ref
+          .read(servicesApiProvider)
+          .updateService(_service!.id, isMobileAvailable: value);
+      ref.invalidate(lineServicesProvider(_lineId!));
+      messenger.showSnackBar(
+        SnackBar(content: Text(value ? 'خدمت به‌صورت سیار قابل ارائه شد' : 'این خدمت فقط در سالن ارائه می‌شود')),
+      );
+    } catch (error) {
+      if (mounted) setState(() => _isMobileAvailable = previous);
+      messenger.showSnackBar(SnackBar(content: Text(messageFromDio(error))));
     }
   }
 
@@ -210,6 +239,16 @@ class _ServiceFormScreenState extends ConsumerState<ServiceFormScreen> {
                 title: Text('فعال', style: BoyaTypography.body),
                 value: _isActive,
                 onChanged: (value) => setState(() => _isActive = value),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('قابل ارائه به‌صورت سیار', style: BoyaTypography.body),
+                subtitle: const Text(
+                  'اگر روشن باشد، این خدمت در محل مشتری قابل انجام است',
+                ),
+                value: _isMobileAvailable,
+                onChanged: _toggleMobileService,
               ),
             ],
             const SizedBox(height: 24),

@@ -26,12 +26,16 @@ import '../widgets/top_bar.dart';
 final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
+  final mobileOnly = ref.watch(homeMobileFilterProvider);
 
   return ref.watch(salonsApiProvider).getSalons(
         lat: location.lat,
         lng: location.lng,
         categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
         sort: 'distance',
+        // ADR-011: `?mobile=true`. Kept off the request entirely while the chip
+        // is unselected so the unfiltered feed stays cache-compatible.
+        mobile: mobileOnly ? true : null,
       );
 });
 

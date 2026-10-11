@@ -71,6 +71,7 @@ class SpecialistApi {
     List<String>? skills,
     double? commissionRate,
     bool? isActive,
+    bool? offersMobileService,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/specialists/$id',
@@ -79,6 +80,7 @@ class SpecialistApi {
         'skills': ?skills,
         'commissionRate': ?commissionRate,
         'isActive': ?isActive,
+        'offersMobileService': ?offersMobileService,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});

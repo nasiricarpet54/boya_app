@@ -15,6 +15,8 @@ class BookingConfirmDialog extends StatelessWidget {
     super.key,
     this.price,
     this.time,
+    this.isMobile = false,
+    this.address,
   });
 
   final String salonName;
@@ -25,6 +27,12 @@ class BookingConfirmDialog extends StatelessWidget {
 
   /// `HH:MM` label of the picked slot, when one was chosen.
   final String? time;
+
+  /// ADR-011: the customer asked for the visit at their own place.
+  final bool isMobile;
+
+  /// ADR-011: the address the specialist travels to, shown when [isMobile].
+  final String? address;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +48,10 @@ class BookingConfirmDialog extends StatelessWidget {
           _SummaryRow(label: 'تاریخ', value: formatJalaliFull(date)),
           if (time != null) _SummaryRow(label: 'ساعت', value: time!),
           if (price != null) _SummaryRow(label: 'مبلغ خدمت', value: price!),
+          // ADR-011: the on-site visit swaps the salon address for the
+          // customer's, which is what the confirmation is really approving.
+          if (isMobile && address != null && address!.isNotEmpty)
+            _SummaryRow(label: 'محل اجرا', value: address!),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,

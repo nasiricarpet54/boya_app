@@ -14,6 +14,7 @@ class SalonSummary {
     required this.tags,
     required this.minPrice,
     this.isOpenNow = false,
+    this.offersMobileService = false,
   });
 
   /// Parses one `GET /salons` item.
@@ -35,6 +36,7 @@ class SalonSummary {
                 const <String>[],
         minPrice: (json['minPrice'] as num?)?.toInt() ?? 0,
         isOpenNow: json['isOpenNow'] as bool? ?? false,
+        offersMobileService: json['offersMobileService'] as bool? ?? false,
       );
 
   final String id;
@@ -63,4 +65,9 @@ class SalonSummary {
 
   /// Whether the salon is serving at request time, Tehran clock.
   final bool isOpenNow;
+
+  /// ADR-011: whether this salon has at least one specialist who travels to
+  /// the customer. The list endpoint leaves it out until it has something to
+  /// report, so absent means false and the card simply shows no car badge.
+  final bool offersMobileService;
 }

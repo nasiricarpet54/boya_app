@@ -58,6 +58,10 @@ class BookingSummary {
     this.serviceName,
     this.lineId,
     this.notes,
+    this.isMobile = false,
+    this.customerAddress,
+    this.customerLatitude,
+    this.customerLongitude,
   });
 
   factory BookingSummary.fromJson(Map<String, dynamic> json) => BookingSummary(
@@ -77,6 +81,12 @@ class BookingSummary {
         serviceName: json['serviceName'] as String?,
         lineId: json['lineId'] as String?,
         notes: json['notes'] as String?,
+        isMobile: json['isMobile'] as bool? ?? false,
+        customerAddress: json['customerAddress'] as String?,
+        // `numeric` travels as decimal text (ADR-011), so the string form is
+        // parsed rather than trusted.
+        customerLatitude: coordinateFromJson(json['customerLatitude']),
+        customerLongitude: coordinateFromJson(json['customerLongitude']),
       );
 
   final String id;
@@ -103,6 +113,23 @@ class BookingSummary {
   final String? lineId;
   final String? notes;
 
+  /// ADR-011: the customer asked the specialist to come to them rather than
+  /// visiting the salon.
+  final bool isMobile;
+
+  /// Where the specialist travels to when [isMobile]. Optional even then: a
+  /// booking can be on-site with only a textual address.
+  final String? customerAddress;
+
+  /// Coordinates of [customerAddress], when the customer dropped a pin. The
+  /// detail screen turns these into a Neshan navigation link.
+  final double? customerLatitude;
+  final double? customerLongitude;
+
+  /// Whether the detail screen can offer a navigation link: a coordinate pair
+  /// is only useful with both halves present.
+  bool get hasCoordinates => customerLatitude != null && customerLongitude != null;
+
   /// Whether the panel may still approve or reject this booking.
   bool get isPending => status == BookingStatus.pending;
 
@@ -123,6 +150,22 @@ class BookingSummary {
     if (phone != null && phone.isNotEmpty) return phone;
     return 'مشتری';
   }
+}
+
+/// Parses a booking coordinate (ADR-011).
+///
+/// Postgres stores `customer_latitude`/`customer_longitude` as `numeric(10,7)`,
+/// and `pg` sends that back as decimal *text* — the backend's own integration
+/// test asserts on `Number(...)` for the same reason. A number that slipped
+/// through as a real JSON number still parses, and anything unparseable is
+/// `null`: a missing coordinate just costs the navigation button.
+double? coordinateFromJson(Object? value) {
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    final parsed = double.tryParse(value.trim());
+    return parsed;
+  }
+  return null;
 }
 
 /// One page of `GET /salon/me/bookings`.

@@ -1,6 +1,7 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/mobile_badge.dart';
 import '../../domain/salon_detail.dart';
 
 class SalonServiceTile extends StatelessWidget {
@@ -27,6 +28,12 @@ class SalonServiceTile extends StatelessWidget {
               style: BoyaTypography.body.copyWith(color: BoyaColors.ink),
             ),
           ),
+          // ADR-011: the «سیار» pill sits between the name and the price so a
+          // service that can leave the salon is visible without tapping it.
+          if (service.isMobileAvailable) ...[
+            const SizedBox(width: 8),
+            const MobileBadge(dense: true),
+          ],
           const SizedBox(width: 12),
           Text(
             formatPrice(service.price),
@@ -108,6 +115,13 @@ class SalonSpecialistStrip extends StatelessWidget {
                         style: BoyaTypography.caption.copyWith(color: BoyaColors.ink),
                         textAlign: TextAlign.center,
                       ),
+                      // ADR-011: only a specialist whose profile says they offer
+                      // mobile service gets the «سیار» pill, because the booking
+                      // form lets the customer request one.
+                      if (specialist.offersMobileService) ...[
+                        const SizedBox(height: 6),
+                        const MobileBadge(),
+                      ],
                     ],
                   ),
                 ),

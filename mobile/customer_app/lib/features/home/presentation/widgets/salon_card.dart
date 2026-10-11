@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/widgets/mobile_badge.dart';
 import '../../application/home_providers.dart';
 import '../../domain/salon_summary.dart';
 
@@ -119,11 +120,21 @@ class _SalonInfo extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          salon.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: BoyaTypography.caption.copyWith(color: BoyaColors.ink, fontWeight: FontWeight.w700),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                salon.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: BoyaTypography.caption.copyWith(color: BoyaColors.ink, fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (salon.offersMobileService) ...[
+              const SizedBox(width: 6),
+              const MobileBadge(dense: true),
+            ],
+          ],
         ),
         const SizedBox(height: 4),
         Row(

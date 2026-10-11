@@ -21,6 +21,7 @@ class SpecialistForm {
     this.bio = '',
     List<String>? skills,
     this.commissionRate,
+    this.offersMobileService = false,
   }) : skills = skills ?? [];
 
   /// Adapts a loaded specialist for the edit form: identity for the header,
@@ -33,6 +34,7 @@ class SpecialistForm {
       bio: specialist.bio ?? '',
       skills: List<String>.of(specialist.skills),
       commissionRate: specialist.commissionRate,
+      offersMobileService: specialist.offersMobileService,
     );
   }
 
@@ -49,6 +51,11 @@ class SpecialistForm {
   /// Null means "use the default", which is what create sends when the field
   /// was left untouched.
   double? commissionRate;
+
+  /// ADR-011: whether this specialist travels to the customer. Saved on its own
+  /// the moment it is toggled — it is an operational switch like commission,
+  /// not part of the bio/skills draft the save button commits.
+  bool offersMobileService;
 
   static const double defaultCommissionRate = 50;
 

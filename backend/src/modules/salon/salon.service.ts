@@ -339,6 +339,13 @@ export interface SalonPanelBookingItem {
   serviceId: string | null;
   serviceName: string | null;
   lineId: string | null;
+  /** ADR-011: the customer asked for an on-site visit. */
+  isMobile: boolean;
+  /** ADR-011: where the specialist travels to when `isMobile`. */
+  customerAddress: string | null;
+  /** ADR-011: `numeric` over the wire, so the client parses it. */
+  customerLatitude: string | number | null;
+  customerLongitude: string | number | null;
 }
 /** One portfolio photo of the panel listing (`GET /salon/me/portfolio`). */
 export interface SalonPanelPortfolioItem {
@@ -1772,7 +1779,11 @@ export class SalonService {
                   b.created_at,
                   b.customer_id,
                   b.specialist_id,
-                  b.service_id
+                  b.service_id,
+                  b.is_mobile,
+                  b.customer_address,
+                  b.customer_latitude,
+                  b.customer_longitude
              FROM bookings b
              LEFT JOIN services sv ON sv.id = b.service_id
             WHERE ${filters.where}
@@ -1799,8 +1810,12 @@ export class SalonService {
                 u.full_name AS specialist_name,
                 sc.service_id,
                 sv.name AS service_name,
-                sv.line_id
-           FROM scoped sc
+                sv.line_id,
+                 sc.is_mobile,
+                 sc.customer_address,
+                 sc.customer_latitude,
+                 sc.customer_longitude
+            FROM scoped sc
            LEFT JOIN contacts ON contacts.customer_id = sc.customer_id
            LEFT JOIN specialists sp ON sp.id = sc.specialist_id
            LEFT JOIN users u ON u.id = sp.user_id
@@ -2132,6 +2147,10 @@ export class SalonService {
               b.customer_id,
               b.specialist_id,
               b.service_id,
+              b.is_mobile,
+              b.customer_address,
+              b.customer_latitude,
+              b.customer_longitude,
               sv.name AS service_name,
               sv.line_id,
               u.full_name AS specialist_name,
@@ -2335,6 +2354,10 @@ export class SalonService {
       serviceId: row.service_id,
       serviceName: row.service_name,
       lineId: row.line_id,
+      isMobile: row.is_mobile === true,
+      customerAddress: row.customer_address,
+      customerLatitude: row.customer_latitude,
+      customerLongitude: row.customer_longitude,
     };
   }
 
@@ -2967,6 +2990,11 @@ interface PanelBookingRow {
   service_id: string | null;
   service_name: string | null;
   line_id: string | null;
+  /** ADR-011: on-site flag and the address/coordinates of the visit. */
+  is_mobile: boolean;
+  customer_address: string | null;
+  customer_latitude: string | number | null;
+  customer_longitude: string | number | null;
 }
 
 /** The tenant's `working_hours` and `settings`, only needed by the detail. */

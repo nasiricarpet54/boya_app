@@ -51,10 +51,41 @@ void main() {
       await _pumpCard(tester, 'reviewed');
       expect(find.text('ثبت بازخورد'), findsNothing);
     });
+
+    testWidgets('a mobile booking shows the car badge and the on-site address', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: BookingHistoryCard(
+                booking: _booking('confirmed').copyWith(
+                  isMobile: true,
+                  customerAddress: 'تهران، خیابان ولیعصر',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('سیار'), findsOneWidget);
+      expect(find.text('تهران، خیابان ولیعصر'), findsOneWidget);
+    });
+
+    testWidgets('an in-salon booking stays quiet about a venue', (tester) async {
+      await _pumpCard(tester, 'confirmed');
+
+      expect(find.text('سیار'), findsNothing);
+    });
   });
 
   testWidgets('success screen ends the flow without a payment step', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: BookingSuccessScreen()));
+    // ADR-011 turned the screen into a ConsumerWidget so it can echo the
+    // record the controller kept; an empty container means "no booking yet",
+    // which is the salon-visit card.
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: BookingSuccessScreen())),
+    );
 
     expect(find.text('درخواست ثبت شد، در انتظار تایید سالن'), findsOneWidget);
     expect(find.text('تسویه در محل، هنگام مراجعه'), findsOneWidget);

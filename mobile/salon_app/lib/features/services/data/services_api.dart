@@ -105,6 +105,7 @@ class ServicesApi {
     bool? depositRequired,
     double? depositAmount,
     bool? isActive,
+    bool? isMobileAvailable,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/services/$id',
@@ -116,6 +117,7 @@ class ServicesApi {
         'depositRequired': ?depositRequired,
         'depositAmount': ?depositAmount,
         'isActive': ?isActive,
+        'isMobileAvailable': ?isMobileAvailable,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});

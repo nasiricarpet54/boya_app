@@ -6,6 +6,7 @@ import { Booking } from '../../src/modules/booking/booking.entity';
 import { BookingService } from '../../src/modules/booking/booking.service';
 import type { CreateBookingInput } from '../../src/modules/booking/booking.service';
 import { AuthenticatedUser } from '../../src/modules/auth/guards/jwt-auth.guard';
+import { SalonPanelBookingsQueryDto } from '../../src/modules/salon/dto/salon-bookings-query.dto';
 import { SalonQueryDto } from '../../src/modules/salon/dto/salon-query.dto';
 import { SalonService } from '../../src/modules/salon/salon.service';
 import { Service } from '../../src/modules/service/entities/service.entity';
@@ -288,6 +289,61 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
     // value is what matters, not the scale Postgres pads it out to.
     expect(Number(row?.customer_latitude)).toBe(35.6892);
     expect(Number(row?.customer_longitude)).toBe(51.389);
+  });
+
+  it('surfaces the on-site flag, address and coordinates on the panel booking detail', async () => {
+    await setFlags(true, true);
+
+    const saved = await create({
+      isMobile: true,
+      customerAddress: 'IT Panel Address',
+      customerLatitude: 35.6892,
+      customerLongitude: 51.389,
+    });
+
+    const owner = { userId: OWNER_A, role: 'salon_owner', tenantId: TENANT_A } as AuthenticatedUser;
+    const detail = await salons.getPanelBooking(owner, saved.id);
+
+    expect(detail.isMobile).toBe(true);
+    expect(detail.customerAddress).toBe('IT Panel Address');
+    // `numeric` arrives as decimal text (ADR-011); the panel's contract is the
+    // raw column value, and the Flutter client parses it.
+    expect(Number(detail.customerLatitude)).toBe(35.6892);
+    expect(Number(detail.customerLongitude)).toBe(51.389);
+  });
+
+  it('reports an in-salon booking as not mobile on the panel detail', async () => {
+    await setFlags(true, true);
+
+    const saved = await create();
+
+    const owner = { userId: OWNER_A, role: 'salon_owner', tenantId: TENANT_A } as AuthenticatedUser;
+    const detail = await salons.getPanelBooking(owner, saved.id);
+
+    expect(detail.isMobile).toBe(false);
+    expect(detail.customerAddress).toBeNull();
+    expect(detail.customerLatitude).toBeNull();
+    expect(detail.customerLongitude).toBeNull();
+  });
+
+  it('lists the on-site flag alongside the panel bookings', async () => {
+    await setFlags(true, true);
+
+    const mobile = await create({
+      isMobile: true,
+      customerAddress: 'IT Panel List Address',
+      customerLatitude: 35.6892,
+      customerLongitude: 51.389,
+    });
+    const inSalon = await create();
+
+    const owner = { userId: OWNER_A, role: 'salon_owner', tenantId: TENANT_A } as AuthenticatedUser;
+    const page = await salons.listPanelBookings(owner, new SalonPanelBookingsQueryDto());
+
+    const byId = new Map(page.data.map((booking) => [booking.id, booking]));
+    expect(byId.get(mobile.id)?.isMobile).toBe(true);
+    expect(byId.get(mobile.id)?.customerAddress).toBe('IT Panel List Address');
+    expect(byId.get(inSalon.id)?.isMobile).toBe(false);
   });
 
   it('leaves an in-salon booking untouched by the new fields', async () => {

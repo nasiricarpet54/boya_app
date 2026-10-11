@@ -19,12 +19,17 @@ class SalonsApi {
   /// [radiusKm] is accepted for the planned "within X km" filter but is not sent
   /// yet: the endpoint rejects unknown query parameters, so sending it would
   /// turn every request into a 400.
+  ///
+  /// [mobile] is the ADR-011 «خدمات سیار» filter. `null` and `false` both mean
+  /// "every salon"; only an explicit `true` is sent, because the backend keys
+  /// the filter off `?mobile=true` and a `?mobile=false` would be read as set.
   Future<List<SalonSummary>> getSalons({
     double? lat,
     double? lng,
     double? radiusKm,
     String? categorySlug,
     String? sort,
+    bool? mobile,
     int page = 1,
     int limit = 20,
   }) async {
@@ -35,6 +40,7 @@ class SalonsApi {
         'lng': ?lng,
         if (categorySlug != null && categorySlug.isNotEmpty) 'category': categorySlug,
         if (sort != null && sort.isNotEmpty) 'sort': sort,
+        if (mobile == true) 'mobile': true,
         'page': page,
         'limit': limit,
       },

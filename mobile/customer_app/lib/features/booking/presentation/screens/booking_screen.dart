@@ -29,6 +29,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   DateTime _date = DateTime.now();
   AvailableSlot? _selectedSlot;
 
+  /// ADR-011: the customer wants the visit at their own place. Kept here rather
+  /// than in the form so it survives rebuilds the form does not outlive.
+  bool _isMobile = false;
+
+  /// ADR-011: the on-site address. Kept here as well so re-picking a slot does
+  /// not discard what the customer typed.
+  String _address = '';
+
   @override
   Widget build(BuildContext context) {
     final salonAsync = ref.watch(salonDetailProvider(widget.salonId));
@@ -45,16 +53,30 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           onSpecialist: (id) => setState(() {
             _specialistId = id;
             _selectedSlot = null;
+            // ADR-011: a specialist who does not travel invalidates the on-site
+            // request, so the toggle is reset rather than left half-on.
+            if (_isMobile && !salon.specialists.any((it) => it.id == id && it.offersMobileService)) {
+              _isMobile = false;
+            }
           }),
           onService: (id) => setState(() {
             _serviceId = id;
             _selectedSlot = null;
+            // ADR-011: same reasoning as the specialist pick — a service that
+            // stays in the salon cannot be delivered at the customer's place.
+            if (_isMobile && !salon.services.any((it) => it.id == id && it.isMobileAvailable)) {
+              _isMobile = false;
+            }
           }),
           onDate: (date) => setState(() {
             _date = date;
             _selectedSlot = null;
           }),
           onSlot: (slot) => setState(() => _selectedSlot = slot),
+          isMobile: _isMobile,
+          address: _address,
+          onMobile: (value) => setState(() => _isMobile = value),
+          onAddress: (value) => setState(() => _address = value),
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
         error: (_, _) => const Center(child: Text('خطا در دریافت اطلاعات', style: BoyaTypography.body)),
@@ -97,6 +119,16 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     // and the request is then left waiting for the salon's approval.
     final slotStart = _slotStart;
     if (slotStart == null) return;
+
+    // ADR-011: the backend answers a missing on-site address with a 400, which
+    // is worth stopping locally before the dialog is even shown.
+    if (_isMobile && _address.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('آدرس مشتری الزامی است')),
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => BookingConfirmDialog(
@@ -106,6 +138,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         date: _date,
         price: _price(salon),
         time: formatJalaliTime(slotStart),
+        isMobile: _isMobile,
+        address: _address.trim(),
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -118,6 +152,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         serviceId: _serviceId!,
         date: _date,
         slotStart: slotStart,
+        isMobile: _isMobile,
+        customerAddress: _isMobile ? _address.trim() : null,
       ),
     );
     try {

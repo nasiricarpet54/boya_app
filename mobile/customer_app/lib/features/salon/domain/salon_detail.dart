@@ -1,7 +1,13 @@
 /// One bookable service of a salon, as returned in `services` by
 /// `GET /salons/{id}`.
 class SalonService {
-  const SalonService({required this.id, required this.name, required this.price, this.description});
+  const SalonService({
+    required this.id,
+    required this.name,
+    required this.price,
+    this.description,
+    this.isMobileAvailable = false,
+  });
 
   factory SalonService.fromJson(Map<String, dynamic> json) {
     return SalonService(
@@ -9,6 +15,7 @@ class SalonService {
       name: (json['name'] as String?) ?? '',
       description: json['description'] as String?,
       price: _toInt(json['price']),
+      isMobileAvailable: json['isMobileAvailable'] as bool? ?? false,
     );
   }
 
@@ -21,6 +28,11 @@ class SalonService {
   /// Price in Toman. Postgres numerics may arrive as strings, so this is parsed
   /// leniently rather than cast.
   final int price;
+
+  /// ADR-011: whether this service can be delivered away from the salon. Set
+  /// per service because some need fixed equipment a travelling specialist
+  /// cannot carry.
+  final bool isMobileAvailable;
 }
 
 /// A specialist of a salon, as returned in `specialists` by `GET /salons/{id}`.
@@ -31,6 +43,7 @@ class SalonSpecialist {
     this.avatarUrl,
     this.bio,
     this.skills = const <String>[],
+    this.offersMobileService = false,
   });
 
   final String id;
@@ -39,6 +52,10 @@ class SalonSpecialist {
   final String? bio;
   final List<String> skills;
 
+  /// ADR-011: whether this specialist travels to the customer. Independent of
+  /// any one service's own flag — both must be true for an on-site booking.
+  final bool offersMobileService;
+
   factory SalonSpecialist.fromJson(Map<String, dynamic> json) {
     return SalonSpecialist(
       id: '${json['id']}',
@@ -46,6 +63,7 @@ class SalonSpecialist {
       avatarUrl: json['avatarUrl'] as String?,
       bio: json['bio'] as String?,
       skills: (json['skills'] as List?)?.cast<String>() ?? const <String>[],
+      offersMobileService: json['offersMobileService'] as bool? ?? false,
     );
   }
 }

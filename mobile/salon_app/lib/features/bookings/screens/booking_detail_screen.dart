@@ -105,6 +105,10 @@ class _DetailBody extends ConsumerWidget {
         children: [
           _Header(booking: booking),
           const SizedBox(height: 24),
+          if (booking.isMobile) ...[
+            _MobileBanner(),
+            const SizedBox(height: 16),
+          ],
           _DetailRow(label: 'مشتری', value: booking.customerLabel),
           if (booking.customerPhone != null && booking.customerPhone!.isNotEmpty)
             _DetailRow(
@@ -128,6 +132,10 @@ class _DetailBody extends ConsumerWidget {
             label: 'پرداخت‌شده',
             value: '${toPersianDigits(booking.depositPaid)} تومان',
           ),
+          if (booking.isMobile) ...[
+            const SizedBox(height: 16),
+            _CustomerAddress(booking: booking),
+          ],
           if (booking.notes != null && booking.notes!.trim().isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('یادداشت', style: BoyaTypography.overline),
@@ -173,6 +181,88 @@ class _DetailBody extends ConsumerWidget {
       if (value is String && value.isNotEmpty) entries.add('$day: $value');
     });
     return entries.isEmpty ? 'ثبت نشده' : entries.join('، ');
+  }
+}
+
+/// ADR-011's on-site marker: a tinted banner above the details so an on-site
+/// booking cannot be mistaken for one in the salon.
+class _MobileBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: BoyaColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.directions_car_rounded, color: BoyaColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('رزرو سیار', style: BoyaTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text('این رزرو در محل مشتری انجام می‌شود', style: BoyaTypography.caption),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The address the specialist travels to, plus a jump to Neshan when the
+/// customer sent coordinates with it (ADR-011).
+class _CustomerAddress extends StatelessWidget {
+  const _CustomerAddress({required this.booking});
+
+  final BookingSummary booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final address = booking.customerAddress?.trim() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('آدرس مشتری', style: BoyaTypography.overline),
+        const SizedBox(height: 4),
+        Text(address.isEmpty ? 'ثبت نشده' : address, style: BoyaTypography.body),
+        if (booking.hasCoordinates) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _openInNeshan(context),
+            icon: const Icon(Icons.map_outlined, size: 18),
+            label: const Text('مسیریابی'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Opens the pinned location in Neshan.
+  ///
+  /// Neshan reads a dropped pin as `https://neshan.org/maps/@<lat>,<lng>,<z>`,
+  /// where the last segment is the zoom level; it is an `https` link rather
+  /// than a custom scheme, so the URL goes through `url_launcher` as an
+  /// external application link. `canLaunchUrl` still guards it: a device
+  /// without a browser (or a desktop build) gets a message instead of a silent
+  /// no-op.
+  Future<void> _openInNeshan(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final uri = Uri.parse(
+      'https://neshan.org/maps/@${booking.customerLatitude},${booking.customerLongitude},17z',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('امکان باز کردن نقشه نیشن در این دستگاه وجود ندارد')),
+      );
+    }
   }
 }
 

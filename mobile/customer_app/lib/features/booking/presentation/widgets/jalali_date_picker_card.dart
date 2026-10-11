@@ -203,21 +203,6 @@ DateTime _clamp(DateTime value, DateTime start, DateTime end) {
   return value;
 }
 
-/// Every Friday inside [start, .., end], for the picker's holiday marking.
-List<ParsiDate> _fridays(DateTime start, DateTime end) {
-  final dates = <ParsiDate>[];
-  var cursor = DateTime(start.year, start.month, start.day);
-  final limit = DateTime(end.year, end.month, end.day);
-  while (cursor.weekday != DateTime.friday) {
-    cursor = cursor.add(const Duration(days: 1));
-  }
-  while (!cursor.isAfter(limit) && dates.length < 3660) {
-    dates.add(ParsiDate.fromDateTime(cursor));
-    cursor = cursor.add(const Duration(days: 7));
-  }
-  return dates;
-}
-
 /// One cell of the week strip. A bookable day carries an availability dot:
 /// green when the salon still has a free slot that day, red when the day is
 /// full. Friday, past, and out-of-range days stay grey and inert.

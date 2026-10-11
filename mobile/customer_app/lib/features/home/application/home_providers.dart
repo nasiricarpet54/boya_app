@@ -135,6 +135,22 @@ class HomeFilterController extends Notifier<String> {
 
 final homeFilterProvider = NotifierProvider<HomeFilterController, String>(HomeFilterController.new);
 
+/// ADR-011: the «خدمات سیار» toggle above the feed. Independent of
+/// [homeFilterProvider] on purpose: that one is single-select («نزدیک من» and
+/// «باز الان» cannot both hold), whereas mobile is a boolean the customer
+/// combines with whichever chip is active.
+class HomeMobileFilterController extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+
+  void select(bool value) => state = value;
+}
+
+final homeMobileFilterProvider =
+    NotifierProvider<HomeMobileFilterController, bool>(HomeMobileFilterController.new);
+
 /// Locally toggled favourites. Kept in memory only; no endpoint yet.
 class FavoriteSalonsController extends Notifier<Set<String>> {
   @override

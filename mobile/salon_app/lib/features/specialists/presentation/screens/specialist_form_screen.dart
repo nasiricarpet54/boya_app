@@ -128,6 +128,36 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
     }
   }
 
+  /// Toggles ADR-011's on-site switch and persists it immediately.
+  ///
+  /// Unlike the bio/skills draft, this is an operational flag on the level of
+  /// the commission rate, so it gets its own PATCH the moment it changes rather
+  /// than waiting for the save button: leaving the screen with the switch on
+  /// must not silently drop the salon's mobile availability. The flip is
+  /// optimistic and rolls back when the write fails, so the switch never shows
+  /// a state the server does not have.
+  Future<void> _toggleMobileService(bool value) async {
+    final form = _form;
+    if (form == null || !form.isEditing) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final previous = form.offersMobileService;
+    setState(() => form.offersMobileService = value);
+    try {
+      await ref
+          .read(specialistApiProvider)
+          .updateSpecialist(form.specialistId!, offersMobileService: value);
+      // The list behind this screen shows the flag as a badge, so it needs the
+      // new value even though the form keeps its own copy.
+      ref.invalidate(specialistListProvider);
+      messenger.showSnackBar(
+        SnackBar(content: Text(value ? 'خدمات سیار برای این متخصص فعال شد' : 'خدمات سیار برای این متخصص غیرفعال شد')),
+      );
+    } catch (error) {
+      if (mounted) setState(() => form.offersMobileService = previous);
+      messenger.showSnackBar(SnackBar(content: Text(messageFromDio(error))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_form == null) {
@@ -255,6 +285,18 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
               validator: (value) =>
                   form.validateCommission(form.parseCommission(value ?? '')),
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('ارائه خدمات سیار', style: BoyaTypography.body),
+                subtitle: const Text(
+                  'اگر روشن باشد، این متخصص می‌تواند خدمت در محل مشتری ارائه دهد',
+                ),
+                value: form.offersMobileService,
+                onChanged: _toggleMobileService,
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,

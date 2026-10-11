@@ -43,6 +43,7 @@ class SalonService {
     required this.durationMinutes,
     required this.depositRequired,
     required this.isActive,
+    required this.isMobileAvailable,
     this.description,
     this.depositAmount,
   });
@@ -57,6 +58,7 @@ class SalonService {
         depositRequired: json['depositRequired'] as bool? ?? false,
         depositAmount: (json['depositAmount'] as num?)?.toDouble(),
         isActive: json['isActive'] as bool? ?? true,
+        isMobileAvailable: json['isMobileAvailable'] as bool? ?? false,
       );
 
   final String id;
@@ -68,4 +70,9 @@ class SalonService {
   final bool depositRequired;
   final double? depositAmount;
   final bool isActive;
+
+  /// ADR-011: whether this service can be delivered away from the salon. Set
+  /// per service because some services need fixed equipment; a specialist who
+  /// travels still cannot take those on the road.
+  final bool isMobileAvailable;
 }
