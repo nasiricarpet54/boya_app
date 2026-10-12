@@ -63,4 +63,16 @@ export class Tenant {
    */
   @Column({ name: 'profile_completed', type: 'boolean', default: false })
   profileCompleted!: boolean;
+
+  /**
+   * Where the salon is (migration 1730000000038). Both are optional: a salon is
+   * created before its city is picked, and the reference rows are never deleted
+   * cascade-style, so the link stays loose rather than a hard FK that could
+   * orphan or destroy a tenant.
+   */
+  @Column({ name: 'province_id', type: 'uuid', nullable: true })
+  provinceId!: string | null;
+
+  @Column({ name: 'city_id', type: 'uuid', nullable: true })
+  cityId!: string | null;
 }

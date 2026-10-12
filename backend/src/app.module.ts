@@ -17,6 +17,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { HealthModule } from './modules/health/health.module';
+import { LocationModule } from './modules/location/location.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { ReferralModule } from './modules/referral/referral.module';
@@ -71,6 +72,7 @@ import { UserModule } from './modules/user/user.module';
     ServiceModule,
     BookingModule,
     HealthModule,
+    LocationModule,
     PaymentModule,
     NotificationModule,
     AdminModule,

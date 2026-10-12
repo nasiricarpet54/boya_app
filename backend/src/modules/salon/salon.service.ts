@@ -195,6 +195,9 @@ export interface SalonDetail extends SalonListItem {
   phone: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** `cities.id` / `provinces.id`, null when the salon has not picked one. */
+  cityId: string | null;
+  provinceId: string | null;
   workingHours: Record<string, unknown>;
   settings: Record<string, unknown>;
   services: SalonCatalogServiceItem[];
@@ -472,6 +475,9 @@ interface SalonRow {
   settings: Record<string, unknown> | null;
   latitude: string | null;
   longitude: string | null;
+  /** Location links (migration 1730000000038); null when the salon never picked one. */
+  city_id: string | null;
+  province_id: string | null;
 }
 
 /** Raw shape of the panel's service-line list; decimals arrive as strings. */
@@ -563,6 +569,13 @@ export class SalonService {
          )`,
       );
     }
+
+    // `?cityId=` / `?provinceId=`: the Home screen's city picker. Both columns
+    // are nullable and plain equality is enough — a salon with no city set can
+    // never match either filter, which is the intent. Bound here rather than
+    // inlined so they reach the count query's `whereParams` snapshot below.
+    if (query.cityId) where.push(`t.city_id = ${bind(query.cityId)}`);
+    if (query.provinceId) where.push(`t.province_id = ${bind(query.provinceId)}`);
 
     // The count query is a separate statement that only needs the filters, and
     // those are bound first, so its placeholders still line up.
@@ -748,6 +761,7 @@ export class SalonService {
               t.discount_percent,
               c.name AS category_name, t.rating, t.review_count,
               t.working_hours, t.settings, t.latitude, t.longitude,
+              t.city_id, t.province_id,
               (SELECT MIN(s.price) FROM services s WHERE s.tenant_id = t.id) AS min_price,
               ${this.buildDistanceSelect(coords, bind)}
        FROM tenants t
@@ -777,6 +791,8 @@ export class SalonService {
       phone: row.phone,
       latitude: toNumber(row.latitude),
       longitude: toNumber(row.longitude),
+      cityId: row.city_id,
+      provinceId: row.province_id,
       workingHours: row.working_hours ?? {},
       settings: row.settings ?? {},
       services: serviceRows.map((service) => ({

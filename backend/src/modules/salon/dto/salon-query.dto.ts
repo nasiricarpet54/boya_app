@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -103,4 +104,16 @@ export class SalonQueryDto {
   @IsOptional()
   @IsBoolean()
   mobile?: boolean;
+
+  /** `cities.id` — narrow the feed to one city (migration 1730000000038). */
+  @ApiPropertyOptional({ example: 'b1c2d3e4-...', description: 'city_id از جدول cities' })
+  @IsOptional()
+  @IsUUID()
+  cityId?: string;
+
+  /** `provinces.id` — narrow the feed to one province (migration 1730000000038). */
+  @ApiPropertyOptional({ example: 'a0b1c2d3-...', description: 'province_id از جدول provinces' })
+  @IsOptional()
+  @IsUUID()
+  provinceId?: string;
 }

@@ -29,6 +29,14 @@ export class User {
   @Column({ name: 'no_show_count', type: 'int', default: 0 })
   noShowCount!: number;
 
+  /**
+   * The customer's default city (migration 1730000000038), used to pre-fill the
+   * booking address. Optional and loosely linked for the same reason as
+   * `tenants.city_id`: a user row outlives any city row.
+   */
+  @Column({ name: 'city_id', type: 'uuid', nullable: true })
+  cityId!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 }
