@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../location/application/city_provider.dart';
 import '../../application/home_providers.dart';
 import '../../data/salon_api.dart';
 import '../../domain/salon_summary.dart';
@@ -27,10 +28,14 @@ final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
   final mobileOnly = ref.watch(homeMobileFilterProvider);
+  final city = ref.watch(cityProvider);
 
   return ref.watch(salonsApiProvider).getSalons(
         lat: location.lat,
         lng: location.lng,
+        // The picker's selection drives the feed. `null` before the customer has
+        // chosen anything, which asks for the whole catalogue rather than none.
+        cityId: city.cityId,
         categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
         sort: 'distance',
         // ADR-011: `?mobile=true`. Kept off the request entirely while the chip

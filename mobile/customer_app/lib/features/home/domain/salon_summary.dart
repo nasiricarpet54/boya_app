@@ -13,6 +13,10 @@ class SalonSummary {
     required this.discountPercent,
     required this.tags,
     required this.minPrice,
+    this.cityId = '',
+    this.provinceId = '',
+    this.cityName = '',
+    this.provinceName = '',
     this.isOpenNow = false,
     this.offersMobileService = false,
   });
@@ -35,6 +39,13 @@ class SalonSummary {
             (json['tags'] as List?)?.whereType<String>().toList(growable: false) ??
                 const <String>[],
         minPrice: (json['minPrice'] as num?)?.toInt() ?? 0,
+        // The list endpoint reports only the ids so far; the names come later,
+        // so absent is the normal case and the card falls back to the picker's
+        // selected city, which is accurate while the feed is city-filtered.
+        cityId: (json['cityId'] as String?) ?? '',
+        provinceId: (json['provinceId'] as String?) ?? '',
+        cityName: (json['cityName'] as String?) ?? '',
+        provinceName: (json['provinceName'] as String?) ?? '',
         isOpenNow: json['isOpenNow'] as bool? ?? false,
         offersMobileService: json['offersMobileService'] as bool? ?? false,
       );
@@ -70,4 +81,16 @@ class SalonSummary {
   /// the customer. The list endpoint leaves it out until it has something to
   /// report, so absent means false and the card simply shows no car badge.
   final bool offersMobileService;
+
+  /// `cities.id` of the salon's city. Empty until the list endpoint reports it.
+  final String cityId;
+
+  /// `provinces.id`, for detail screens that will group by province later.
+  final String provinceId;
+
+  /// Persian city name for the card's location line. Empty until the list
+  /// endpoint reports it; see [SalonSummary.fromJson].
+  final String cityName;
+
+  final String provinceName;
 }

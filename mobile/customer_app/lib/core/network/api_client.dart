@@ -12,7 +12,15 @@ const boyaApiBaseUrl = String.fromEnvironment(
 /// Routes the API exposes without a token. Everything else gets the bearer
 /// header when a session is cached. Matching is a prefix test, so `/salons`
 /// covers both the list and `/salons/{id}`.
-const _publicPaths = ['/auth/otp/send', '/auth/otp/verify', '/salons', '/categories'];
+const _publicPaths = [
+  '/auth/otp/send',
+  '/auth/otp/verify',
+  '/salons',
+  '/categories',
+  // Province/city reference data: picking a city is the first thing a customer
+  // does, before there is a session to attach a token to.
+  '/locations',
+];
 
 /// Auth endpoints the interceptor must never drive itself into a loop: a 401
 /// from these is the *answer*, not a signal to refresh.

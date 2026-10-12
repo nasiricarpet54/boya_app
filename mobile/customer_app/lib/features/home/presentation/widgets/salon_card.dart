@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/widgets/mobile_badge.dart';
+import '../../../location/application/city_provider.dart';
 import '../../application/home_providers.dart';
 import '../../domain/salon_summary.dart';
 
@@ -17,6 +18,10 @@ class SalonCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFavorite = ref.watch(favoriteSalonsProvider).contains(salon.id);
+    final location = ref.watch(cityProvider);
+    // The list endpoint names no city yet, so the picker's selection labels the
+    // row — and it is the right label, because the feed is filtered to it.
+    final cityName = location.displayCityName;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Card(
@@ -33,7 +38,7 @@ class SalonCard extends ConsumerWidget {
                 children: [
                   _SalonThumb(salon: salon),
                   const SizedBox(width: 12),
-                  Expanded(child: _SalonInfo(salon: salon)),
+                  Expanded(child: _SalonInfo(salon: salon, cityName: cityName)),
                   IconButton(
                     onPressed: () => ref.read(favoriteSalonsProvider.notifier).toggle(salon.id),
                     tooltip: isFavorite ? 'حذف از علاقه‌مندی' : 'افزودن به علاقه‌مندی',
@@ -110,12 +115,19 @@ class _SalonThumb extends StatelessWidget {
 }
 
 class _SalonInfo extends StatelessWidget {
-  const _SalonInfo({required this.salon});
+  const _SalonInfo({required this.salon, this.cityName});
 
   final SalonSummary salon;
 
+  /// Persian city name shown under the salon name, `null` when unknown.
+  final String? cityName;
+
   @override
   Widget build(BuildContext context) {
+    // The row is a fixed 120pt tall, so a second text line is earned back from
+    // the gaps between the others rather than added on, or the column overflows.
+    final showsCity = cityName != null && cityName!.isNotEmpty;
+    final gap = showsCity ? 2.0 : 4.0;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +148,24 @@ class _SalonInfo extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 4),
+        if (showsCity) ...[
+          SizedBox(height: gap),
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, size: 13, color: BoyaColors.inkMuted),
+              const SizedBox(width: 2),
+              Expanded(
+                child: Text(
+                  cityName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: BoyaTypography.overline.copyWith(fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ],
+        SizedBox(height: gap),
         Row(
           children: [
             const Icon(Icons.star, size: 14, color: BoyaColors.warning),
@@ -152,14 +181,14 @@ class _SalonInfo extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: gap),
         Text(
           salon.tags.join('، '),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: BoyaTypography.overline.copyWith(fontSize: 11),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: gap),
         Text(
           'شروع قیمت از ${formatPrice(salon.minPrice)}',
           maxLines: 1,

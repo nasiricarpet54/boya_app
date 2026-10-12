@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../notifications/data/notifications_api.dart';
-import '../../application/home_providers.dart';
+import '../../../location/application/city_provider.dart';
+import '../../../location/presentation/city_picker_sheet.dart';
 
 /// White header of the home screen: city picker and notification bell on top,
 /// then the "انتخاب آدرس" pill.
@@ -13,7 +14,7 @@ class HomeTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final city = ref.watch(homeCityProvider);
+    final city = ref.watch(cityProvider);
     // Signed out there is no session to count against and the endpoint answers
     // 401, so the badge is simply absent rather than showing a stale zero.
     final unread = ref.watch(unreadCountProvider).value ?? 0;
@@ -40,7 +41,7 @@ class HomeTopBar extends ConsumerWidget {
                   // pill sits on the right and the notification bell on the left.
                   InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showCityPicker(context, ref),
+                    onTap: () => CityPickerSheet.show(context),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       child: Row(
@@ -52,7 +53,7 @@ class HomeTopBar extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            city,
+                            city.displayCityName ?? 'انتخاب شهر',
                             style: BoyaTypography.caption.copyWith(
                               color: BoyaColors.ink,
                               fontWeight: FontWeight.w600,
@@ -118,88 +119,4 @@ class HomeTopBar extends ConsumerWidget {
       ),
     );
   }
-}
-
-Future<void> _showCityPicker(BuildContext context, WidgetRef ref) async {
-  final selected = await showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: BoyaColors.surface,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (sheetContext) {
-      String searchQuery = '';
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final filteredCities = searchQuery.isEmpty
-              ? homeCities
-              : homeCities.where((city) => city.name.contains(searchQuery)).toList();
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 16),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: BoyaColors.inkMuted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('انتخاب شهر', style: BoyaTypography.title),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: TextField(
-                    onChanged: (value) => setState(() => searchQuery = value.trim()),
-                    decoration: InputDecoration(
-                      hintText: 'جستجوی شهر...',
-                      hintStyle: BoyaTypography.body.copyWith(color: BoyaColors.inkMuted),
-                      prefixIcon: const Icon(Icons.search, color: BoyaColors.inkMuted),
-                      filled: true,
-                      fillColor: BoyaColors.cream,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: filteredCities.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text('شهری یافت نشد', style: BoyaTypography.body),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: filteredCities.length,
-                          itemBuilder: (context, index) {
-                            final city = filteredCities[index];
-                            return ListTile(
-                              title: Text(city.name, style: BoyaTypography.body),
-                              trailing: city.name == ref.read(homeCityProvider)
-                                  ? const Icon(Icons.check, color: BoyaColors.primary)
-                                  : null,
-                              onTap: () => Navigator.of(sheetContext).pop(city.name),
-                            );
-                          },
-                        ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-  if (selected != null) ref.read(homeCityProvider.notifier).select(selected);
 }

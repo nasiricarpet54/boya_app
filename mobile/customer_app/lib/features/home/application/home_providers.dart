@@ -4,50 +4,6 @@ import '../data/salon_api.dart';
 import '../domain/salon_summary.dart';
 import '../domain/service_category.dart';
 
-class _City {
-  const _City(this.name, this.slug);
-  final String name;
-  final String slug;
-}
-
-/// Cities offered by the top-bar picker until the location API lands.
-const homeCities = [
-  _City('تهران', 'tehran'),
-  _City('کرج', 'karaj'),
-  _City('اصفهان', 'esfahan'),
-  _City('مشهد', 'mashhad'),
-  _City('شیراز', 'shiraz'),
-  _City('تبریز', 'tabriz'),
-  _City('قم', 'qom'),
-  _City('اهواز', 'ahvaz'),
-  _City('کرمانشاه', 'kermanshah'),
-  _City('ارومیه', 'orumiyeh'),
-  _City('رشت', 'resht'),
-  _City('زاهدان', 'zahedan'),
-  _City('کرمان', 'kerman'),
-  _City('همدان', 'hamedan'),
-  _City('یزد', 'yazd'),
-  _City('اردبیل', 'ardabil'),
-  _City('بندرعباس', 'bandar_abbas'),
-  _City('اراک', 'araq'),
-  _City('قزوین', 'qazvin'),
-  _City('ساری', 'sari'),
-  _City('گرگان', 'gorgan'),
-  _City('بوشهر', 'bushehr'),
-  _City('خرم‌آباد', 'khorramabad'),
-  _City('سنندج', 'sanandaj'),
-  _City('بیرجند', 'birjand'),
-  _City('بجنورد', 'bojnoord'),
-  _City('ایلام', 'ilam'),
-  _City('شهرکرد', 'shahrekord'),
-  _City('یاسوج', 'yasuj'),
-  _City('سمنان', 'semnan'),
-  _City('زنجان', 'zanjan'),
-];
-
-/// Default city per the current requirement.
-const defaultHomeCity = 'تهران';
-
 /// Filter chips above the salon list. The first entry is the default selection.
 const homeFilterLabels = <String>[
   'همه',
@@ -114,16 +70,6 @@ final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
     return const <SalonSummary>[];
   }
 });
-
-/// Selected city shown in the top bar.
-class HomeCityController extends Notifier<String> {
-  @override
-  String build() => defaultHomeCity;
-
-  void select(String city) => state = city;
-}
-
-final homeCityProvider = NotifierProvider<HomeCityController, String>(HomeCityController.new);
 
 /// Active filter chip label, e.g. `همه`.
 class HomeFilterController extends Notifier<String> {

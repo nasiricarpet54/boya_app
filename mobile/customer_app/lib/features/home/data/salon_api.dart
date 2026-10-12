@@ -20,6 +20,10 @@ class SalonsApi {
   /// yet: the endpoint rejects unknown query parameters, so sending it would
   /// turn every request into a 400.
   ///
+  /// [cityId] narrows the catalogue to one city, as picked in the top bar. It is
+  /// the `cities.id` UUID the picker persists, and it is left off the request
+  /// when no city is chosen yet so the feed shows every salon rather than none.
+  ///
   /// [mobile] is the ADR-011 «خدمات سیار» filter. `null` and `false` both mean
   /// "every salon"; only an explicit `true` is sent, because the backend keys
   /// the filter off `?mobile=true` and a `?mobile=false` would be read as set.
@@ -27,6 +31,7 @@ class SalonsApi {
     double? lat,
     double? lng,
     double? radiusKm,
+    String? cityId,
     String? categorySlug,
     String? sort,
     bool? mobile,
@@ -38,6 +43,7 @@ class SalonsApi {
       queryParameters: <String, dynamic>{
         'lat': ?lat,
         'lng': ?lng,
+        if (cityId != null && cityId.isNotEmpty) 'cityId': cityId,
         if (categorySlug != null && categorySlug.isNotEmpty) 'category': categorySlug,
         if (sort != null && sort.isNotEmpty) 'sort': sort,
         if (mobile == true) 'mobile': true,
