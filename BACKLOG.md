@@ -328,3 +328,34 @@ provider can be dropped and the shared one can propagate errors for both.
 ### Support
 - [ ] بخش پشتیبانی + FAQ
 - [ ] ثبت و رسیدگی به شکایات
+
+
+## Panel Editing with Admin Approval (فاز ۴)
+
+### مدل مورد نیاز
+- متخصص و سالندار میتوانند در هر زمان ویرایش کنند:
+  * اطلاعات سالن (نام، آدرس، تلفن، ساعات کاری)
+  * اطلاعات متخصص (بیو، تخصصها، نمونهکارها)
+  * تصاویر (آواتار، گالری نمونهکار، کاور سالن)
+  * خدمات و قیمتها
+- تغییرات بهصورت PENDING ذخیره میشوند (نه اعمال فوری)
+- ادمین اصلی تغییرات را review و approve/reject میکند
+- تا زمان تأیید، نسخه قبلی نمایش داده میشود (live data)
+- بعد از تأیید، نسخه pending جایگزین میشود
+
+### تغییرات لازم
+- Migration: جدول `pending_changes` (اگر نیست) یا گسترش موجود
+- ستون `has_pending_changes` در tenants, specialists, services
+- Audit trail: چه کسی، چه زمانی، چه چیزی
+- UI: نمایش تفاوت (diff) قبل از approve
+- ادمین اصلی: bypass approval (تغییرات مستقیم)
+
+### ادمین اصلی
+- میتونه مستقیماً هر چیزی رو ویرایش کنه (بدون approval)
+- میتونه pending ها رو approve/reject کنه
+- میتونه تمام نسخهها رو ببینه (current + pending)
+
+### نکات
+- `tenants.pending_changes` JSONB از قبل وجود دارد (ADR-012)
+- `SalonStatusInfo.hasPendingChanges` در UI هست
+- نیاز به گسترش برای specialists و services
