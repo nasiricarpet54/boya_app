@@ -1,0 +1,10 @@
+{
+  "appName": "BOYA",
+  "tagline": "Beauty, within reach",
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "error": "Something went wrong. Please try again."
+  }
+}
