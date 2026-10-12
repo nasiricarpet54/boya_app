@@ -24,11 +24,14 @@ class RejectBookingDto {
 
 /**
  * Body of POST /bookings. `customerId` is deliberately absent: it is taken
- * from the token so a caller cannot book on behalf of someone else.
+ * from the token so a caller cannot book on behalf of someone else. `tenantId`
+ * is optional too: when it is omitted the service derives it from the
+ * specialist, and when it is present it must match the specialist's tenant.
  */
 class CreateBookingDto {
+  @IsOptional()
   @IsUUID('loose')
-  tenantId!: string;
+  tenantId?: string;
 
   @IsUUID('loose')
   specialistId!: string;

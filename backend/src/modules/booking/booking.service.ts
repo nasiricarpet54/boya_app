@@ -14,6 +14,7 @@ import { isOpenFor } from '../../utils/working-hours.util';
 import { setTenantContext } from '../../database/tenant-context';
 import { ServiceCatalogService } from '../service/service.service';
 import { SpecialistService } from '../specialist/specialist.service';
+import { Specialist } from '../specialist/entities/specialist.entity';
 import { AvailabilityService, TimeSlot, WorkingHours } from './availability.service';
 import { CancellationPolicyService, CancellationReason, RefundCalculation } from './cancellation-policy.service';
 import { Booking, BookingStatus, APPROVER_ROLES } from './booking.entity';
@@ -21,7 +22,12 @@ import { BOOKING_CANCELLED, BOOKING_CONFIRMED, BOOKING_CREATED } from '../../com
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
 
 export interface CreateBookingInput {
-  tenantId: string;
+  /**
+   * The tenant the booking is written into. Optional: when absent the
+   * specialist's `tenant_id` is used, and when present it must equal that
+   * value — see `create()`.
+   */
+  tenantId?: string;
   specialistId: string;
   serviceId: string;
   customerId: string;
@@ -84,8 +90,22 @@ export class BookingService {
   }
 
   async create(input: CreateBookingInput): Promise<Booking> {
-    const service = await this.catalog.findById(input.tenantId, input.serviceId);
-    const specialist = await this.specialists.findById(input.tenantId, input.specialistId);
+    // A booking belongs to the tenant its specialist belongs to. The caller may
+    // omit `tenantId` — it is then taken from the specialist — and when it is
+    // sent it must match, so a booking can never be written into a tenant the
+    // specialist has nothing to do with. `specialists` carries no RLS policy, so
+    // this single read needs no tenant GUC (which a customer's token would not
+    // set anyway) and doubles as the row the checks below read from.
+    const specialist = await this.dataSource.getRepository(Specialist).findOne({
+      where: { id: input.specialistId },
+    });
+    if (!specialist) throw new NotFoundException('متخصص یافت نشد');
+    if (input.tenantId && specialist.tenantId !== input.tenantId) {
+      throw new BadRequestException('tenantId با متخصص مطابقت ندارد');
+    }
+    const tenantId = specialist.tenantId;
+
+    const service = await this.catalog.findById(tenantId, input.serviceId);
     if (!service.isActive || !specialist.isActive) throw new BadRequestException('خدمت یا متخصص انتخاب‌شده غیرفعال است');
 
     // On-site booking (ADR-011): an address is the one thing the specialist
@@ -104,7 +124,7 @@ export class BookingService {
     }
 
     if (input.startsAt.getTime() <= Date.now()) throw new BadRequestException('زمان رزرو باید در آینده باشد');
-    await this.assertWithinWorkingHours(input.tenantId, input.startsAt, service.durationMinutes);
+    await this.assertWithinWorkingHours(tenantId, input.startsAt, service.durationMinutes);
 
     const end = new Date(input.startsAt.getTime() + service.durationMinutes * 60_000);
     let saved: Booking;
@@ -116,10 +136,10 @@ export class BookingService {
       // transaction that sets the session variable for that transaction only
       // (set_config(..., true) is transaction-local), matching body.tenantId.
       saved = await this.dataSource.transaction(async (manager) => {
-        await setTenantContext(manager, input.tenantId);
+        await setTenantContext(manager, tenantId);
         return manager.save(
           manager.create(Booking, {
-            tenantId: input.tenantId,
+            tenantId,
             specialistId: input.specialistId,
             customerId: input.customerId,
             serviceId: input.serviceId,
