@@ -1,12 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**
  * `POST /tenants` — an admin brings a new salon into existence.
  *
- * Only the two fields a tenant cannot do without are accepted: a display name
- * and a URL-safe `slug`. Everything else (address, phone, logo, working hours)
+ * Only the two fields a tenant cannot do without are required: a display name
+ * and a URL-safe `slug`. The optional `provinceId` / `cityId` pair (migration
+ * 1730000000038) pins the salon on the map the moment the admin creates it;
+ * both stay optional because a salon is created before its city is picked in
+ * the onboarding flow. Everything else (address, phone, logo, working hours)
  * is the owner's job after they accept the invite, so this payload stays small
  * and the create endpoint cannot be used to seed a salon with data the owner
  * never reviewed.
@@ -32,4 +35,20 @@ export class CreateTenantDto {
   })
   @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   slug!: string;
+
+  @ApiPropertyOptional({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'شناسه استان از provinces (migration 1730000000038). اختیاری.',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'provinceId باید UUID معتبر باشد' })
+  provinceId?: string | null;
+
+  @ApiPropertyOptional({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'شناسه شهر از cities (migration 1730000000038). اختیاری.',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'cityId باید UUID معتبر باشد' })
+  cityId?: string | null;
 }

@@ -113,12 +113,21 @@
       "name": "نام",
       "slug": "Slug",
       "phone": "تلفن",
+      "city": "شهر",
       "status": "وضعیت",
       "bookings": "رزروها",
       "specialists": "متخصصان",
       "rating": "امتیاز",
       "date": "تاریخ",
       "view": "مشاهده"
+    },
+    "form": {
+      "province": "استان",
+      "city": "شهر",
+      "selectProvince": "انتخاب استان",
+      "selectCity": "انتخاب شهر",
+      "selectProvinceFirst": "ابتدا استان را انتخاب کنید",
+      "none": "بدون انتخاب"
     },
     "empty": "سالنی با این مشخصات پیدا نشد.",
     "prev": "قبلی",

@@ -77,4 +77,20 @@ export class UpdateTenantDto {
   @IsOptional()
   @IsBoolean({ message: 'isFeatured باید بولی باشد' })
   isFeatured?: boolean;
+
+  @ApiPropertyOptional({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'شناسه استان از provinces (migration 1730000000038).',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'provinceId باید UUID معتبر باشد' })
+  provinceId?: string | null;
+
+  @ApiPropertyOptional({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'شناسه شهر از cities (migration 1730000000038).',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'cityId باید UUID معتبر باشد' })
+  cityId?: string | null;
 }

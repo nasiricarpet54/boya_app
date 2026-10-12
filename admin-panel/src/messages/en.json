@@ -113,12 +113,21 @@
       "name": "Name",
       "slug": "Slug",
       "phone": "Phone",
+      "city": "City",
       "status": "Status",
       "bookings": "Bookings",
       "specialists": "Specialists",
       "rating": "Rating",
       "date": "Date",
       "view": "View"
+    },
+    "form": {
+      "province": "Province",
+      "city": "City",
+      "selectProvince": "Select a province",
+      "selectCity": "Select a city",
+      "selectProvinceFirst": "Select a province first",
+      "none": "None"
     },
     "empty": "No salon matches these filters.",
     "prev": "Previous",

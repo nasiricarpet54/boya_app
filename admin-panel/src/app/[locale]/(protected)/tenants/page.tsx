@@ -129,12 +129,13 @@ export default function TenantsPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[880px] border-collapse text-right">
+              <table className="w-full min-w-[960px] border-collapse text-right">
                 <thead>
                   <tr className="border-b border-line text-overline text-ink-muted">
                     <th className="px-3 py-2.5 font-medium">{t('table.name')}</th>
                     <th className="px-3 py-2.5 font-medium">{t('table.slug')}</th>
                     <th className="px-3 py-2.5 font-medium">{t('table.phone')}</th>
+                    <th className="px-3 py-2.5 font-medium">{t('table.city')}</th>
                     <th className="px-3 py-2.5 font-medium">{t('table.status')}</th>
                     <th className="px-3 py-2.5 font-medium">{t('table.bookings')}</th>
                     <th className="px-3 py-2.5 font-medium">{t('table.specialists')}</th>
@@ -149,6 +150,7 @@ export default function TenantsPage() {
                       <td className="max-w-56 truncate px-3 py-3 text-body font-semibold text-ink">{item.name}</td>
                       <td className="px-3 py-3 text-caption text-ink-muted" dir="ltr">{item.slug ?? '—'}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-caption text-ink" dir="ltr">{item.phone ? faDigits(item.phone) : '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-body text-ink">{item.cityName ?? '—'}</td>
                       <td className="px-3 py-3"><Badge tone={statusTone(item.status)}>{statusLabels[item.status]}</Badge></td>
                       <td className="px-3 py-3 text-body text-ink">{faNumber(item.bookingsCount)}</td>
                       <td className="px-3 py-3 text-body text-ink">{faNumber(item.specialistsCount)}</td>

@@ -117,7 +117,11 @@ export async function runMigrationsOnTestDatabase(): Promise<void> {
 
   await dataSource.initialize();
   try {
-    await dataSource.runMigrations();
+    // `'each'` honours a migration's own `transaction` flag. The default
+    // `'all'` wraps the whole chain in one transaction and refuses any
+    // per-migration override — which the backfill in 1730000000040 sets
+    // deliberately, so `'all'` fails the run before a single test starts.
+    await dataSource.runMigrations({ transaction: 'each' });
   } finally {
     await dataSource.destroy();
   }

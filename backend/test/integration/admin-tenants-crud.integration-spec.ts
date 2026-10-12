@@ -42,10 +42,28 @@ const MISSING_UUID = '0b999999-9999-4999-8999-999999999999';
 /** The slug another tenant already holds, reused to trigger the 409. */
 const OTHER_SLUG = 'it-admin-tenants-crud-other';
 
+/** The fields of GET/PATCH /admin/tenants/:id that the location link fills in. */
+interface LocationDetail {
+  provinceId: string | null;
+  cityId: string | null;
+  province: { id: string; nameFa: string; nameEn: string } | null;
+  city: { id: string; nameFa: string; nameEn: string } | null;
+}
+
+interface TenantListPage {
+  data: Array<{ id: string; cityName: string | null; provinceName: string | null }>;
+  total: number;
+}
+
 describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', () => {
   let app: INestApplication;
   let baseUrl: string;
   let jwtService: JwtService;
+  /** Location catalogue ids resolved in `beforeAll` from the 1730000000039 seed. */
+  let tehranProvinceId: string;
+  let tehranCityId: string;
+  let tabrizCityId: string;
+  let eastAzerbaijanProvinceId: string;
 
   beforeAll(async () => {
     // Three tenants. `tenants` has no RLS, but the fixtures still go through
@@ -66,6 +84,27 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
       `INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, NULL, $2, 'admin')`,
       [ADMIN_ID, ADMIN_PHONE],
     );
+
+    // The province/city link (migration 1730000000038) is validated against the
+    // catalogue, so the specs resolve the seed rows the way the backfill in
+    // 1730000000040 does — by code/name — because the generated uuids are not
+    // stable across environments.
+    const [tehranProvince] = await queryAsAdmin<{ id: string }>(
+      `SELECT id FROM provinces WHERE code = 'THR'`,
+    );
+    const [tehranCity] = await queryAsAdmin<{ id: string }>(
+      `SELECT id FROM cities WHERE province_id = $1 AND name_fa = 'تهران'`,
+      [tehranProvince.id],
+    );
+    // A second city in a *different* province, to prove the pair is kept
+    // consistent instead of being written as-is.
+    const [tabriz] = await queryAsAdmin<{ id: string; province_id: string }>(
+      `SELECT id, province_id FROM cities WHERE name_fa = 'تبریز'`,
+    );
+    tehranProvinceId = tehranProvince.id;
+    tehranCityId = tehranCity.id;
+    tabrizCityId = tabriz.id;
+    eastAzerbaijanProvinceId = tabriz.province_id;
 
     const moduleRef = await Test.createTestingModule({
       controllers: [AdminTenantsController],
@@ -235,6 +274,120 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
     expect(response.status).toBe(400);
     const body = (await response.json()) as { message: string };
     expect(body.message).toContain('آرشیو نشده');
+  });
+
+  describe('province/city link (migration 1730000000038)', () => {
+    const adminGet = (path: string) =>
+      call(path, { headers: { Authorization: `Bearer ${tokenFor('admin', ADMIN_ID)}` } });
+
+    it('admin → PATCH {provinceId, cityId} → 200, stored and echoed with resolved names', async () => {
+      const response = await adminPatch(TENANT_ID, {
+        provinceId: tehranProvinceId,
+        cityId: tehranCityId,
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as LocationDetail;
+      expect(body.provinceId).toBe(tehranProvinceId);
+      expect(body.cityId).toBe(tehranCityId);
+      expect(body.province?.id).toBe(tehranProvinceId);
+      expect(body.province?.nameFa).toBe('تهران');
+      expect(body.city?.id).toBe(tehranCityId);
+      expect(body.city?.nameFa).toBe('تهران');
+
+      // Confirmed in the database, not just the response body.
+      const tenants = await queryAsAdmin<{ province_id: string | null; city_id: string | null }>(
+        `SELECT province_id, city_id FROM tenants WHERE id = $1`,
+        [TENANT_ID],
+      );
+      expect(tenants[0]!.province_id).toBe(tehranProvinceId);
+      expect(tenants[0]!.city_id).toBe(tehranCityId);
+    });
+
+    it('admin → PATCH with a city that belongs to another province → 400', async () => {
+      const response = await adminPatch(TENANT_ID, {
+        provinceId: tehranProvinceId,
+        cityId: tabrizCityId,
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as { message: string };
+      expect(body.message).toContain('شهر مورد نظر به این استان تعلق ندارد');
+
+      // The row is untouched: the update never ran.
+      const tenants = await queryAsAdmin<{ city_id: string | null }>(
+        `SELECT city_id FROM tenants WHERE id = $1`,
+        [TENANT_ID],
+      );
+      expect(tenants[0]!.city_id).toBe(tehranCityId);
+    });
+
+    it('admin → PATCH {cityId} alone → the province is derived from the city', async () => {
+      const response = await adminPatch(TENANT_ID, { cityId: tabrizCityId });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as LocationDetail;
+      expect(body.cityId).toBe(tabrizCityId);
+      expect(body.provinceId).toBe(eastAzerbaijanProvinceId);
+      expect(body.province?.nameFa).toBe('آذربایجان شرقی');
+    });
+
+    it('admin → PATCH with ids that are not in the catalogue → 404 (province before city)', async () => {
+      const provinceResponse = await adminPatch(TENANT_ID, {
+        provinceId: MISSING_UUID,
+        cityId: tehranCityId,
+      });
+      expect(provinceResponse.status).toBe(404);
+      expect(((await provinceResponse.json()) as { message: string }).message).toContain('استان');
+
+      const cityResponse = await adminPatch(TENANT_ID, { cityId: MISSING_UUID });
+      expect(cityResponse.status).toBe(404);
+      expect(((await cityResponse.json()) as { message: string }).message).toContain('شهر');
+    });
+
+    it('admin → PATCH {provinceId: null, cityId: null} → the link is cleared', async () => {
+      const response = await adminPatch(TENANT_ID, { provinceId: null, cityId: null });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as LocationDetail;
+      expect(body.provinceId).toBeNull();
+      expect(body.cityId).toBeNull();
+      expect(body.province).toBeNull();
+      expect(body.city).toBeNull();
+
+      const tenants = await queryAsAdmin<{ province_id: string | null; city_id: string | null }>(
+        `SELECT province_id, city_id FROM tenants WHERE id = $1`,
+        [TENANT_ID],
+      );
+      expect(tenants[0]!.province_id).toBeNull();
+      expect(tenants[0]!.city_id).toBeNull();
+    });
+
+    it('admin → GET /admin/tenants?cityId= / ?provinceId= → only the salons in that location', async () => {
+      // The other fixture salon has no location at all, so any location filter
+      // has to drop it.
+      await adminPatch(TENANT_ID, { provinceId: tehranProvinceId, cityId: tehranCityId });
+
+      const byCity = await adminGet(`/admin/tenants?cityId=${tehranCityId}`);
+      expect(byCity.status).toBe(200);
+      const cityBody = (await byCity.json()) as TenantListPage;
+      const own = cityBody.data.find((t) => t.id === TENANT_ID);
+      expect(own).toBeDefined();
+      expect(own!.cityName).toBe('تهران');
+      expect(own!.provinceName).toBe('تهران');
+      expect(cityBody.data.some((t) => t.id === OTHER_TENANT_ID)).toBe(false);
+
+      const byProvince = await adminGet(`/admin/tenants?provinceId=${tehranProvinceId}`);
+      expect(byProvince.status).toBe(200);
+      const provinceBody = (await byProvince.json()) as TenantListPage;
+      expect(provinceBody.data.some((t) => t.id === TENANT_ID)).toBe(true);
+      expect(provinceBody.data.some((t) => t.id === OTHER_TENANT_ID)).toBe(false);
+
+      // A city the salon is not in answers 200 with an empty page, not a 404.
+      const elsewhere = await adminGet(`/admin/tenants?cityId=${tabrizCityId}`);
+      expect(elsewhere.status).toBe(200);
+      expect(((await elsewhere.json()) as TenantListPage).data.some((t) => t.id === TENANT_ID)).toBe(false);
+    });
   });
 });
 

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { LocationSelector, type LocationValue } from '@/components/location/location-selector';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Link } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
@@ -47,6 +48,7 @@ export function TenantForm() {
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [location, setLocation] = useState<LocationValue>({});
   const [ownerName, setOwnerName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export function TenantForm() {
   const resetForm = () => {
     setName('');
     setSlug('');
+    setLocation({});
     setOwnerName('');
     setOwnerPhone('');
     setFormError(null);
@@ -91,7 +94,12 @@ export function TenantForm() {
     setFormError(null);
     setSubmitting(true);
     try {
-      const tenant = await tenantsApi.createTenant({ name: cleanName, slug: cleanSlug });
+      const tenant = await tenantsApi.createTenant({
+        name: cleanName,
+        slug: cleanSlug,
+        provinceId: location.provinceId ?? null,
+        cityId: location.cityId ?? null,
+      });
       const invite = await invitesApi.createInvite({
         role: 'salon_owner',
         phone: cleanPhone,
@@ -183,6 +191,11 @@ export function TenantForm() {
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             dir="ltr"
+            disabled={submitting}
+          />
+          <LocationSelector
+            value={location}
+            onChange={setLocation}
             disabled={submitting}
           />
         </div>

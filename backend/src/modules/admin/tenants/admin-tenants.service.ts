@@ -12,12 +12,14 @@ interface TenantListRow {
   id: string; name: string; slug: string | null; phone: string | null;
   status: ApprovalStatus; rating: string | null; review_count: number | string;
   bookings_count: number | string; specialists_count: number | string; created_at: Date;
+  city_name: string | null; province_name: string | null;
 }
 
 export interface TenantListItem {
   id: string; name: string; slug: string | null; phone: string | null;
   status: ApprovalStatus; rating: number; reviewCount: number;
   bookingsCount: number; specialistsCount: number; createdAt: Date;
+  cityName: string | null; provinceName: string | null;
 }
 
 export interface TenantListPage { data: TenantListItem[]; total: number; page: number; totalPages: number; }
@@ -30,6 +32,9 @@ interface TenantDetailRow {
   status: ApprovalStatus; rejection_reason: string | null;
   approved_at: Date | null; approved_by: string | null;
   pending_changes: Record<string, unknown> | null; created_at: Date;
+  city_id: string | null; province_id: string | null;
+  city_name_fa: string | null; city_name_en: string | null;
+  province_name_fa: string | null; province_name_en: string | null;
 }
 
 interface TenantCountsRow { bookings: number | string; services: number | string; specialists: number | string; lines: number | string; }
@@ -46,6 +51,17 @@ export interface TenantRecentBooking {
   customerName: string | null; customerPhone: string | null; createdAt: Date;
 }
 
+/**
+ * A resolved province/city link (migration 1730000000038). `null` when the
+ * salon never picked one, or when the reference row was deleted — the schema
+ * keeps the link loose (no ON DELETE CASCADE) so a tenant is never orphaned.
+ */
+export interface TenantLocationRef {
+  id: string;
+  nameFa: string;
+  nameEn: string;
+}
+
 export interface TenantDetail {
   id: string; name: string; nameEn: string | null; slug: string | null;
   address: string | null; phone: string | null; coverImageUrl: string | null;
@@ -55,6 +71,10 @@ export interface TenantDetail {
   workingHours: Record<string, unknown>; settings: Record<string, unknown>;
   createdAt: Date; stats: { bookings: number; services: number; specialists: number; lines: number };
   recentBookings: TenantRecentBooking[];
+  provinceId: string | null;
+  cityId: string | null;
+  province: TenantLocationRef | null;
+  city: TenantLocationRef | null;
 }
 
 /** Management surface behind /admin/tenants (raw SQL: entity maps 7 cols only, bookings/lines are FORCE RLS). */
@@ -95,6 +115,17 @@ export class AdminTenantsService {
       params.push(`%${escaped}%`);
       bind += 1;
     }
+    // Optional location drill-down (migration 1730000000038). Both are plain
+    // uuid equality checks on indexed, partial-key columns; a null id simply
+    // never matches, which is the intent.
+    if (query.provinceId) {
+      filters.push(`t.province_id = $${bind++}::uuid`);
+      params.push(query.provinceId);
+    }
+    if (query.cityId) {
+      filters.push(`t.city_id = $${bind++}::uuid`);
+      params.push(query.cityId);
+    }
     const where = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
     const countRows = await this.dataSource.query<Array<{ total: string | number }>>(
       `SELECT COUNT(*) AS total FROM tenants t ${where}`, params,
@@ -103,9 +134,12 @@ export class AdminTenantsService {
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.dataSource.query<TenantListRow[]>(
       `SELECT t.id, t.name, t.slug, t.phone, t.status, t.rating, t.review_count,
-              c.bookings AS bookings_count, c.specialists AS specialists_count, t.created_at
+              c.bookings AS bookings_count, c.specialists AS specialists_count, t.created_at,
+              ci.name_fa AS city_name, pr.name_fa AS province_name
          FROM tenants t
          CROSS JOIN LATERAL admin_tenant_counts(t.id) c
+         LEFT JOIN cities ci ON ci.id = t.city_id
+         LEFT JOIN provinces pr ON pr.id = t.province_id
         ${where}
         ORDER BY t.created_at DESC, t.id DESC
         LIMIT $${bind++} OFFSET $${bind++}`,
@@ -119,6 +153,8 @@ export class AdminTenantsService {
         bookingsCount: Number(r.bookings_count ?? 0),
         specialistsCount: Number(r.specialists_count ?? 0),
         createdAt: r.created_at,
+        cityName: r.city_name,
+        provinceName: r.province_name,
       })),
       total, page, totalPages,
     };
@@ -130,8 +166,14 @@ export class AdminTenantsService {
       `SELECT t.id, t.name, t.name_en, t.slug, t.address, t.phone, t.cover_image_url,
               t.is_active, t.rating, t.review_count, t.working_hours, t.settings,
               t.status, t.rejection_reason, t.approved_at, t.approved_by,
-              t.pending_changes, t.created_at
-         FROM tenants t WHERE t.id = $1::uuid`, [id],
+              t.pending_changes, t.created_at,
+              t.city_id, t.province_id,
+              ci.name_fa AS city_name_fa, ci.name_en AS city_name_en,
+              pr.name_fa AS province_name_fa, pr.name_en AS province_name_en
+         FROM tenants t
+         LEFT JOIN cities ci ON ci.id = t.city_id
+         LEFT JOIN provinces pr ON pr.id = t.province_id
+        WHERE t.id = $1::uuid`, [id],
     );
     const row = rows[0];
     if (!row) throw new NotFoundException('سالن مورد نظر یافت نشد');
@@ -161,6 +203,16 @@ export class AdminTenantsService {
         serviceName: b.service_name, specialistName: b.specialist_name,
         customerName: b.customer_name, customerPhone: b.customer_phone, createdAt: b.created_at,
       })),
+      provinceId: row.province_id,
+      cityId: row.city_id,
+      // The join resolves the names in one round trip; a dangling id (the city
+      // row was deleted) still reports the id with empty names rather than 500.
+      province: row.province_id
+        ? { id: row.province_id, nameFa: row.province_name_fa ?? '', nameEn: row.province_name_en ?? '' }
+        : null,
+      city: row.city_id
+        ? { id: row.city_id, nameFa: row.city_name_fa ?? '', nameEn: row.city_name_en ?? '' }
+        : null,
     };
   }
 
@@ -201,9 +253,12 @@ export class AdminTenantsService {
    * `undefined`, and folding those into the SET clause would null out columns
    * the client never meant to touch. A new `slug` is uniqueness-checked first
    * (the global `uq_tenants_slug` constraint surfaces as a 409 rather than a
-   * raw 23505), and a supplied `categoryId` must name a real
-   * `service_categories` row. The transition is audited, then the refreshed
-   * detail is returned so the caller sees the same shape as `findOne`.
+   * raw 23505), a supplied `categoryId` must name a real
+   * `service_categories` row, and a supplied `cityId` / `provinceId` must name
+   * real `cities` / `provinces` rows — and agree with each other, since a city
+   * belongs to exactly one province. The transition is audited, then the
+   * refreshed detail is returned so the caller sees the same shape as
+   * `findOne`.
    */
   async update(user: AuthenticatedUser, id: string, dto: UpdateTenantDto): Promise<TenantDetail> {
     this.requireAdmin(user);
@@ -231,6 +286,35 @@ export class AdminTenantsService {
       if (categories.length === 0) throw new NotFoundException('دسته‌بندی مورد نظر یافت نشد');
     }
 
+    // Location links (migration 1730000000038). Like categoryId, a supplied id
+    // is checked against the reference table so a bad uuid answers 404 instead
+    // of a raw FK violation surfacing as a 500. `null` is an explicit clear and
+    // is written straight through, the same as every other optional field.
+    if (dto.provinceId !== undefined && dto.provinceId !== null) {
+      const provinces = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM provinces WHERE id = $1::uuid`,
+        [dto.provinceId],
+      );
+      if (provinces.length === 0) throw new NotFoundException('استان مورد نظر یافت نشد');
+    }
+    if (dto.cityId !== undefined && dto.cityId !== null) {
+      const cities = await this.dataSource.query<Array<{ id: string; province_id: string }>>(
+        `SELECT id, province_id FROM cities WHERE id = $1::uuid`,
+        [dto.cityId],
+      );
+      if (cities.length === 0) throw new NotFoundException('شهر مورد نظر یافت نشد');
+      // Keep the pair consistent: a city implies its province. When the caller
+      // names a province too it must agree, otherwise the two columns would
+      // contradict each other the moment this statement commits.
+      if (dto.provinceId !== undefined && dto.provinceId !== null) {
+        if (cities[0]!.province_id !== dto.provinceId) {
+          throw new BadRequestException('شهر مورد نظر به این استان تعلق ندارد');
+        }
+      } else {
+        dto.provinceId = cities[0]!.province_id;
+      }
+    }
+
     // Build the SET list from only the defined fields; bind parameters in order.
     const sets: string[] = [];
     const params: unknown[] = [];
@@ -247,6 +331,8 @@ export class AdminTenantsService {
     if (dto.categoryId !== undefined) set('category_id', dto.categoryId);
     if (dto.discountPercent !== undefined) set('discount_percent', dto.discountPercent);
     if (dto.isFeatured !== undefined) set('is_featured', dto.isFeatured);
+    if (dto.provinceId !== undefined) set('province_id', dto.provinceId);
+    if (dto.cityId !== undefined) set('city_id', dto.cityId);
 
     if (sets.length > 0) {
       await this.dataSource.query(

@@ -12,6 +12,8 @@ export interface TenantListItem {
   bookingsCount: number;
   specialistsCount: number;
   createdAt: string;
+  cityName: string | null;
+  provinceName: string | null;
 }
 
 export interface TenantListPage {
@@ -34,6 +36,18 @@ export interface TenantRecentBooking {
   createdAt: string;
 }
 
+/**
+ * One side of the tenant's loose location link (migration 1730000000038).
+ * Mirrors `AdminTenantsService.TenantLocationRef`: the id is always present when
+ * the ref itself is, the names degrade to an empty string if the joined row is
+ * gone — the link is intentionally not FK-cascaded.
+ */
+export interface TenantLocationRef {
+  id: string;
+  nameFa: string;
+  nameEn: string;
+}
+
 /** Mirrors `AdminTenantsService.TenantDetail`. */
 export interface TenantDetail {
   id: string;
@@ -54,6 +68,10 @@ export interface TenantDetail {
   workingHours: Record<string, unknown>;
   settings: Record<string, unknown>;
   createdAt: string;
+  provinceId: string | null;
+  cityId: string | null;
+  province: TenantLocationRef | null;
+  city: TenantLocationRef | null;
   stats: { bookings: number; services: number; specialists: number; lines: number };
   recentBookings: TenantRecentBooking[];
 }
@@ -73,6 +91,9 @@ export interface UpdateTenantBody {
   categoryId?: string;
   discountPercent?: number;
   isFeatured?: boolean;
+  /** `null` clears the link; omitted leaves it untouched. */
+  provinceId?: string | null;
+  cityId?: string | null;
 }
 
 export interface ListTenantsQuery {
@@ -81,15 +102,23 @@ export interface ListTenantsQuery {
   page?: number;
   /** Defaults to `TENANTS_PAGE_SIZE`; the role-dialog dropdown asks for 100. */
   limit?: number;
+  provinceId?: string;
+  cityId?: string;
 }
 
 export const TENANTS_PAGE_SIZE = 20;
 
-/** `POST /tenants` — the minimal payload a new salon needs (ADR-010 step 1). */
+/**
+ * `POST /tenants` — the minimal payload a new salon needs (ADR-010 step 1).
+ * The location ids are optional and loose; the pair is validated server-side
+ * (a city must belong to its province).
+ */
 export interface CreateTenantBody {
   name: string;
   /** URL-safe, lowercase `[a-z0-9-]`; the backend rejects anything else. */
   slug: string;
+  provinceId?: string | null;
+  cityId?: string | null;
 }
 
 /** The created tenant, as `POST /tenants` returns it. A fresh salon is `draft`. */
@@ -105,7 +134,14 @@ export const tenantsApi = {
   listTenants(query: ListTenantsQuery = {}): Promise<TenantListPage> {
     return api
       .get<TenantListPage>('/admin/tenants', {
-        params: { search: query.search || undefined, status: query.status ?? 'all', page: query.page ?? 1, limit: query.limit ?? TENANTS_PAGE_SIZE },
+        params: {
+          search: query.search || undefined,
+          status: query.status ?? 'all',
+          page: query.page ?? 1,
+          limit: query.limit ?? TENANTS_PAGE_SIZE,
+          provinceId: query.provinceId || undefined,
+          cityId: query.cityId || undefined,
+        },
       })
       .then((r) => r.data);
   },
@@ -129,7 +165,11 @@ export const tenantsApi = {
     return api.patch<TenantDetail>(`/admin/tenants/${id}/status`, body).then((r) => r.data);
   },
 
-  /** `PATCH /admin/tenants/:id` — edit public salon fields (name, slug, address, phone, category, discount, featured). */
+  /**
+   * `PATCH /admin/tenants/:id` — edit public salon fields (name, slug, address,
+   * phone, category, discount, featured) plus the optional province/city link.
+   * An omitted field is left untouched; an explicit `null` clears the link.
+   */
   updateTenant(id: string, body: UpdateTenantBody): Promise<TenantDetail> {
     return api.patch<TenantDetail>(`/admin/tenants/${id}`, body).then((r) => r.data);
   },

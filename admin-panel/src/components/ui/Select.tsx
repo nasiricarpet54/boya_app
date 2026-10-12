@@ -20,6 +20,11 @@ export interface SelectProps {
   options: SelectOption[];
   placeholder?: string;
   error?: string;
+  /**
+   * Greys the trigger and blocks interaction. Use it for a dependent select
+   * whose options are not meaningful until another field is filled.
+   */
+  disabled?: boolean;
   className?: string;
   children?: ReactNode;
 }
@@ -32,14 +37,14 @@ export interface SelectProps {
  * chevron and the check mark must sit on the correct side in RTL.
  */
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
-  { label, value, onValueChange, options, placeholder, error, className },
+  { label, value, onValueChange, options, placeholder, error, disabled, className },
   ref,
 ) {
   return (
     <div className={cn('flex w-full flex-col gap-1', className)}>
       <span className="text-caption font-medium text-ink">{label}</span>
 
-      <SelectPrimitive.Root value={value} onValueChange={onValueChange}>
+      <SelectPrimitive.Root value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectPrimitive.Trigger
           ref={ref}
           aria-invalid={error ? true : undefined}

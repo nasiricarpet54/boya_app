@@ -10,6 +10,10 @@ const PG_UNIQUE_VIOLATION = '23505';
 export interface CreateTenantInput {
   name: string;
   slug: string;
+  /** `provinces.id`; optional — a salon can be created before its city is picked. */
+  provinceId?: string | null;
+  /** `cities.id`; optional for the same reason as `provinceId`. */
+  cityId?: string | null;
 }
 
 @Injectable()
@@ -41,6 +45,8 @@ export class TenantService {
       slug: input.slug,
       status: 'draft',
       isActive: true,
+      provinceId: input.provinceId ?? null,
+      cityId: input.cityId ?? null,
     });
 
     try {

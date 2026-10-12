@@ -39,5 +39,10 @@ export default new DataSource({
   entities: ['src/**/*.entity.ts'],
   migrations: ['src/database/migrations/*.ts'],
   migrationsTableName: 'migrations',
+  // Per-migration transactions: the backfill in 1730000000040 opts out
+  // (`transaction = false`) to avoid holding locks across a bulk UPDATE, and
+  // the default `'all'` rejects any such override outright, so the chain could
+  // not run against a fresh database at all.
+  migrationsTransactionMode: 'each',
 });
 

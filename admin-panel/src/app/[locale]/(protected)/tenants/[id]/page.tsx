@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardCaption, CardTitle } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { LocationSelector, type LocationValue } from '@/components/location/location-selector';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Link, useRouter } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
@@ -46,6 +47,9 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   const [phoneDraft, setPhoneDraft] = useState<string | null>(null);
   const [discountDraft, setDiscountDraft] = useState<string | null>(null);
   const [featuredDraft, setFeaturedDraft] = useState<boolean | null>(null);
+  // `null` = not yet seeded from the server record; the ids are the source of
+  // truth, the joined names come along for display via `detail`.
+  const [locationDraft, setLocationDraft] = useState<LocationValue | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   // Deep-link support: /tenants/:id?edit=true opens the form directly.
   useEffect(() => {
@@ -97,6 +101,10 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   const slugValue = slugDraft ?? detail?.slug ?? '';
   const addressValue = addressDraft ?? detail?.address ?? '';
   const phoneValue = phoneDraft ?? detail?.phone ?? '';
+  const locationValue: LocationValue = locationDraft ?? {
+    provinceId: detail?.provinceId ?? undefined,
+    cityId: detail?.cityId ?? undefined,
+  };
   // discount/featured/category are PATCH-only (not echoed by GET /admin/tenants/:id),
   // so they start blank/off until the admin sets them.
   const discountValue = discountDraft ?? '';
@@ -110,6 +118,10 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     setPhoneDraft(detail.phone ?? '');
     setDiscountDraft('');
     setFeaturedDraft(false);
+    setLocationDraft({
+      provinceId: detail.provinceId ?? undefined,
+      cityId: detail.cityId ?? undefined,
+    });
     setFormError(null);
     setEditing(true);
   };
@@ -117,7 +129,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     setEditing(false);
     setNameDraft(null); setNameEnDraft(null); setSlugDraft(null);
     setAddressDraft(null); setPhoneDraft(null); setDiscountDraft(null);
-    setFeaturedDraft(null); setFormError(null);
+    setFeaturedDraft(null); setLocationDraft(null); setFormError(null);
   };
   const submitEdit = () => {
     const cleanName = nameValue.trim();
@@ -141,6 +153,10 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
       phone: cleanPhone || undefined,
       discountPercent,
       isFeatured: featuredValue || undefined,
+      // The link is optional, so an empty choice is an explicit clear, not a
+      // no-op: `null` removes it, `undefined` would leave the old id in place.
+      provinceId: locationValue.provinceId ?? null,
+      cityId: locationValue.cityId ?? null,
     };
     updateMutation.mutate(body);
   };
@@ -219,6 +235,13 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
             <Input label={te('phoneLabel')} value={phoneValue} onChange={(e) => setPhoneDraft(e.target.value)} numeric inputMode="tel" disabled={updateMutation.isPending} />
             <div className="sm:col-span-2">
               <Input label={te('addressLabel')} value={addressValue} onChange={(e) => setAddressDraft(e.target.value)} disabled={updateMutation.isPending} />
+            </div>
+            <div className="sm:col-span-2">
+              <LocationSelector
+                value={locationValue}
+                onChange={setLocationDraft}
+                disabled={updateMutation.isPending}
+              />
             </div>
             <Input label={te('discountLabel')} value={discountValue} onChange={(e) => setDiscountDraft(e.target.value)} numeric inputMode="numeric" disabled={updateMutation.isPending} />
             <div className="flex items-center gap-3">
