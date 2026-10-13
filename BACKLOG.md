@@ -359,3 +359,77 @@ provider can be dropped and the shared one can propagate errors for both.
 - `tenants.pending_changes` JSONB از قبل وجود دارد (ADR-012)
 - `SalonStatusInfo.hasPendingChanges` در UI هست
 - نیاز به گسترش برای specialists و services
+
+## 🎨 Brand Integration — Phase Post-Beta
+
+**منبع:** BOYA-brand-guide.md + کیت هویت بصری بویا
+
+**وضعیت:** ثبت شده — اجرا بعد از نسخه بتا
+
+### پالت رنگ بویا
+| نقش | نام | HEX |
+|---|---|---|
+| اصلی | سبز نفتی | `#173B3F` |
+| پسزمینه | شیری گرم | `#F7F3EE` |
+| تأکیدی | رز خاکی | `#D9A2B0` |
+| تأکیدی روشن | صورتی ابریشمی | `#E6B5C0` |
+| متن ثانویه | خاکستری زغالی | `#46565A` |
+| مرز | خاکستری گرم | `#D9D2CA` |
+| موفقیت | سبز مریمگلی | `#6F9A8D` |
+| هشدار | کهربایی نرم | `#C99558` |
+| خطا | آلبالویی مات | `#B35D67` |
+
+**نسبت استفاده:** ۶۰٪ شیری، ۲۵٪ سبز نفتی، ۱۰٪ رز/صورتی، ۵٪ وضعیت
+
+### Design Tokens
+- `radius-card: 20px`
+- `radius-button: 12px`
+- `shadow-soft: 0 10px 30px rgba(23, 59, 63, .08)`
+
+### تایپوگرافی
+- فارسی UI: **Vazirmatn** یا **Estedad**
+- لاتین: **Manrope** یا **Inter**
+- تیتر: وزن ۷۰۰، line-height 1.35
+- متن: وزن ۴۰۰-۵۰۰، line-height 1.8
+
+### ناوبری اصلی مشتری (۵ تب)
+1. خانه
+2. کشف سالنها
+3. نوبتهای من
+4. علاقهمندیها
+5. حساب کاربری
+
+### سبک آیکون
+- خطی، stroke 1.8px، گوشههای گرد
+- فعال: سبز نفتی
+- غیرفعال: خاکستری
+
+### Assets مورد نیاز
+- [ ] `logo/boya-mark.svg`
+- [ ] `logo/boya-mark-dark.svg`
+- [ ] `logo/boya-lockup.svg`
+- [ ] `app-icons/boya-app-icon.svg`
+- [ ] `app-icons/boya-app-icon-light.svg`
+- [ ] `icons/*.svg` (home, discover, calendar, heart, user, location, star)
+- [ ] PNG export در ۱۹۲، ۵۱۲، maskable
+
+### فازهای اجرا (بعد از بتا)
+- [ ] **فاز ۱:** Design Tokens + Theme (Flutter shared + Admin Tailwind)
+- [ ] **فاز ۲:** Logo + Assets + Splash Screen
+- [ ] **فاز ۳:** Typography (نصب فایل فونت Vazirmatn)
+- [ ] **فاز ۴:** Navigation (۵ تب مشتری)
+- [ ] **فاز ۵:** Components (Buttons, Cards, Inputs, Modals)
+- [ ] **فاز ۶:** عکاسی/تصویرسازی یکدست (طبیعی، کرم، رز خاکی)
+
+### فایلهای مرجع
+- `BOYA-brand-guide.md` (ریشه)
+- `design_system/boya_design_system.md`
+- `docs/design/` (ساخته میشه)
+- `scripts/create_brand_assets.py` (اسکریپت تولید SVG — در صورت نیاز)
+
+### یادداشت اجرایی
+- فایلهای SVG با ابزار Python (اسکریپت موجود در repo) یا Adobe Illustrator تولید میشن
+- font باید در فاز ۳ bundle شه (~۲ مگ Vazirmatn variable)
+- فرآیند مرحلهای: هر فاز یک commit + deploy + تست
+- هیچ فازی breaking نیست — incremental rollout
+
