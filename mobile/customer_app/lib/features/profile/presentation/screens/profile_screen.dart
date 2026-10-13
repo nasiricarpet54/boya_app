@@ -51,6 +51,11 @@ class ProfileScreen extends ConsumerWidget {
               badge: unread,
             ),
             _MenuItem(
+              icon: Icons.support_agent,
+              title: 'پشتیبانی',
+              onTap: () => context.push('/support'),
+            ),
+            _MenuItem(
               icon: Icons.logout,
               title: 'خروج از حساب',
               color: BoyaColors.error,

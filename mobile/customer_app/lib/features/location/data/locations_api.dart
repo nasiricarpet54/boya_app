@@ -69,6 +69,53 @@ class City {
   final bool isCapital;
 }
 
+/// `POST /locations/reverse-geocode` — a device GPS fix resolved to a city.
+///
+/// [city] and [province] are the same catalogue rows the picker lists, so a hit
+/// can be selected without a second request. Both stay `null` when Neshan names
+/// a place the seed does not carry, which is the app's cue to tell the customer
+/// their city is not served yet.
+class ReverseGeocodeResult {
+  const ReverseGeocodeResult({
+    this.cityName,
+    this.formattedAddress,
+    this.provinceName,
+    this.city,
+    this.province,
+  });
+
+  factory ReverseGeocodeResult.fromJson(Map<String, dynamic> json) =>
+      ReverseGeocodeResult(
+        cityName: json['cityName'] as String?,
+        formattedAddress: json['formattedAddress'] as String?,
+        provinceName: json['provinceName'] as String?,
+        city: _cityOrNull(json['city']),
+        province: _provinceOrNull(json['province']),
+      );
+
+  /// The Persian city name Neshan reported, e.g. `تهران`.
+  final String? cityName;
+  final String? formattedAddress;
+  final String? provinceName;
+
+  /// The seeded row matching [cityName], when the backend resolved one.
+  final City? city;
+  final Province? province;
+
+  /// Enough to select a city in the picker outright, with no extra request.
+  bool get hasResolvedCity => city != null && province != null;
+}
+
+City? _cityOrNull(Object? json) {
+  if (json is! Map<String, dynamic>) return null;
+  return City.fromJson(json);
+}
+
+Province? _provinceOrNull(Object? json) {
+  if (json is! Map<String, dynamic>) return null;
+  return Province.fromJson(json);
+}
+
 /// Read-only client for the province/city reference data (`/locations`).
 ///
 /// Both routes are `@Public` on the API: choosing a city is the first thing a
@@ -109,6 +156,27 @@ class LocationsApi {
       for (final row in rows)
         if (row is Map<String, dynamic>) City.fromJson(row),
     ];
+  }
+  /// Resolves a GPS fix to a city via `POST /locations/reverse-geocode`.
+  ///
+  /// Returns `null` when the platform has no Neshan key (the endpoint answers
+  /// 503): that is a deployment gap rather than something the customer can fix
+  /// by retrying, so the caller shows a distinct message instead of a generic
+  /// error. Any other failure is rethrown — it is a network problem the caller
+  /// already knows how to report.
+  Future<ReverseGeocodeResult?> reverseGeocode(double lat, double lng) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/locations/reverse-geocode',
+        data: <String, dynamic>{'lat': lat, 'lng': lng},
+      );
+      final json = response.data;
+      if (json is! Map<String, dynamic>) return null;
+      return ReverseGeocodeResult.fromJson(json);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 503) return null;
+      rethrow;
+    }
   }
 }
 

@@ -1,7 +1,8 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../auth/decorators/public.decorator';
+import { ReverseGeocodeDto } from './dto/reverse-geocode.dto';
 import { LocationService } from './location.service';
 
 /**
@@ -39,5 +40,17 @@ export class LocationController {
   searchCities(@Query('q') q?: string) {
     if (!q || q.trim().length < 2) return [];
     return this.service.searchCities(q.trim());
+  }
+
+  /**
+   * Turns a GPS fix into a city. The picker's «موقعیت من» entry calls this with
+   * the device position; the answer carries the matched catalogue rows so the
+   * app selects the city directly.
+   */
+  @Post('reverse-geocode')
+  @ApiOperation({ summary: 'تبدیل مختصات دستگاه به شهر' })
+  @ApiBody({ type: ReverseGeocodeDto })
+  reverseGeocode(@Body() dto: ReverseGeocodeDto) {
+    return this.service.reverseGeocode(dto.lat, dto.lng);
   }
 }

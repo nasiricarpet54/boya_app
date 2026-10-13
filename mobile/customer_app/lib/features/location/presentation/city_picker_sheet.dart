@@ -2,6 +2,7 @@ import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../home/application/home_providers.dart';
 import '../application/city_provider.dart';
 import '../data/locations_api.dart';
 
@@ -9,8 +10,8 @@ import '../data/locations_api.dart';
 /// province.
 ///
 /// Snapp/Divar style — one searchable list per step, the province's capital
-/// leading the second, and a «موقعیت من» entry held back until device GPS is
-/// wired up. Picking a city writes it to [cityProvider] and closes the sheet.
+/// leading the second, and a «موقعیت من» entry that resolves the device to a
+/// city outright. Picking a city writes it to [cityProvider] and closes the sheet.
 class CityPickerSheet extends ConsumerStatefulWidget {
   const CityPickerSheet({super.key});
 
@@ -298,29 +299,77 @@ class _List extends StatelessWidget {
   }
 }
 
-/// Held back for the next version: the feed would have to reverse-geocode the
-/// device, and the salons do not carry coordinates yet.
-class _MyLocationTile extends StatelessWidget {
+/// «موقعیت من»: resolves the device to a city in one tap.
+///
+/// GPS → reverse-geocode → the picker's own selection. Each way it can fail is
+/// reported with its own sentence, because "ناموفق بود" tells the customer
+/// nothing they can act on: a refused permission, an unserved city and an
+/// unconfigured geocoder each need a different next step.
+class _MyLocationTile extends ConsumerStatefulWidget {
   const _MyLocationTile();
+
+  @override
+  ConsumerState<_MyLocationTile> createState() => _MyLocationTileState();
+}
+
+class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
+  /// The chain is GPS → permission → network; long enough to need its own
+  /// spinner so the tile does not look dead while the platform dialog is up.
+  var _resolving = false;
+
+  Future<void> _resolve() async {
+    setState(() => _resolving = true);
+    final outcome = await ref.read(userLocationProvider.notifier).resolve();
+    if (!mounted) return;
+    setState(() => _resolving = false);
+
+    final message = switch (outcome) {
+      // The resolved city was written to cityProvider; the sheet's job is done
+      // and closing it lands the customer on a feed already scoped to them.
+      UserLocationOutcome.resolved => '',
+      UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت ممکن نیست',
+      UserLocationOutcome.cityNotServed => 'شهر شما هنوز در دسترس نیست',
+      UserLocationOutcome.geocoderUnavailable => 'سرویس موقعیت‌یابی فعال نیست',
+    };
+    if (message.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return _Hairline(
       child: ListTile(
-        enabled: false,
-        leading: const Icon(Icons.my_location, color: BoyaColors.inkMuted),
+        enabled: !_resolving,
+        leading: _resolving
+            ? const Padding(
+                padding: EdgeInsets.all(4),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    color: BoyaColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
+            : const Icon(Icons.my_location, color: BoyaColors.primary),
         title: Text(
           'موقعیت من',
-          style: BoyaTypography.body.copyWith(color: BoyaColors.inkMuted),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: BoyaColors.cream,
-            borderRadius: BorderRadius.circular(8),
+          style: BoyaTypography.body.copyWith(
+            color: _resolving ? BoyaColors.inkMuted : BoyaColors.ink,
+            fontWeight: FontWeight.w500,
           ),
-          child: const Text('به‌زودی', style: BoyaTypography.overline),
         ),
+        subtitle: Text(
+          'انتخاب خودکار شهر بر اساس GPS',
+          style: BoyaTypography.overline.copyWith(color: BoyaColors.inkMuted),
+        ),
+        onTap: _resolve,
       ),
     );
   }

@@ -85,6 +85,11 @@ services:
       NODE_ENV: production
       PORT: "3000"
       API_PREFIX: api/v1
+      # Neshan server-side reverse geocoding for the «موقعیت من» entry. Comes
+      # from the repo-root .env; repeated here so a missing key is visible in the
+      # compose file rather than only in the secret store. The endpoint answers
+      # 503 while it is empty.
+      NESHAN_API_KEY: ${NESHAN_API_KEY:-}
     ports:
       - "${BACKEND_PORT:-3021}:3000"
     healthcheck:

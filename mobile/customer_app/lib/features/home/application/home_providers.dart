@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../location/application/city_provider.dart';
+import '../../location/data/geolocation_service.dart';
+import '../../location/data/locations_api.dart';
 import '../data/salon_api.dart';
 import '../domain/salon_summary.dart';
 import '../domain/service_category.dart';
@@ -14,11 +17,86 @@ const homeFilterLabels = <String>[
   'پذیرش امروز',
 ];
 
+/// The device's own GPS fix, resolved on demand.
+///
+/// `null` until the customer asks for it (the «موقعیت من» tile or the
+/// «نزدیک من» chip): the app does not prompt for location on launch, because a
+/// cold-start permission request is the fastest way to lose a customer who
+/// only wanted to browse.
+///
+/// Every failure leaves this `null` — [GeolocationService] already converts a
+/// refused permission, disabled GPS or a timeout into `null`, and the callers
+/// own the user-facing copy. A resolved city is written straight to
+/// [cityProvider] so the feed narrows to it and the top bar shows its name.
+class UserLocationController extends Notifier<UserLocation?> {
+  @override
+  UserLocation? build() => null;
+
+  /// Walks GPS → reverse-geocode → the selected city.
+  ///
+  /// Returns the outcome so the caller can say precisely what happened instead
+  /// of a generic error: a refused permission, a city the catalogue does not
+  /// carry, or a backend without a Neshan key are three different messages.
+  Future<UserLocationOutcome> resolve() async {
+    final position = await ref.read(geolocationServiceProvider).getCurrentPosition();
+    if (position == null) return UserLocationOutcome.positionUnavailable;
+
+    final resolved = UserLocation(lat: position.latitude, lng: position.longitude);
+    state = resolved;
+
+    final result = await ref.read(locationsApiProvider).reverseGeocode(
+          position.latitude,
+          position.longitude,
+        );
+    // 503 — the deployment has no Neshan key. A deployment gap, not something
+    // retrying helps, so the coordinates stay and the caller reports it as
+    // "unavailable" rather than as a network failure.
+    if (result == null) return UserLocationOutcome.geocoderUnavailable;
+
+    if (!result.hasResolvedCity) {
+      return UserLocationOutcome.cityNotServed;
+    }
+
+    await ref.read(cityProvider.notifier).selectCity(result.province!, result.city!);
+    return UserLocationOutcome.resolved;
+  }
+
+  /// Drops the fix so the feed falls back to the default reference point.
+  void clear() => state = null;
+}
+
+final userLocationProvider =
+    NotifierProvider<UserLocationController, UserLocation?>(UserLocationController.new);
+
+/// What happened when the customer asked for their location, so the UI can say
+/// it in one Persian sentence instead of showing a generic error.
+enum UserLocationOutcome {
+  /// GPS returned a city the picker then selected.
+  resolved,
+
+  /// Permission refused, GPS off, or no fix in time.
+  positionUnavailable,
+
+  /// The device reported a place the city catalogue does not carry yet.
+  cityNotServed,
+
+  /// Reverse-geocoding is not configured on the server (no Neshan key).
+  geocoderUnavailable,
+}
+
+/// One resolved device position.
+class UserLocation {
+  const UserLocation({required this.lat, required this.lng});
+
+  final double lat;
+  final double lng;
+}
+
 /// Centre point the "near me" feed is measured from.
 ///
-/// Device GPS is not wired up yet, so this is Tehran's city centre. The API
-/// only needs a reference point to fill in `distanceKm`; swapping this provider
-/// for a real location is the only change needed later.
+/// The customer's own fix when they have shared one ([userLocationProvider]),
+/// otherwise Tehran's city centre as a sensible national default — the API only
+/// needs a reference point to fill in `distanceKm`.
 class HomeLocation {
   const HomeLocation({required this.lat, required this.lng});
 
@@ -26,9 +104,11 @@ class HomeLocation {
   final double lng;
 }
 
-final locationProvider = Provider<HomeLocation>(
-  (ref) => const HomeLocation(lat: 35.7575, lng: 51.4100),
-);
+final locationProvider = Provider<HomeLocation>((ref) {
+  final user = ref.watch(userLocationProvider);
+  if (user != null) return HomeLocation(lat: user.lat, lng: user.lng);
+  return const HomeLocation(lat: 35.7575, lng: 51.4100);
+});
 
 /// Category chips under the search bar.
 ///

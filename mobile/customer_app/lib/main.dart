@@ -14,6 +14,11 @@ import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/profile/presentation/screens/booking_history_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'features/salon/presentation/screens/salon_detail_screen.dart';
+import 'features/support/presentation/create_ticket_screen.dart';
+import 'features/support/presentation/faq_screen.dart';
+import 'features/support/presentation/my_tickets_screen.dart';
+import 'features/support/presentation/support_screen.dart';
+import 'features/support/presentation/ticket_detail_screen.dart';
 import 'shared/widgets/placeholder_screen.dart';
 
 /// Held outside the widget tree so the router's [GoRouter.redirect] can read
@@ -80,6 +85,16 @@ final _router = GoRouter(
       path: '/loyalty',
       builder: (_, _) => const PlaceholderScreen(title: 'امتیاز وفاداری'),
     ),
+    // Support area: FAQ is static bundle content, tickets are the dynamic half.
+    GoRoute(path: '/support', builder: (_, _) => const SupportScreen()),
+    GoRoute(path: '/support/faq', builder: (_, _) => const FaqScreen()),
+    GoRoute(path: '/support/new', builder: (_, _) => const CreateTicketScreen()),
+    GoRoute(path: '/support/tickets', builder: (_, _) => const MyTicketsScreen()),
+    GoRoute(
+      path: '/support/tickets/:ticketId',
+      builder: (_, state) =>
+          TicketDetailScreen(ticketId: state.pathParameters['ticketId']!),
+    ),
   ],
   redirect: (context, state) {
     final container = _globalProviderContainer;
@@ -101,4 +116,12 @@ final _router = GoRouter(
 /// Routes that need a session. Everything else — home, search, salon detail —
 /// stays public so the catalogue can be browsed before signing in. The bell
 /// stays visible while signed out and simply carries no badge.
-const _protectedPaths = ['/profile', '/profile/bookings', '/notifications', '/referral', '/loyalty'];
+const _protectedPaths = [
+  '/profile',
+  '/profile/bookings',
+  '/notifications',
+  '/referral',
+  '/loyalty',
+  // Tickets are keyed to the signed-in user, so the whole area is gated.
+  '/support',
+];

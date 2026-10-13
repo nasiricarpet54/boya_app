@@ -8,6 +8,20 @@ import '../../application/home_providers.dart';
 class FilterChips extends ConsumerWidget {
   const FilterChips({super.key});
 
+  /// The «نزدیک من» label, which is the one chip that needs the device: tapping
+  /// it asks for GPS so `locationProvider` becomes the customer, not Tehran.
+  static const _nearMeLabel = 'نزدیک من';
+
+  Future<void> _select(WidgetRef ref, String label) async {
+    ref.read(homeFilterProvider.notifier).select(label);
+    if (label != _nearMeLabel) return;
+
+    // Asking is what makes the chip true: without a fix the feed is still
+    // measured from the default reference point, so the chip would sort by a
+    // city the customer is not in. The outcome is reported by the caller below.
+    await ref.read(userLocationProvider.notifier).resolve();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final active = ref.watch(homeFilterProvider);
@@ -35,7 +49,7 @@ class FilterChips extends ConsumerWidget {
           return _FilterChip(
             label: label,
             selected: label == active,
-            onTap: () => ref.read(homeFilterProvider.notifier).select(label),
+            onTap: () => _select(ref, label),
           );
         },
       ),
