@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/auth_controller.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../shared/widgets/boya_app_bar.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({required this.phone, super.key});
@@ -88,7 +89,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final seconds = toPersianDigits((_secondsLeft % 60).toString().padLeft(2, '0'));
     return Scaffold(
       backgroundColor: BoyaColors.surface,
-      appBar: AppBar(title: const Text('کد تأیید')),
+      appBar: const BoyaAppBar(title: 'کد تأیید'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),

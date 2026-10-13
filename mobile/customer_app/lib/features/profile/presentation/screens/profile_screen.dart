@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/widgets/boya_app_bar.dart';
 import '../../../notifications/data/notifications_api.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../application/profile_controller.dart';
@@ -15,7 +16,7 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
     final unread = ref.watch(unreadCountProvider).value ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('پروفایل')),
+      appBar: const BoyaAppBar(title: 'پروفایل'),
       body: userAsync.when(
         data: (user) => ListView(
           children: [

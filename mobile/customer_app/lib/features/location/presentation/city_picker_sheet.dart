@@ -343,7 +343,6 @@ class _ProvinceTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Text(province.nameEn, style: BoyaTypography.overline),
         onTap: onTap,
       ),
     );
