@@ -109,8 +109,19 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final form = _form!;
+    if (!mounted) return;
+    final form = _form;
+    if (form == null) return;
+
+    // Sync controller values onto the form BEFORE validation so the
+    // validators see what the user actually typed.
+    form
+      ..fullName = _fullNameController.text.trim()
+      ..phone = _phoneController.text.trim()
+      ..bio = _bioController.text.trim();
+
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) return;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
@@ -119,13 +130,9 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
           form.commissionRate ??
           SpecialistForm.defaultCommissionRate;
 
-      // Controllers are the live values; mirror them onto the form so the
-      // payloads see what the validators just approved.
-      form
-        ..fullName = _fullNameController.text
-        ..phone = _phoneController.text
-        ..bio = _bioController.text
-        ..commissionRate = commission;
+      // Commission resolved from the live field; mirror it onto the form
+      // so the payloads see what the validator just approved.
+      form.commissionRate = commission;
 
       if (_isEditing) {
         await api.updateSpecialist(
@@ -226,6 +233,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
       appBar: SalonAppBar(title: _isEditing ? 'ویرایش متخصص' : 'متخصص جدید'),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -271,7 +279,19 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                   hintText: 'مثلاً مریم رضایی',
                   counterText: '',
                 ),
-                validator: (_) => form.validateFullName(),
+                validator: (value) {
+                  final trimmed = value?.trim() ?? '';
+                  if (trimmed.isEmpty) {
+                    return 'نام متخصص را وارد کنید';
+                  }
+                  if (trimmed.length < 2) {
+                    return 'نام باید حداقل ۲ حرف باشد';
+                  }
+                  if (trimmed.length > 200) {
+                    return 'نام متخصص طولانی است';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               Text('شماره موبایل', style: BoyaTypography.caption),
@@ -283,7 +303,16 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                   hintText: '۰۹۱۲۱۲۳۴۵۶۷',
                   counterText: '',
                 ),
-                validator: (_) => form.validatePhone(),
+                validator: (value) {
+                  final trimmed = toLatinDigits(value ?? '').trim();
+                  if (trimmed.isEmpty) {
+                    return 'شماره موبایل متخصص را وارد کنید';
+                  }
+                  if (!RegExp(r'^09\d{9}$').hasMatch(trimmed)) {
+                    return 'شماره موبایل معتبر وارد کنید';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
             ],
