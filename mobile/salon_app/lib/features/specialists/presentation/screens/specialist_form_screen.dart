@@ -36,6 +36,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
   SpecialistForm? _form;
   bool _seeded = false;
   bool _saving = false;
+  String? _error;
 
   /// The portrait sent with the next save: the seeded URL while editing
   /// (re-sent unchanged unless the user touches it), `''` when there is no
@@ -53,20 +54,38 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
   void _seed() {
     if (_seeded) return;
     _seeded = true;
-    final extra = GoRouterState.of(context).extra;
-    if (extra is SalonSpecialist) {
-      final form = SpecialistForm.fromSpecialist(extra);
-      _form = form;
-      _avatarUrl = extra.avatarUrl ?? '';
-      _fullNameController.text = form.fullName;
-      _phoneController.text = form.phone;
-      _bioController.text = form.bio;
-      _commissionController.text =
-          toPersianDigits('${(form.commissionRate ?? SpecialistForm.defaultCommissionRate).round()}');
-    } else {
-      _form = SpecialistForm();
-      _commissionController.text =
-          toPersianDigits('${SpecialistForm.defaultCommissionRate.round()}');
+    try {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is SalonSpecialist) {
+        final form = SpecialistForm.fromSpecialist(extra);
+        if (!mounted) return;
+        setState(() {
+          _form = form;
+          _error = null;
+          _avatarUrl = extra.avatarUrl ?? '';
+        });
+        _fullNameController.text = form.fullName;
+        _phoneController.text = form.phone;
+        _bioController.text = form.bio;
+        _commissionController.text =
+            toPersianDigits('${(form.commissionRate ?? SpecialistForm.defaultCommissionRate).round()}');
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _form = SpecialistForm();
+          _error = null;
+        });
+        _commissionController.text =
+            toPersianDigits('${SpecialistForm.defaultCommissionRate.round()}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'خطا در بارگذاری: $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطا در بارگذاری: $e')),
+      );
     }
   }
 
@@ -169,9 +188,38 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        appBar: SalonAppBar(title: _isEditing ? 'ویرایش متخصص' : 'متخصص جدید'),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _error = null;
+                    _seeded = false;
+                  });
+                  _seed();
+                },
+                child: const Text('تلاش مجدد'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (_form == null) {
-      // extra has not been read yet; the first frame shows a plain scaffold.
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      // extra has not been read yet; the first frame shows a loading scaffold.
+      return Scaffold(
+        appBar: SalonAppBar(title: _isEditing ? 'ویرایش متخصص' : 'متخصص جدید'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     final form = _form!;
     return Scaffold(
