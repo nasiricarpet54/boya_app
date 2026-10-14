@@ -319,25 +319,45 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
 
   Future<void> _resolve() async {
     setState(() => _resolving = true);
-    final outcome = await ref.read(userLocationProvider.notifier).resolve();
-    if (!mounted) return;
-    setState(() => _resolving = false);
+    try {
+      final outcome = await ref.read(userLocationProvider.notifier).resolve();
+      if (!mounted) return;
 
-    final message = switch (outcome) {
-      // The resolved city was written to cityProvider; the sheet's job is done
-      // and closing it lands the customer on a feed already scoped to them.
-      UserLocationOutcome.resolved => '',
-      UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت ممکن نیست',
-      UserLocationOutcome.cityNotServed => 'شهر شما هنوز در دسترس نیست',
-      UserLocationOutcome.geocoderUnavailable => 'سرویس موقعیت‌یابی فعال نیست',
-    };
-    if (message.isEmpty) {
-      Navigator.of(context).pop();
-      return;
+      // Only a resolved city closes the sheet: every other outcome leaves the
+      // customer on the picker, where they can still choose by hand instead of
+      // staring at a feed that silently stayed scoped to the default city.
+      if (outcome == UserLocationOutcome.resolved) {
+        Navigator.of(context).pop();
+        return;
+      }
+
+      final message = switch (outcome) {
+        UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت مکانی امکانپذیر نیست',
+        UserLocationOutcome.cityNotServed => 'متأسفانه بویا در شهر شما فعال نیست',
+        UserLocationOutcome.geocoderUnavailable => 'نزدیکترین شهر یافت نشد، لطفاً دستی انتخاب کنید',
+        UserLocationOutcome.resolved => '', // unreachable: popped above
+      };
+
+      if (message.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (_) {
+      // resolve() is null-safe end to end, so this is only the net for a
+      // platform channel that throws outright — the tile still has to
+      // unblock and say something rather than hang on the spinner.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('خطا در دریافت موقعیت، لطفاً دوباره تلاش کنید')),
+      );
+    } finally {
+      // Runs on every path out, including the early returns above, so the tile
+      // never stays disabled once the chain has ended.
+      if (mounted) {
+        setState(() => _resolving = false);
+      }
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
   }
 
   @override

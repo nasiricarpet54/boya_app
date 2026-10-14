@@ -12,14 +12,36 @@ class FilterChips extends ConsumerWidget {
   /// it asks for GPS so `locationProvider` becomes the customer, not Tehran.
   static const _nearMeLabel = 'نزدیک من';
 
-  Future<void> _select(WidgetRef ref, String label) async {
-    ref.read(homeFilterProvider.notifier).select(label);
-    if (label != _nearMeLabel) return;
+  Future<void> _select(BuildContext context, WidgetRef ref, String label) async {
+    // Every chip but «نزدیک من» is a plain filter the catalogue already knows,
+    // so it applies instantly with no device round-trip.
+    if (label != _nearMeLabel) {
+      ref.read(homeFilterProvider.notifier).select(label);
+      return;
+    }
 
-    // Asking is what makes the chip true: without a fix the feed is still
-    // measured from the default reference point, so the chip would sort by a
-    // city the customer is not in. The outcome is reported by the caller below.
-    await ref.read(userLocationProvider.notifier).resolve();
+    // Resolve first, select only on success: turning the chip on before a fix
+    // would sort the feed from the default reference point — a city the
+    // customer is not in — while the chip promised "near me".
+    final outcome = await ref.read(userLocationProvider.notifier).resolve();
+    if (!context.mounted) return;
+
+    if (outcome == UserLocationOutcome.resolved) {
+      ref.read(homeFilterProvider.notifier).select(label);
+      return;
+    }
+
+    final message = switch (outcome) {
+      UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت مکانی امکانپذیر نیست',
+      UserLocationOutcome.cityNotServed => 'بویا در شهر شما فعال نیست',
+      UserLocationOutcome.geocoderUnavailable => 'نزدیکترین شهر یافت نشد',
+      UserLocationOutcome.resolved => '', // unreachable: selected above
+    };
+    if (message.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   @override
@@ -49,7 +71,7 @@ class FilterChips extends ConsumerWidget {
           return _FilterChip(
             label: label,
             selected: label == active,
-            onTap: () => _select(ref, label),
+            onTap: () => _select(context, ref, label),
           );
         },
       ),
