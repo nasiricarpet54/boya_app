@@ -71,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
             _MenuItem(
               icon: Icons.schedule_outlined,
               title: 'ساعات کاری',
-              onTap: () => _comingSoon(context),
+              onTap: () => context.push(salonWorkingHoursPath),
             ),
             _MenuItem(
               icon: Icons.photo_library_outlined,
@@ -101,12 +101,6 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('این بخش به‌زودی فعال می‌شود')),
     );
   }
 }

@@ -16,6 +16,7 @@ import '../../features/portfolio/presentation/screens/portfolio_manage_screen.da
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salon/presentation/screens/salon_edit_screen.dart';
 import '../../features/salon/presentation/screens/salon_setup_screen.dart';
+import '../../features/salon/presentation/screens/working_hours_screen.dart';
 import '../../features/services/presentation/screens/line_form_screen.dart';
 import '../../features/services/presentation/screens/lines_list_screen.dart';
 import '../../features/services/presentation/screens/service_form_screen.dart';
@@ -30,6 +31,10 @@ import '../navigation/salon_shell.dart';
 /// page reached from the profile tab, not a sixth tab of its own, so it is
 /// pushed onto the root navigator and takes the whole screen.
 const String salonEditPath = '/salon/edit';
+
+/// The weekly schedule form. A sibling of the edit form: also a full page
+/// pushed onto the root navigator, saving to `PATCH /salon/me/schedule`.
+const String salonWorkingHoursPath = '/salon/hours';
 
 /// First-run onboarding. The router parks a signed-in account here while
 /// `profileCompleted` is false (migration 1730000000033 + `GET /auth/me`): an
@@ -131,6 +136,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // the whole screen, bottom navigation bar included. The auth redirect
       // below still applies — only the path prefix is checked.
       GoRoute(path: salonEditPath, builder: (_, _) => const SalonEditScreen()),
+      GoRoute(
+        path: salonWorkingHoursPath,
+        builder: (_, _) => const WorkingHoursScreen(),
+      ),
       // Service-line management. Also outside the shell: every one of these is
       // a pushed full-page screen reached from the profile tab, and the auth
       // redirect below matches on the `/services` prefix already.

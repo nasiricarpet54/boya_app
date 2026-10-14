@@ -6,5 +6,24 @@
     "cancel": "Cancel",
     "retry": "Try again",
     "error": "Something went wrong. Please try again."
+  },
+  "salon": {
+    "workingHours": {
+      "title": "Working hours",
+      "days": {
+        "sat": "Saturday",
+        "sun": "Sunday",
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday"
+      },
+      "breaks": "Breaks",
+      "addBreak": "Add break",
+      "copyToAll": "Copy to all days",
+      "closed": "Closed",
+      "save": "Save"
+    }
   }
 }

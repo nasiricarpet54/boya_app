@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/salon_profile.dart';
 import '../domain/salon_status.dart';
+import '../domain/working_hours.dart';
 
 /// Thrown when a gated edit was accepted but the API answered with something
 /// other than `pending_approval`, which would mean the salon believes its
@@ -63,6 +64,25 @@ class SalonApi {
         'coverImage': ?coverImage,
         'workingHours': ?workingHours,
       },
+    );
+    final status = SalonApprovalStatus.fromWire(response.data?['status'] as String?);
+    if (status != SalonApprovalStatus.pendingApproval) {
+      throw SalonEditNotQueuedException(status);
+    }
+    return status;
+  }
+
+  /// `PATCH /salon/me/schedule` — the weekly schedule form.
+  ///
+  /// Approval-gated exactly like [patchSalon]: the payload is staged in
+  /// `tenants.pending_changes.workingHours` and goes live only after an
+  /// admin approves, so the response is a status rather than the schedule.
+  /// Throws [SalonEditNotQueuedException] when the server answers without
+  /// queueing the edit.
+  Future<SalonApprovalStatus> patchSchedule(WorkingHours hours) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/salon/me/schedule',
+      data: <String, dynamic>{'workingHours': hours.toJson()},
     );
     final status = SalonApprovalStatus.fromWire(response.data?['status'] as String?);
     if (status != SalonApprovalStatus.pendingApproval) {

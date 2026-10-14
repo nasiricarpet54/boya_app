@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../application/salon_edit_controller.dart';
@@ -190,6 +191,15 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
                 onChanged: (url) => setState(() => _coverImageController.text = url),
               ),
               const SizedBox(height: 24),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.access_time),
+                title: const Text('ساعات کاری'),
+                subtitle: const Text('تنظیم روزها و ساعات باز بودن'),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: () => context.push(salonWorkingHoursPath),
+              ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: isSaving ? null : _save,
                 child: isSaving
