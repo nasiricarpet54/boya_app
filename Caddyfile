@@ -64,6 +64,20 @@ boya.bcshopir.ir {
 		redir * /app/ 308
 	}
 
+	# Salon Flutter Web app (prebuilt static web build served by nginx).
+	# handle_path (not handle) strips the /salon prefix before proxying, so
+	# nginx serves the build from its own root while the browser still sees
+	# /salon/* URLs — the web build is produced with --base-href /salon/, so
+	# every asset URL resolves back here. Bare /salon 308s to /salon/ so the
+	# trailing-slash-relative asset URLs in index.html resolve correctly.
+	handle_path /salon/* {
+		reverse_proxy salon-web:80
+	}
+
+	handle /salon {
+		redir * /salon/ 308
+	}
+
 	# Fallback: anything else lands on the admin panel. `/admin/fa` (not the
 	# bare `/admin/`, which Next 308s back to a 404ing `/admin`).
 	handle {

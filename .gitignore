@@ -50,3 +50,4 @@ Thumbs.db
 # `flutter build web --base-href /app/` on the host before `docker compose
 # -f docker-compose.production.yml build`.
 mobile/customer_app/build/
+mobile/salon_app/build/
