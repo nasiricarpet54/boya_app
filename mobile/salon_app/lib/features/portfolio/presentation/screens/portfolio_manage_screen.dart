@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/upload_api.dart';
+import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../../salon/data/salon_api.dart';
 import '../../../salon/presentation/widgets/approval_status_banner.dart';
@@ -211,12 +213,11 @@ class _AddPhotoDialogState extends ConsumerState<_AddPhotoDialog> {
             onChanged: (value) => setState(() => _specialistId = value),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: 'آدرس تصویر',
-              hintText: 'https://…',
-            ),
+          ImageUploadField(
+            label: 'تصویر نمونه‌کار',
+            category: 'portfolio',
+            value: _urlController.text,
+            onChanged: (url) => setState(() => _urlController.text = url),
           ),
         ],
       ),
@@ -256,7 +257,7 @@ class _PortfolioTile extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: 1,
           child: Image.network(
-            item.imageUrl,
+            resolveUploadUrl(item.imageUrl),
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => ColoredBox(
               color: BoyaColors.line,

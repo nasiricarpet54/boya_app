@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/navigation/salon_shell.dart';
+import '../../../../core/network/upload_api.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../../auth/application/auth_controller.dart';
@@ -132,7 +133,7 @@ class _SalonHeader extends StatelessWidget {
               radius: 40,
               backgroundColor: BoyaColors.primary,
               backgroundImage: coverImage != null && coverImage.isNotEmpty
-                  ? NetworkImage(coverImage)
+                  ? NetworkImage(resolveUploadUrl(coverImage))
                   : null,
               child: coverImage == null || coverImage.isEmpty
                   ? Text(

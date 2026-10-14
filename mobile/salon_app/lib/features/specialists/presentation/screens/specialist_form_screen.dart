@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../data/specialist_api.dart';
 import '../../domain/salon_specialist.dart';
@@ -36,6 +37,11 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
   bool _seeded = false;
   bool _saving = false;
 
+  /// The portrait sent with the next save: the seeded URL while editing
+  /// (re-sent unchanged unless the user touches it), `''` when there is no
+  /// photo — which the backend reads as "clear the picture".
+  String _avatarUrl = '';
+
   bool get _isEditing => _form?.isEditing ?? false;
 
   @override
@@ -51,6 +57,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
     if (extra is SalonSpecialist) {
       final form = SpecialistForm.fromSpecialist(extra);
       _form = form;
+      _avatarUrl = extra.avatarUrl ?? '';
       _fullNameController.text = form.fullName;
       _phoneController.text = form.phone;
       _bioController.text = form.bio;
@@ -107,6 +114,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
           bio: form.bio.trim(),
           skills: List<String>.of(form.skills),
           commissionRate: commission,
+          avatarUrl: _avatarUrl,
         );
       } else {
         await api.createSpecialist(
@@ -115,6 +123,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
           bio: form.bio.trim().isEmpty ? null : form.bio.trim(),
           skills: List<String>.of(form.skills),
           commissionRate: commission,
+          avatarUrl: _avatarUrl,
         );
       }
 
@@ -172,6 +181,13 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            ImageUploadField(
+              label: 'عکس پروفایل متخصص',
+              category: 'specialist',
+              value: _avatarUrl,
+              onChanged: (url) => setState(() => _avatarUrl = url),
+            ),
+            const SizedBox(height: 16),
             if (_isEditing) ...[
               // Identity is read-only on edit: the backend PATCH takes bio,
               // skills and commission only, so the header shows what was

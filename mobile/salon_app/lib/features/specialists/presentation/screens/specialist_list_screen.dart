@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/upload_api.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../data/specialist_api.dart';
@@ -212,7 +213,9 @@ class _SpecialistAvatar extends StatelessWidget {
       radius: 22,
       backgroundColor: BoyaColors.primarySubtle,
       backgroundImage:
-          avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+          avatarUrl != null && avatarUrl.isNotEmpty
+              ? NetworkImage(resolveUploadUrl(avatarUrl))
+              : null,
       child: avatarUrl == null || avatarUrl.isEmpty
           ? Text(
               specialist.initial,

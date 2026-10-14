@@ -28,6 +28,7 @@ import { ServiceModule } from './modules/service/service.module';
 import { SpecialistModule } from './modules/specialist/specialist.module';
 import { SupportModule } from './modules/support/support.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
@@ -81,6 +82,7 @@ import { UserModule } from './modules/user/user.module';
     SalonModule,
     ReviewModule,
     SupportModule,
+    UploadModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
   // still rate limited before token verification, and `RolesGuard` last so

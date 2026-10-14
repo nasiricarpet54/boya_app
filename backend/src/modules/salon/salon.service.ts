@@ -2412,18 +2412,27 @@ export class SalonService {
           throw new BadRequestException('ط§غŒظ† ع©ط§ط±ط¨ط± ظ‚ط¨ظ„ط§ظ‹ ط¨ظ‡ ط¹ظ†ظˆط§ظ† ظ…طھط®طµطµ ط¯ط± ط§غŒظ† ط³ط§ظ„ظ† ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
         }
         userId = existing.id;
-        // The form is the owner's source of truth for the display name.
-        await manager.query(`UPDATE users SET full_name = $2 WHERE id = $1`, [
-          existing.id,
-          dto.fullName,
-        ]);
+        // The form is the owner's source of truth for the display name and the
+        // portrait. `avatarUrl` is only written when the field was submitted —
+        // absent means "left it alone", null means "cleared it".
+        if (dto.avatarUrl !== undefined) {
+          await manager.query(
+            `UPDATE users SET full_name = $2, avatar_url = $3 WHERE id = $1`,
+            [existing.id, dto.fullName, dto.avatarUrl],
+          );
+        } else {
+          await manager.query(`UPDATE users SET full_name = $2 WHERE id = $1`, [
+            existing.id,
+            dto.fullName,
+          ]);
+        }
       } else {
         try {
           const inserted = await manager.query<Array<{ id: string }>>(
-            `INSERT INTO users (tenant_id, phone, full_name, role, is_active)
-             VALUES ($1, $2, $3, 'specialist', true)
+            `INSERT INTO users (tenant_id, phone, full_name, role, is_active, avatar_url)
+             VALUES ($1, $2, $3, 'specialist', true, $4)
              RETURNING id`,
-            [tenantId, dto.phone, dto.fullName],
+            [tenantId, dto.phone, dto.fullName, dto.avatarUrl ?? null],
           );
           userId = inserted[0].id;
         } catch (error) {
@@ -2491,10 +2500,10 @@ export class SalonService {
     const ownRowOnly = user.role === 'specialist';
 
     return this.withPanelTenant(tenantId, async (manager) => {
-      const rows = await manager.query<Array<{ id: string }>>(
+      const rows = await manager.query<Array<{ id: string; user_id: string }>>(
         ownRowOnly
-          ? `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`
-          : `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
+          ? `SELECT id, user_id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`
+          : `SELECT id, user_id FROM specialists WHERE tenant_id = $1 AND id = $2`,
         ownRowOnly ? [tenantId, id, user.userId] : [tenantId, id],
       );
       if (rows.length === 0) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
@@ -2531,6 +2540,16 @@ export class SalonService {
           WHERE tenant_id = $1 AND id = $2${ownershipTerm}`,
         params,
       );
+      // The portrait lives on the `users` row, not the specialist row, so it has
+      // its own write. Skipped when the field was not submitted: absent means
+      // unchanged, null means the salon removed the picture.
+      if (dto.avatarUrl !== undefined) {
+        await manager.query(`UPDATE users SET avatar_url = $1 WHERE id = $2`, [
+          dto.avatarUrl,
+          rows[0].user_id,
+        ]);
+      }
+
       return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
     });
   }

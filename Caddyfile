@@ -20,6 +20,10 @@ boya.bcshopir.ir {
 	handle /docs* {
 		reverse_proxy backend:3000
 	}
+	# Uploaded images (salon cover, specialist avatar, portfolio).
+	handle /uploads/* {
+		reverse_proxy backend:3000
+	}
 
 	# Admin panel (Next.js, basePath /admin).
 	# `/admin*` (not `/admin/*`) so the bare /admin path matches too.

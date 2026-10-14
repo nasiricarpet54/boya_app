@@ -1,19 +1,28 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { UPLOAD_DIR_DEFAULT } from './modules/upload/upload.service';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(prefix);
   app.use(helmet());
   app.use(compression());
+
+  // Served at the host root — deliberately outside the `api/v1` prefix, so the
+  // stored URLs (`/uploads/...`) resolve the same in dev, behind Caddy and in a
+  // browser. The directory matches the one `UploadService` writes into.
+  app.useStaticAssets(process.env.UPLOAD_DIR || UPLOAD_DIR_DEFAULT, {
+    prefix: '/uploads/',
+  });
   const nodeEnv = process.env.NODE_ENV ?? 'development';
   const isDev = nodeEnv !== 'production';
 

@@ -18,4 +18,8 @@ export const PERSIAN_ERRORS = {
   SPECIALIST_NOT_AVAILABLE: 'متخصص در این زمان در دسترس نیست',
   INVALID_DATE: 'تاریخ وارد شده معتبر نیست',
   INVALID_TIME: 'ساعت وارد شده معتبر نیست',
+  IMAGE_MISSING: 'فایل تصویر ارسال نشده است',
+  IMAGE_FORMAT_UNSUPPORTED: 'فرمت تصویر پشتیبانی نمی‌شود (فقط jpg، png یا webp)',
+  IMAGE_TOO_LARGE: 'حجم تصویر نباید بیش از ۵ مگابایت باشد',
+  IMAGE_CATEGORY_INVALID: 'دستهٔ تصویر نامعتبر است',
 } as const;

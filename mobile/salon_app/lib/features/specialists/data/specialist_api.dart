@@ -43,12 +43,14 @@ class SpecialistApi {
 
   /// Registers a specialist; lands as `approved` immediately. A null [bio]
   /// or [commissionRate] is omitted, so the backend's defaults apply.
+  /// [avatarUrl] is a `POST /upload/image` path (or `''` for no photo).
   Future<CreatedSpecialist> createSpecialist({
     required String phone,
     required String fullName,
     String? bio,
     List<String>? skills,
     double? commissionRate,
+    String? avatarUrl,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/salon/me/specialists',
@@ -58,6 +60,7 @@ class SpecialistApi {
         'bio': ?bio,
         'skills': ?skills,
         'commissionRate': ?commissionRate,
+        'avatarUrl': ?avatarUrl,
       },
     );
     return CreatedSpecialist.fromJson(response.data ?? const {});
@@ -72,6 +75,7 @@ class SpecialistApi {
     double? commissionRate,
     bool? isActive,
     bool? offersMobileService,
+    String? avatarUrl,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/specialists/$id',
@@ -81,6 +85,7 @@ class SpecialistApi {
         'commissionRate': ?commissionRate,
         'isActive': ?isActive,
         'offersMobileService': ?offersMobileService,
+        'avatarUrl': ?avatarUrl,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});

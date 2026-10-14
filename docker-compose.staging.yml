@@ -130,8 +130,14 @@ services:
       FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
       FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
       NESHAN_API_KEY: ${NESHAN_API_KEY:-}
+      # Persistent volume for uploaded images (salon cover, specialist avatar,
+      # portfolio). Served statically at /uploads/. Staging mirrors production
+      # so the same directory layout is required.
+      UPLOAD_DIR: /app/uploads
       # --- CORS (comma-separated browser origins) ---
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      - uploads_data:/app/uploads
     ports:
       - "3001:3000" # direct API access for debugging (Caddy also proxies it)
     healthcheck:
@@ -160,3 +166,4 @@ volumes:
   redis_staging_data:
   caddy_data:
   caddy_config:
+  uploads_data:

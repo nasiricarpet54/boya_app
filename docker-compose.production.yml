@@ -90,6 +90,11 @@ services:
       # compose file rather than only in the secret store. The endpoint answers
       # 503 while it is empty.
       NESHAN_API_KEY: ${NESHAN_API_KEY:-}
+      # Persistent volume for uploaded images (salon cover, specialist avatar,
+      # portfolio). Served statically at /uploads/.
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
     ports:
       - "${BACKEND_PORT:-3021}:3000"
     healthcheck:
@@ -148,3 +153,4 @@ volumes:
   redis_production_data:
   caddy_data:
   caddy_config:
+  uploads_data:

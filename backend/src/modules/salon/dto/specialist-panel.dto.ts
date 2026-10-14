@@ -55,6 +55,17 @@ export class CreateSpecialistPanelDto {
   @Min(0)
   @Max(100)
   commissionRate?: number;
+
+  /**
+   * Specialist portrait. Stored on the `users` row (the panel listing reads it
+   * back from there) as a path returned by `POST /upload/image`, so an absolute
+   * URL from before local storage is equally valid.
+   */
+  @ApiPropertyOptional({ maxLength: 500, example: '/uploads/tenant-1/specialist/3f9a.jpg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string;
 }
 
 /**
@@ -116,6 +127,13 @@ export class UpdateSpecialistPanelDto {
   @IsOptional()
   @IsObject()
   workingHours?: Record<string, unknown>;
+
+  /** Specialist portrait, written to the `users` row (see the create DTO). */
+  @ApiPropertyOptional({ maxLength: 500, example: '/uploads/tenant-1/specialist/3f9a.jpg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string;
 }
 
 /** Body of `POST /salon/me/portfolio` — one photo on one specialist. */
@@ -124,7 +142,11 @@ export class AddPortfolioItemDto {
   @IsString()
   specialistId!: string;
 
-  @ApiProperty({ maxLength: 500, example: 'https://cdn.boya.ir/portfolio/before.jpg' })
+  @ApiProperty({
+    maxLength: 500,
+    example: '/uploads/tenant-1/portfolio/9c2b.jpg',
+    description: 'آدرس تصویر آپلودشده (خروجی `POST /upload/image`) یا آدرس عمومی قبلی',
+  })
   @IsString()
   @MaxLength(500)
   imageUrl!: string;

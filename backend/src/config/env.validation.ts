@@ -171,6 +171,16 @@ class EnvironmentVariables {
   PAYMENTS_ENABLED: boolean = false;
 
 
+  /**
+   * Directory for uploaded images (cover photos, specialist avatars, portfolio
+   * shots), also served statically at `/uploads/`. Optional: unset means
+   * `${cwd}/uploads`, which is what a local checkout uses; the compose files set
+   * it to the mounted volume.
+   */
+  @IsOptional()
+  @IsString()
+  UPLOAD_DIR?: string;
+
   @IsString()
   OTP_PEPPER!: string;
 

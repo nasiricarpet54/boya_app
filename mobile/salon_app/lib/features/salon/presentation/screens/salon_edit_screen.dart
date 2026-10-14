@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../application/salon_edit_controller.dart';
 import '../../data/salon_api.dart';
@@ -182,31 +183,11 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              Text('آدرس عکس کاور', style: BoyaTypography.caption),
-              const SizedBox(height: 4),
-              TextFormField(
-                controller: _coverImageController,
-                keyboardType: TextInputType.url,
-                textDirection: TextDirection.ltr,
-                maxLength: 500,
-                decoration: const InputDecoration(
-                  hintText: 'https://example.com/cover.jpg',
-                  counterText: '',
-                ),
-                validator: (value) {
-                  final url = (value ?? '').trim();
-                  if (url.isEmpty) return null;
-                  final uri = Uri.tryParse(url);
-                  final valid = uri != null &&
-                      (uri.scheme == 'http' || uri.scheme == 'https') &&
-                      uri.host.isNotEmpty;
-                  return valid ? null : 'آدرس تصویر معتبر نیست';
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'آپلود مستقیم تصویر در فاز بعد فعال می‌شود؛ فعلاً آدرس تصویر را وارد کنید.',
-                style: BoyaTypography.overline,
+              ImageUploadField(
+                label: 'عکس کاور',
+                category: 'cover',
+                value: _coverImageController.text,
+                onChanged: (url) => setState(() => _coverImageController.text = url),
               ),
               const SizedBox(height: 24),
               FilledButton(
