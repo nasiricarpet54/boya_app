@@ -55,13 +55,16 @@ import { UserModule } from './modules/user/user.module';
       inject: [ConfigService],
       isGlobal: true,
       useFactory: (config: ConfigService) => ({
-        defaultDriver: DriverType.KAVENEGAR,
+        defaultDriver: DriverType.MELIPAYAMAK,
         timeout: 10_000,
         drivers: {
-          kavenegar: {
-            url: 'https://api.kavenegar.com/v1/',
-            apiKey: config.get<string>('KAVENEGAR_API_KEY', ''),
-            lineNumber: config.get<string>('KAVENEGAR_SENDER', ''),
+          melipayamak: {
+            url: config.get<string>(
+              'MELIPAYAMAK_URL',
+              'https://rest.payamak-panel.com/api/SendSMS/',
+            ),
+            username: config.get<string>('MELIPAYAMAK_USERNAME', ''),
+            password: config.get<string>('MELIPAYAMAK_PASSWORD', ''),
           },
         },
       }),

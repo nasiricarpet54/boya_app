@@ -4,7 +4,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { InAppNotificationService } from './in-app-notification.service';
-import { KavenegarAlertService } from './kavenegar-alert.service';
+import { MelipayamakAlertService } from './melipayamak-alert.service';
 import { PushNotificationService } from './push-notification.service';
 
 interface ReminderRow {
@@ -46,7 +46,7 @@ export class ReminderScheduler implements OnModuleInit {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly inApp: InAppNotificationService,
-    private readonly alerts: KavenegarAlertService,
+    private readonly alerts: MelipayamakAlertService,
     private readonly push: PushNotificationService,
   ) {}
 

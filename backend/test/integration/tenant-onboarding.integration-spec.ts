@@ -92,7 +92,7 @@ describeIntegration('salon onboarding (ADR-010): create tenant -> invite owner -
       dataSource,
       refreshTokenService,
       configStub,
-      // KAVENEGAR_INVITE_TEMPLATE is unset, so `create` logs and skips the SMS.
+      // MELIPAYAMAK_INVITE_BODY_ID is unset, so `create` logs and skips the SMS.
       { verify: async () => ({ success: false }) } as unknown as SmsService,
     );
 

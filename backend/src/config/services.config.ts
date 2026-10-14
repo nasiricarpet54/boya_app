@@ -6,9 +6,11 @@ export const stripeConfig = registerAs('stripe', () => ({
   connectClientId: process.env.STRIPE_CONNECT_CLIENT_ID ?? '',
 }));
 
-export const kavenegarConfig = registerAs('kavenegar', () => ({
-  apiKey: process.env.KAVENEGAR_API_KEY ?? '',
-  sender: process.env.KAVENEGAR_SENDER ?? '',
+export const melipayamakConfig = registerAs('melipayamak', () => ({
+  username: process.env.MELIPAYAMAK_USERNAME ?? '',
+  password: process.env.MELIPAYAMAK_PASSWORD ?? '',
+  sender: process.env.MELIPAYAMAK_SENDER ?? '',
+  url: process.env.MELIPAYAMAK_URL ?? 'https://rest.payamak-panel.com/api/SendSMS/',
 }));
 
 export const neshanConfig = registerAs('neshan', () => ({

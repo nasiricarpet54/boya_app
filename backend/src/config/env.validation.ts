@@ -79,36 +79,72 @@ class EnvironmentVariables {
   @IsString()
   ZARINPAL_SANDBOX?: string;
 
-  @IsString()
-  KAVENEGAR_API_KEY!: string;
-
   /**
-   * Kavenegar sender line number ("lineNumber"). Must be set before any real SMS
-   * can be sent — the kavenegar driver rejects an empty value with
-   * `ConfigurationException: Driver 'kavenegar' requires a valid lineNumber`.
-   * Optional only so a fresh checkout still boots; set it wherever SMS is meant
-   * to be delivered, and remember env changes need a container recreate.
+   * Melipayamak (ملی پیامک) credentials for the shared-service pattern API
+   * (`BaseServiceNumber`). Optional so a fresh checkout still boots — the SMS
+   * driver is instantiated lazily and only a real send fails without them.
+   * Set both wherever SMS is meant to be delivered.
    */
   @IsOptional()
   @IsString()
-  KAVENEGAR_SENDER?: string;
+  MELIPAYAMAK_USERNAME?: string;
 
   @IsOptional()
   @IsString()
-  KAVENEGAR_OTP_TEMPLATE?: string;
-
-  @IsOptional()
-  @IsString()
-  KAVENEGAR_BOOKING_TEMPLATE?: string;
+  MELIPAYAMAK_PASSWORD?: string;
 
   /**
-   * Kavenegar template for the salon-invite OTP. Separate from the login one so
-   * the message can read "کد ورود به پنل سالن" instead of a generic login code.
-   * Falls back to KAVENEGAR_OTP_TEMPLATE when unset.
+   * Sender number for the direct (non-pattern) REST SendSMS fallback.
+   * Only the beta fallback needs it; the pattern API sends from the shared
+   * service number instead. Optional so a fresh checkout still boots.
    */
   @IsOptional()
   @IsString()
-  KAVENEGAR_INVITE_TEMPLATE?: string;
+  MELIPAYAMAK_SENDER?: string;
+
+  /**
+   * Base URL of the Melipayamak REST API. Defaults to the public panel
+   * endpoint when unset.
+   */
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_URL?: string;
+
+  /**
+   * Numeric shared-service pattern (bodyId) for the login/invite OTP code.
+   * One pattern serves both purposes: its single variable receives the code.
+   * Empty means the provider rejects the send and OtpService answers
+   * SMS_FAILED rather than silently skipping.
+   */
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_OTP_BODY_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_BOOKING_BODY_ID?: string;
+
+  /**
+   * Melipayamak shared-service pattern (bodyId) for the salon-invite link.
+   * Falls back to MELIPAYAMAK_INVITE_BODY_ID when unset.
+   */
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_INVITE_BODY_ID?: string;
+
+  /**
+   * Per-role invite overrides. Each is optional and falls back to
+   * MELIPAYAMAK_INVITE_BODY_ID, so one pattern serves every role until owner and
+   * specialist invites need different wording. `line_manager` has no override and
+   * uses the generic pattern.
+   */
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_INVITE_OWNER_BODY_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  MELIPAYAMAK_INVITE_SPECIALIST_BODY_ID?: string;
 
   /**
    * Base of the deep link the invite SMS carries: `${INVITE_BASE_URL}?token=…`.
@@ -119,20 +155,6 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   INVITE_BASE_URL?: string;
-
-  /**
-   * Per-role invite overrides. Each is optional and falls back to
-   * KAVENEGAR_INVITE_TEMPLATE, so one template serves every role until owner and
-   * specialist invites need different wording. `line_manager` has no override and
-   * uses the generic template.
-   */
-  @IsOptional()
-  @IsString()
-  KAVENEGAR_INVITE_OWNER_TEMPLATE?: string;
-
-  @IsOptional()
-  @IsString()
-  KAVENEGAR_INVITE_SPECIALIST_TEMPLATE?: string;
 
   /**
    * How long a staff invite stays redeemable (ADR-010). Days, not seconds, so

@@ -67,7 +67,7 @@ describeIntegration('invite tokens', () => {
         getAdminDataSource(),
         refreshTokenService,
         { get: <T>(_key: string, fallback: T) => fallback } as unknown as ConfigService,
-        // KAVENEGAR_INVITE_TEMPLATE is unset here, so `create` logs and skips the
+        // MELIPAYAMAK_INVITE_BODY_ID is unset here, so `create` logs and skips the
         // SMS — no test ever reaches a provider.
         { verify: async () => ({ success: false }) } as unknown as SmsService,
       );
@@ -357,7 +357,7 @@ describeIntegration('invite tokens', () => {
   // The SMS half of `create`. `getService()` deliberately leaves the template
   // unset so nothing reaches a provider, so these specs build their own service
   // with a map-backed ConfigService and a recording SmsService to see the
-  // template and link `resolveInviteTemplate` actually hands Kavenegar.
+  // bodyId and link `resolveInviteTemplate` actually hands Melipayamak.
   describe('invite SMS template resolution', () => {
     /** Builds a service whose `verify` calls are captured into `sent`. */
     const serviceWith = (
@@ -387,7 +387,7 @@ describeIntegration('invite tokens', () => {
 
     it('falls back to the generic template for every role when no override is set', async () => {
       const { service, sent } = serviceWith({
-        KAVENEGAR_INVITE_TEMPLATE: 'invite',
+        MELIPAYAMAK_INVITE_BODY_ID: '1001',
         INVITE_BASE_URL: 'https://staging.boya.ir',
       });
 
@@ -396,7 +396,7 @@ describeIntegration('invite tokens', () => {
         const phone = nextPhone();
         const issued = await service.create({ role, phone }, OWNER, TENANT_A);
         expect(sent).toHaveLength(1);
-        expect(sent[0].template).toBe('invite');
+        expect(sent[0].template).toBe('1001');
         // INVITE_BASE_URL shapes the link; without it the SMS carries only the
         // bare hex token, which nothing can open.
         expect(sent[0].token).toBe(`https://staging.boya.ir?token=${issued.token}`);
@@ -405,20 +405,20 @@ describeIntegration('invite tokens', () => {
 
     it('prefers the per-role template, and falls back when the override is blank', async () => {
       const { service, sent } = serviceWith({
-        KAVENEGAR_INVITE_TEMPLATE: 'invite',
+        MELIPAYAMAK_INVITE_BODY_ID: '1001',
         // Set for owner, deliberately blank for specialist: blank means "no
-        // opinion", so specialist still resolves to the generic template.
-        KAVENEGAR_INVITE_OWNER_TEMPLATE: 'invite-owner',
-        KAVENEGAR_INVITE_SPECIALIST_TEMPLATE: '',
+        // opinion", so specialist still resolves to the generic pattern.
+        MELIPAYAMAK_INVITE_OWNER_BODY_ID: '1002',
+        MELIPAYAMAK_INVITE_SPECIALIST_BODY_ID: '',
       });
 
       const ownerPhone = nextPhone();
       await service.create({ role: 'salon_owner', phone: ownerPhone }, OWNER, TENANT_A);
-      expect(sent[0].template).toBe('invite-owner');
+      expect(sent[0].template).toBe('1002');
 
       const specialistPhone = nextPhone();
       await service.create({ role: 'specialist', phone: specialistPhone }, OWNER, TENANT_A);
-      expect(sent[1].template).toBe('invite');
+      expect(sent[1].template).toBe('1001');
     });
 
     it('skips the SMS when no template is configured at all', async () => {
@@ -432,7 +432,7 @@ describeIntegration('invite tokens', () => {
     });
 
     it('sends only the bare token when INVITE_BASE_URL is unset', async () => {
-      const { service, sent } = serviceWith({ KAVENEGAR_INVITE_TEMPLATE: 'invite' });
+      const { service, sent } = serviceWith({ MELIPAYAMAK_INVITE_BODY_ID: '1001' });
 
       const phone = nextPhone();
       const issued = await service.create({ role: 'specialist', phone }, OWNER, TENANT_A);

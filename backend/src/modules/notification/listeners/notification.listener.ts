@@ -21,7 +21,7 @@ import {
   RefundMarkedEvent,
 } from '../../../common/domain-events';
 import { InAppNotificationService } from '../services/in-app-notification.service';
-import { KavenegarAlertService } from '../services/kavenegar-alert.service';
+import { MelipayamakAlertService } from '../services/melipayamak-alert.service';
 
 @Injectable()
 export class NotificationListener {
@@ -29,7 +29,7 @@ export class NotificationListener {
 
   constructor(
     private readonly inApp: InAppNotificationService,
-    private readonly alerts: KavenegarAlertService,
+    private readonly alerts: MelipayamakAlertService,
     private readonly users: UserService,
     private readonly tenants: TenantService,
     private readonly catalog: ServiceCatalogService,

@@ -28,13 +28,13 @@ const INVITE_TOKEN_BYTES = 32;
 const DEFAULT_EXPIRY_DAYS = 7;
 
 /**
- * Per-role invite templates, keyed by the env var holding the template name.
- * `line_manager` is deliberately absent: it has no dedicated template and falls
+ * Per-role invite patterns (bodyId), keyed by the env var holding the pattern code.
+ * `line_manager` is deliberately absent: it has no dedicated pattern and falls
  * back to the generic one, same as a role whose override is configured but empty.
  */
-const INVITE_TEMPLATE_BY_ROLE: Partial<Record<InviteRole, string>> = {
-  salon_owner: 'KAVENEGAR_INVITE_OWNER_TEMPLATE',
-  specialist: 'KAVENEGAR_INVITE_SPECIALIST_TEMPLATE',
+const INVITE_BODY_ID_BY_ROLE: Partial<Record<InviteRole, string>> = {
+  salon_owner: 'MELIPAYAMAK_INVITE_OWNER_BODY_ID',
+  specialist: 'MELIPAYAMAK_INVITE_SPECIALIST_BODY_ID',
 };
 
 export interface CreateInviteInput {
@@ -174,7 +174,7 @@ export class InviteTokenService {
       );
     });
 
-    // Best-effort, exactly like KavenegarAlertService: the inviter already gets
+    // Best-effort, exactly like MelipayamakAlertService: the inviter already gets
     // the plaintext in the response, so a provider outage must not turn a saved
     // invite into a 502 — the admin panel can always resend from the list.
     if (input.phone) {
@@ -193,44 +193,94 @@ export class InviteTokenService {
    * only hide a working invite behind a messaging error.
    */
   /**
-   * Resolves the Kavenegar template for a role: a configured per-role override
-   * wins, otherwise everything falls back to `KAVENEGAR_INVITE_TEMPLATE`, so one
-   * template is enough until owner and specialist invites need different wording.
-   * Empty string (never undefined) when no template is configured at all, so the
-   * caller can skip the send rather than hand Kavenegar an empty template name.
+   * Resolves the Melipayamak pattern (bodyId) for a role: a configured per-role
+   * override wins, otherwise everything falls back to `MELIPAYAMAK_INVITE_BODY_ID`,
+   * so one pattern is enough until owner and specialist invites need different
+   * wording. Empty string (never undefined) when no pattern is configured at all,
+   * so the caller can skip the send rather than hand the provider an empty bodyId.
    *
    * Uses falsy rather than nullish semantics on purpose: an override set but left
-   * blank means "no opinion", so the invite falls back to the generic template
-   * instead of sending an empty name to the provider.
+   * blank means "no opinion", so the invite falls back to the generic pattern
+   * instead of sending an empty code to the provider.
    */
   private resolveInviteTemplate(role: InviteRole): string {
-    const override = INVITE_TEMPLATE_BY_ROLE[role];
+    const override = INVITE_BODY_ID_BY_ROLE[role];
     return (
       (override ? this.config.get<string>(override) : undefined) ||
-      this.config.get<string>('KAVENEGAR_INVITE_TEMPLATE') ||
+      this.config.get<string>('MELIPAYAMAK_INVITE_BODY_ID') ||
       ''
     );
   }
 
   private async sendInviteSms(phone: string, role: InviteRole, token: string): Promise<void> {
-    const template = this.resolveInviteTemplate(role);
-    if (!template) {
-      this.logger.warn(
-        `KAVENEGAR_INVITE_TEMPLATE is unset for role=${role}; invite SMS skipped`,
-      );
-      return;
-    }
-
     const baseUrl = this.config.get<string>('INVITE_BASE_URL', '');
     const link = baseUrl ? `${baseUrl}?token=${token}` : token;
+    const template = this.resolveInviteTemplate(role);
 
-    try {
-      const sent = await this.sms.verify({ to: phone, template, tokens: { token: link } });
-      if (!sent.success) {
-        this.logger.warn(`Kavenegar invite SMS was not accepted for role=${role}`);
+    // Pattern first; direct REST SMS is the beta fallback while the bodyId
+    // is not yet approved in the panel (or the pattern call fails).
+    if (template) {
+      try {
+        const sent = await this.sms.verify({ to: phone, template, tokens: { token: link } });
+        if (sent.success) return;
+        this.logger.warn(
+          `Melipayamak invite pattern was not accepted for role=${role}; trying direct SMS`,
+        );
+      } catch (cause) {
+        this.logger.warn(`invite pattern SMS failed for role=${role}: ${String(cause)}; trying direct SMS`);
       }
+    } else {
+      this.logger.warn(
+        `MELIPAYAMAK_INVITE_BODY_ID is unset for role=${role}; trying direct SMS`,
+      );
+    }
+
+    const direct = await this.sendDirectSms(phone, `دعوت به بویا: ${link}`);
+    if (!direct) {
+      this.logger.warn(`invite direct SMS failed for role=${role}`);
+    }
+  }
+
+  /**
+   * Beta fallback: plain REST SendSMS without a pattern bodyId.
+   *
+   * Same endpoint as the OTP fallback in OtpService. Returns false — never
+   * throws — because `create` has already persisted the invite and the caller
+   * holds the one-time plaintext.
+   */
+  private async sendDirectSms(to: string, text: string): Promise<boolean> {
+    const username = this.config.get<string>('MELIPAYAMAK_USERNAME');
+    const password = this.config.get<string>('MELIPAYAMAK_PASSWORD');
+    const from = this.config.get<string>('MELIPAYAMAK_SENDER');
+    if (!username || !password || !from) {
+      this.logger.warn('Melipayamak direct SMS skipped: MELIPAYAMAK_USERNAME/PASSWORD/SENDER is not set');
+      return false;
+    }
+
+    const base =
+      this.config.get<string>('MELIPAYAMAK_URL') || 'https://rest.payamak-panel.com/api/SendSMS/';
+    const endpoint = /SendSMS\/SendSMS\/?$/i.test(base)
+      ? base
+      : `${base.replace(/\/*$/, '')}/SendSMS`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username, password, to, from, text }).toString(),
+        signal: controller.signal,
+      });
+      const data = (await res.json()) as { RetStatus?: number | string; StrRetStatus?: string };
+      if (data?.RetStatus === 1 || data?.RetStatus === '1') return true;
+      this.logger.warn(`Melipayamak direct invite SMS rejected: ${data?.StrRetStatus ?? res.status}`);
+      return false;
     } catch (cause) {
-      this.logger.warn(`invite SMS failed for role=${role}: ${String(cause)}`);
+      this.logger.warn(`invite direct SMS error for to=${to}: ${String(cause)}`);
+      return false;
+    } finally {
+      clearTimeout(timer);
     }
   }
 

@@ -12,7 +12,7 @@ import { NotificationListener } from './listeners/notification.listener';
 import { NotificationController } from './notification.controller';
 import { DeviceTokenController } from './device-token.controller';
 import { InAppNotificationService } from './services/in-app-notification.service';
-import { KavenegarAlertService } from './services/kavenegar-alert.service';
+import { MelipayamakAlertService } from './services/melipayamak-alert.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { ReminderScheduler } from './services/reminder.scheduler';
 
@@ -32,7 +32,7 @@ import { ReminderScheduler } from './services/reminder.scheduler';
   controllers: [NotificationController, DeviceTokenController],
   providers: [
     InAppNotificationService,
-    KavenegarAlertService,
+    MelipayamakAlertService,
     PushNotificationService,
     NotificationListener,
     ReminderScheduler,

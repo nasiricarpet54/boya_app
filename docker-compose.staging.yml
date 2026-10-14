@@ -107,18 +107,20 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
-      # --- SMS / OTP via Kavenegar (required for SMS testing) ---
-      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:?set KAVENEGAR_API_KEY in .env}
-      KAVENEGAR_SENDER: ${KAVENEGAR_SENDER:-}
-      KAVENEGAR_OTP_TEMPLATE: ${KAVENEGAR_OTP_TEMPLATE:-boya-otp}
-      KAVENEGAR_BOOKING_TEMPLATE: ${KAVENEGAR_BOOKING_TEMPLATE:-}
-      KAVENEGAR_INVITE_TEMPLATE: ${KAVENEGAR_INVITE_TEMPLATE:-invite}
-      KAVENEGAR_INVITE_OWNER_TEMPLATE: ${KAVENEGAR_INVITE_OWNER_TEMPLATE:-invite-owner}
-      KAVENEGAR_INVITE_SPECIALIST_TEMPLATE: ${KAVENEGAR_INVITE_SPECIALIST_TEMPLATE:-invite-specialist}
+      # --- SMS / OTP via Melipayamak (required for SMS testing) ---
+      MELIPAYAMAK_USERNAME: ${MELIPAYAMAK_USERNAME:?set MELIPAYAMAK_USERNAME in .env}
+      MELIPAYAMAK_PASSWORD: ${MELIPAYAMAK_PASSWORD:?set MELIPAYAMAK_PASSWORD in .env}
+      MELIPAYAMAK_SENDER: ${MELIPAYAMAK_SENDER:-}
+      MELIPAYAMAK_URL: ${MELIPAYAMAK_URL:-https://rest.payamak-panel.com/api/SendSMS/}
+      MELIPAYAMAK_OTP_BODY_ID: ${MELIPAYAMAK_OTP_BODY_ID:-}
+      MELIPAYAMAK_BOOKING_BODY_ID: ${MELIPAYAMAK_BOOKING_BODY_ID:-}
+      MELIPAYAMAK_INVITE_BODY_ID: ${MELIPAYAMAK_INVITE_BODY_ID:-}
+      MELIPAYAMAK_INVITE_OWNER_BODY_ID: ${MELIPAYAMAK_INVITE_OWNER_BODY_ID:-}
+      MELIPAYAMAK_INVITE_SPECIALIST_BODY_ID: ${MELIPAYAMAK_INVITE_SPECIALIST_BODY_ID:-}
       INVITE_BASE_URL: ${INVITE_BASE_URL:-https://staging.boya.ir}
       INVITE_EXPIRY_DAYS: ${INVITE_EXPIRY_DAYS:-7}
       OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER in .env}
-      # false => real SMS is sent through Kavenegar (the point of staging).
+      # false => real SMS is sent through Melipayamak (the point of staging).
       # Set OTP_DEV_MODE=true in .env to log codes instead of sending them.
       OTP_DEV_MODE: ${OTP_DEV_MODE:-false}
       # --- Feature flags (Phase 1 showcase: payments off) ---

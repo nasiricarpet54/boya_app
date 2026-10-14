@@ -9,7 +9,7 @@ jest.mock('@nestjs/schedule', () => ({
 import { DataSource } from 'typeorm';
 
 import { ReminderScheduler } from '../../src/modules/notification/services/reminder.scheduler';
-import { KavenegarAlertService } from '../../src/modules/notification/services/kavenegar-alert.service';
+import { MelipayamakAlertService } from '../../src/modules/notification/services/melipayamak-alert.service';
 import { InAppNotificationService } from '../../src/modules/notification/services/in-app-notification.service';
 import { PushNotificationService } from '../../src/modules/notification/services/push-notification.service';
 import { describeIntegration, getDataSource, queryAsAdmin, withTenant } from '../setup/integration.setup';
@@ -52,7 +52,7 @@ describeIntegration('BUG-1: customer SMS reminder must not depend on tenant_id',
         sentAlerts.push({ phone, title });
         return true;
       },
-    } as unknown as KavenegarAlertService;
+    } as unknown as MelipayamakAlertService;
 
     const inApp = { create: async () => ({}) } as unknown as InAppNotificationService;
     const push = { sendToUser: async () => true } as unknown as PushNotificationService;

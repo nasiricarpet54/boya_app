@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -31,6 +32,8 @@ export type OtpPurpose = 'login' | 'invite';
 
 @Injectable()
 export class OtpService {
+  private readonly logger = new Logger(OtpService.name);
+
   constructor(
     @Inject('OTP_REDIS') private readonly redis: Redis,
     private readonly smsService: SmsService,
@@ -67,15 +70,32 @@ export class OtpService {
       return;
     }
 
-    const sent = await this.smsService.verify({
-      to: phone,
-      // A salon invite reads differently from a login ("کد ورود به پنل سالن"),
-      // so each purpose has its own Kavenegar template.
-      template: this.config.get<string>(`KAVENEGAR_${purpose.toUpperCase()}_TEMPLATE`)
-        ?? this.config.get<string>('KAVENEGAR_OTP_TEMPLATE', 'boya-otp'),
-      tokens: { code },
-    });
-    if (!sent.success) {
+    const bodyId = this.config.get<string>('MELIPAYAMAK_OTP_BODY_ID', '');
+
+    // Pattern first; direct REST SMS is the beta fallback while the bodyId
+    // is not yet approved in the panel (or the pattern call fails).
+    let sent = false;
+    if (bodyId) {
+      try {
+        const res = await this.smsService.verify({
+          to: phone,
+          // Melipayamak shared-service pattern: `template` is the numeric bodyId
+          // approved in the panel, and the single OTP code fills its only variable.
+          template: bodyId,
+          tokens: { code },
+        });
+        sent = res.success;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        this.logger.warn(`Melipayamak pattern send failed, trying direct SMS: ${reason}`);
+      }
+    }
+
+    if (!sent) {
+      sent = await this.sendDirectSms(phone, `کد ورود شما به بویا: ${code}`);
+    }
+
+    if (!sent) {
       await this.redis.del(this.otpKey(phone, purpose));
       throw new HttpException(PERSIAN_ERRORS.SMS_FAILED, HttpStatus.BAD_GATEWAY);
     }
@@ -105,6 +125,51 @@ export class OtpService {
       throw new UnauthorizedException(PERSIAN_ERRORS.OTP_INVALID);
     }
     await this.redis.del(this.otpKey(phone, purpose), this.attemptKey(phone, purpose));
+  }
+
+  /**
+   * Beta fallback: plain REST SendSMS without a pattern bodyId.
+   *
+   * The shared-service pattern API needs its bodyId approved in the panel;
+   * until then this direct endpoint delivers the text as-is. Uses the global
+   * fetch (Node 20+), so no extra dependency. Returns false — never throws —
+   * so the caller decides between success and SMS_FAILED.
+   */
+  private async sendDirectSms(to: string, text: string): Promise<boolean> {
+    const username = this.config.get<string>('MELIPAYAMAK_USERNAME');
+    const password = this.config.get<string>('MELIPAYAMAK_PASSWORD');
+    const from = this.config.get<string>('MELIPAYAMAK_SENDER');
+    if (!username || !password || !from) {
+      this.logger.error('Melipayamak direct SMS skipped: MELIPAYAMAK_USERNAME/PASSWORD/SENDER is not set');
+      return false;
+    }
+
+    const base =
+      this.config.get<string>('MELIPAYAMAK_URL') || 'https://rest.payamak-panel.com/api/SendSMS/';
+    const endpoint = /SendSMS\/SendSMS\/?$/i.test(base)
+      ? base
+      : `${base.replace(/\/*$/, '')}/SendSMS`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username, password, to, from, text }).toString(),
+        signal: controller.signal,
+      });
+      const data = (await res.json()) as { RetStatus?: number | string; StrRetStatus?: string };
+      if (data?.RetStatus === 1 || data?.RetStatus === '1') return true;
+      this.logger.error(`Melipayamak direct SMS rejected: ${data?.StrRetStatus ?? res.status}`);
+      return false;
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Melipayamak direct SMS error: ${reason}`);
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   normalizePersianPhone(phone: string): string {

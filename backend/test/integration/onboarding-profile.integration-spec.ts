@@ -85,7 +85,7 @@ describeIntegration('profile completion (GET /auth/me, PATCH /salon/me)', () => 
       dataSource,
       refreshTokenService,
       configStub,
-      // KAVENEGAR_INVITE_TEMPLATE is unset on the stub, so `create` logs and
+      // MELIPAYAMAK_INVITE_BODY_ID is unset on the stub, so `create` logs and
       // skips the SMS — no spec ever reaches a provider.
       { verify: async () => ({ success: false }) } as unknown as SmsService,
     );
