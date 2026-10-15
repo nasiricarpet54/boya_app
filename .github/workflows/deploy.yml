@@ -19,8 +19,8 @@ jobs:
       - name: Generate API Clients (build_runner)
         run: |
           cd mobile/shared
-          flutter pub add retrofit
-          flutter pub add dev:retrofit_generator dev:build_runner dev:json_serializable
+          flutter pub upgrade --major-versions retrofit retrofit_generator
+          flutter pub get
           dart run build_runner build --delete-conflicting-outputs
           
       - name: Build Salon Web
