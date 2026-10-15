@@ -269,6 +269,13 @@ export class BookingService {
         now,
         reason,
       });
+
+      // Calculate hours to start for late_cancel_count logic
+      const hoursToStart = (rangeStart(booking.timeSlot).getTime() - now.getTime()) / (1000 * 60 * 60);
+      if (hoursToStart < 24 && reason === 'customer_request') {
+         await this.dataSource.query(`UPDATE users SET late_cancel_count = late_cancel_count + 1 WHERE id = $1`, [booking.customerId]);
+      }
+
       booking.status = BookingStatus.Cancelled;
       return { booking: await bookings.save(booking), refund };
     });
@@ -380,6 +387,19 @@ export class BookingService {
       refundAmount: 0,
     });
     return saved;
+  }
+
+  async markNoShow(user: AuthenticatedUser, id: string): Promise<Booking> {
+    const tenantId = this.requireApprover(user);
+    return this.inTenant(tenantId, async (bookings) => {
+      const booking = await this.findScoped(bookings, tenantId, id);
+      if (booking.status !== BookingStatus.Confirmed) {
+        throw new ConflictException('فقط رزرو تأییدشده را می‌توان به عنوان عدم حضور ثبت کرد');
+      }
+      booking.status = BookingStatus.NoShow as any;
+      await this.dataSource.query(`UPDATE users SET no_show_count = no_show_count + 1 WHERE id = $1`, [booking.customerId]);
+      return bookings.save(booking);
+    });
   }
 
   /** confirmed → completed, marked by the salon after the visit. */

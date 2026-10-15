@@ -1,3 +1,4 @@
+import { AccountingModule } from './modules/accounting/accounting.module';
 import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantHierarchyGuard } from './modules/auth/guards/tenant-hierarchy.guard';
@@ -126,6 +127,7 @@ import { UserModule } from './modules/user/user.module';
     ReviewModule,
     SupportModule,
     UploadModule,
+    AccountingModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
   // still rate limited before token verification, and `RolesGuard` last so
