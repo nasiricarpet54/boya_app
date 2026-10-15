@@ -6,7 +6,7 @@ import '../../features/auth/domain/auth_session.dart';
 
 const boyaApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://localhost:3000/api/v1',
+  defaultValue: 'https://boya.bcshopir.ir/api/v1',
 );
 
 /// Routes the API exposes without a token. Everything else gets the bearer
