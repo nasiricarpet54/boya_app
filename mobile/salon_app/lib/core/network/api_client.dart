@@ -26,8 +26,9 @@ const _authPaths = ['/auth/refresh', '/auth/logout', '/auth/logout-all'];
 /// the first and the server revokes the whole family — signing the user out.
 /// The in-flight completer lets every waiting request ride on one rotation.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor({required this._store, Dio? client})
-      : _client = client ?? Dio(BaseOptions(baseUrl: boyaApiBaseUrl));
+  AuthInterceptor({required SessionStore store, Dio? client})
+      : _store = store,
+        _client = client ?? Dio(BaseOptions(baseUrl: boyaApiBaseUrl));
 
   final SessionStore _store;
 
