@@ -1,95 +1,46 @@
-# BOYA platform — reverse proxy (Caddy)
-#
-# One file serves BOTH compose stacks (both mount ./Caddyfile:ro):
-#   - production (docker-compose.production.yml): boya.bcshopir.ir, auto HTTPS
-#   - staging   (docker-compose.staging.yml)   : plain :80 on a LAN / local box
-#
-# The admin panel is a Next.js app with `basePath: '/admin'` (next.config.js),
-# so every /admin* path — pages and /admin/_next/* assets alike — proxies to
-# the admin container on :3001.
-#
-# Caddy sets X-Forwarded-For / -Proto / -Host on the upstream automatically.
-
 boya.bcshopir.ir {
-	encode zstd gzip
+    encode zstd gzip
 
-	# API + Swagger (NestJS, global prefix /api/v1)
-	handle /api/* {
-		reverse_proxy backend:3000
-	}
-	handle /docs* {
-		reverse_proxy backend:3000
-	}
-	# Uploaded images (salon cover, specialist avatar, portfolio).
-	handle /uploads/* {
-		reverse_proxy backend:3000
-	}
+    # API + Swagger + Uploads
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+    handle /docs* {
+        reverse_proxy backend:3000
+    }
+    handle /uploads/* {
+        reverse_proxy backend:3000
+    }
 
-	# Admin panel (Next.js, basePath /admin).
-	# `/admin*` (not `/admin/*`) so the bare /admin path matches too.
-	#
-	# Next's middleware matcher requires a path *after* the basePath, so the
-	# bare `/admin` never reaches the next-intl middleware and 404s. Same for
-	# `/admin/`, which Next 308s back to the 404ing `/admin`. Redirect both to
-	# the default locale up front; every other /admin* path proxies straight
-	# through (pages and /admin/_next/* assets alike).
-	#
-	# NOTE: inside a `handle` block, `redir`'s first arg is read as a request
-	# matcher — so a bare `redir /admin/fa 308` would match on path `/admin/fa`
-	# and redirect to the literal "308". The explicit `*` matcher keeps
-	# `/admin/fa` as the target; 308 preserves the method (permanent).
-	handle /admin {
-		redir * /admin/fa 308
-	}
-	handle /admin/ {
-		redir * /admin/fa 308
-	}
-	handle /admin* {
-		reverse_proxy admin:3001
-	}
+    # Admin Panel
+    handle /admin {
+        redir * /admin/fa 308
+    }
+    handle /admin/ {
+        redir * /admin/fa 308
+    }
+    handle /admin* {
+        reverse_proxy admin:3001
+    }
 
-	# Customer Flutter Web app (prebuilt static web build served by nginx).
-	# handle_path (not handle) strips the /app prefix before proxying, so nginx
-	# serves the build from its own root while the browser still sees /app/*
-	# URLs — the web build is produced with --base-href /app/, so every asset
-	# URL resolves back here. Bare /app 308s to /app/ so the trailing-slash-
-	# relative asset URLs in index.html resolve correctly.
-	# NOTE: inside a handle block, redir's first arg is read as a request
-	# matcher, so the explicit * keeps /app/ as the target; 308 preserves the
-	# method (permanent).
-	handle_path /app/* {
-		reverse_proxy customer-web:80
-	}
-	handle /app {
-		redir * /app/ 308
-	}
+    # Customer Web App
+    handle_path /app/* {
+        reverse_proxy customer-web:80
+    }
+    handle /app {
+        redir * /app/ 308
+    }
 
-	# Salon Flutter Web app (prebuilt static web build served by nginx).
-	# handle_path (not handle) strips the /salon prefix before proxying, so
-	# nginx serves the build from its own root while the browser still sees
-	# /salon/* URLs — the web build is produced with --base-href /salon/, so
-	# every asset URL resolves back here. Bare /salon 308s to /salon/ so the
-	# trailing-slash-relative asset URLs in index.html resolve correctly.
-	handle_path /salon/* {
-		reverse_proxy salon-web:80
-	}
+    # Salon Web App
+    handle_path /salon/* {
+        reverse_proxy salon-web:80
+    }
+    handle /salon {
+        redir * /salon/ 308
+    }
 
-	handle /salon {
-		redir * /salon/ 308
-	}
-
-	# Fallback: anything else lands on the admin panel. `/admin/fa` (not the
-	# bare `/admin/`, which Next 308s back to a 404ing `/admin`).
-	handle {
-		redir * /admin/fa 308
-	}
-}
-
-# Staging / local box: plain HTTP on :80, everything to the backend.
-:80 {
-	# Compress responses.
-	encode zstd gzip
-
-	# NestJS API (global prefix /api/v1), Swagger UI (/docs) and any other path.
-	reverse_proxy backend:3000
+    # Fallback
+    handle {
+        redir * /app/ 308
+    }
 }
