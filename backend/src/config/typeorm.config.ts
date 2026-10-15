@@ -1,3 +1,4 @@
+import { AdvancedQueryLogger } from './typeorm-logger';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
@@ -13,5 +14,6 @@ export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
     synchronize: false,
     migrations: ['dist/database/migrations/*.js'],
     ssl: config.get<string>('DATABASE_SSL') === 'true',
+    logger: process.env.NODE_ENV !== 'production' ? new AdvancedQueryLogger() : undefined,
   };
 }
