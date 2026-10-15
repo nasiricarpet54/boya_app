@@ -39,7 +39,7 @@ abstract final class BoyaTheme {
           foregroundColor: BoyaColors.white,
           minimumSize: const Size.fromHeight(48),
           textStyle: BoyaTypography.body.copyWith(fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -47,19 +47,19 @@ abstract final class BoyaTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         labelStyle: BoyaTypography.caption.copyWith(fontWeight: FontWeight.w500),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.line),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.error),
         ),
       ),
@@ -67,7 +67,7 @@ abstract final class BoyaTheme {
         color: BoyaColors.surface,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       ),
       dividerColor: BoyaColors.line,
     );

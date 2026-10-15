@@ -12,7 +12,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 32,
     fontWeight: FontWeight.w700,
-    height: 1.4,
+    height: 1.35,
     color: BoyaColors.ink,
   );
 
@@ -21,7 +21,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 24,
     fontWeight: FontWeight.w700,
-    height: 1.4,
+    height: 1.35,
     color: BoyaColors.ink,
   );
 
@@ -30,7 +30,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    height: 1.5,
+    height: 1.35,
     color: BoyaColors.ink,
   );
 
@@ -39,7 +39,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    height: 1.6,
+    height: 1.8,
     color: BoyaColors.ink,
   );
 
@@ -48,7 +48,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    height: 1.5,
+    height: 1.35,
     color: BoyaColors.inkMuted,
   );
 
@@ -57,7 +57,7 @@ abstract final class BoyaTypography {
     fontFamilyFallback: fontFamilyFallback,
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    height: 1.4,
+    height: 1.35,
     color: BoyaColors.inkMuted,
   );
 
