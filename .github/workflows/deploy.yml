@@ -14,10 +14,9 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
           channel: 'stable'
 
-      - - name: Generate API Clients (build_runner)
+      - name: Generate API Clients (build_runner)
         run: |
           cd mobile/shared
           flutter pub add dev:retrofit_generator dev:build_runner dev:json_serializable
