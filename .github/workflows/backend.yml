@@ -66,9 +66,8 @@ jobs:
       OTP_DEV_MODE: "false"
       PAYMENTS_ENABLED: "false"
     steps:
-      # Fix EACCES error on clean step during checkout by taking ownership of the docker/postgres directory
-      - run: sudo chown -R $USER:$USER ${{ github.workspace }}/docker/postgres || true
-        working-directory: .
+      - run: sudo chown -R $USER:$USER ${{ github.workspace }} || true
+        working-directory: /
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

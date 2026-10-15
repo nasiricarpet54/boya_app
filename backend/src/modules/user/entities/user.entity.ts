@@ -37,6 +37,9 @@ export class User {
   @Column({ name: 'city_id', type: 'uuid', nullable: true })
   cityId!: string | null;
 
+  @Column({ name: 'late_cancel_count', type: 'int', default: 0 })
+  lateCancelCount!: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 }

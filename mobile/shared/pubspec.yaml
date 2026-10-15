@@ -4,8 +4,8 @@ publish_to: none
 version: 1.0.0
 
 environment:
-  sdk: ^3.12.0
-  flutter: ">=3.44.0"
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
@@ -13,29 +13,29 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  flutter_riverpod: ^3.4.3
-  riverpod_annotation: ^4.0.7
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.3
 
-  go_router: ^18.0.1
+  go_router: ^14.0.0
 
   dio: ^5.11.1
-  retrofit: ^4.10.0
-  json_annotation: ^4.12.0
+  retrofit: ^4.0.0
+  json_annotation: ^4.9.0
 
-  freezed_annotation: ^3.1.0
+  freezed_annotation: ^2.4.4
   flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.5
 
   neshan_maps_flutter: ^1.1.0
   geolocator: ^14.0.3
 
-  cached_network_image: ^4.0.2
-  shimmer: ^4.0.0
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
   fl_chart: ^1.2.0
 
   parsi_datetime_picker: ^0.0.2
   text_fa: ^1.0.0
-  intl: ^0.20.3
+  intl: ^0.20.2
 
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
@@ -46,11 +46,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: ^2.16.1
-  freezed: ^4.0.2
-  json_serializable: ^6.14.1
-  retrofit_generator: ^10.2.11
-  riverpod_generator: ^4.0.9
+  build_runner: ^2.4.6
+  freezed: ^2.5.2
+  json_serializable: ^6.6.0
+  retrofit_generator: ^8.1.0
+  riverpod_generator: ^2.3.9
   flutter_lints: ^6.0.0
 
 flutter:

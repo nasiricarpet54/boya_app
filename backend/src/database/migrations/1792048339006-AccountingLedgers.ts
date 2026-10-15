@@ -1,0 +1,51 @@
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class AccountingLedgers1792048339006 implements MigrationInterface {
+  name = 'AccountingLedgers' + String(Date.now()); // Fallback name
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // 1. Remove pending from bookings check constraint
+    await queryRunner.query(`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check`);
+    await queryRunner.query(`ALTER TABLE bookings ADD CONSTRAINT bookings_status_check CHECK ("status" IN ('confirmed','cancelled','completed','no_show','reviewed'))`);
+
+    // 2. Add no_show_count and late_cancel_count to users
+    await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS no_show_count INT DEFAULT 0`);
+    await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS late_cancel_count INT DEFAULT 0`);
+
+    // 3. Create accounting_ledgers table
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS accounting_ledgers (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        tenant_id UUID NOT NULL,
+        booking_id UUID REFERENCES bookings(id),
+        payment_method VARCHAR NOT NULL CHECK (payment_method IN ('pos', 'cash', 'card_transfer', 'package')),
+        total_amount NUMERIC(10, 2) NOT NULL,
+        specialist_share_percent NUMERIC(5, 2) NOT NULL,
+        salon_share_percent NUMERIC(5, 2) NOT NULL,
+        specialist_share_amount NUMERIC(10, 2) NOT NULL,
+        salon_share_amount NUMERIC(10, 2) NOT NULL,
+        is_settled_internally BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Optional: Enable RLS on accounting_ledgers
+    await queryRunner.query(`ALTER TABLE accounting_ledgers ENABLE ROW LEVEL SECURITY`);
+    await queryRunner.query(`ALTER TABLE accounting_ledgers FORCE ROW LEVEL SECURITY`);
+    const res = await queryRunner.query(`
+      SELECT policyname FROM pg_policies WHERE tablename = 'accounting_ledgers' AND policyname = 'accounting_ledgers_tenant_isolation'
+    `);
+    if (res.length === 0) {
+      await queryRunner.query(`
+        CREATE POLICY accounting_ledgers_tenant_isolation ON accounting_ledgers
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::UUID)
+      `);
+    }
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE IF EXISTS accounting_ledgers`);
+    await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS no_show_count`);
+    await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS late_cancel_count`);
+  }
+}

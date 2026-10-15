@@ -56,7 +56,7 @@ export class PaymentService {
   async initiate(tenantId: string, bookingId: string): Promise<Transaction> {
     this.assertEnabled();
     const booking = await this.bookings.findById(tenantId, bookingId);
-    if (booking.status !== BookingStatus.Pending) throw new BadRequestException('این رزرو در وضعیت قابل پرداخت نیست');
+    if (booking.status === BookingStatus.Cancelled) throw new BadRequestException('این رزرو لغو شده است');
 
     const existing = await this.transactions.findOne({ where: { tenantId, bookingId } });
     if (existing && existing.status !== 'failed') throw new ConflictException('برای این رزرو قبلاً تراکنش ایجاد شده است');

@@ -10,12 +10,18 @@ import { UPLOAD_DIR_DEFAULT } from './modules/upload/upload.service';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  if (process.env.NODE_ENV !== 'production') {
+    app.use((req: any, res: any, next: () => void) => {
+      req.queryCount = 0;
+      next();
+    });
+  }
   const config = app.get(ConfigService);
 
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(prefix);
   app.use(helmet());
-  app.use(compression());
+  app.use(compression({ threshold: 1024, level: 6 }));
 
   // Served at the host root — deliberately outside the `api/v1` prefix, so the
   // stored URLs (`/uploads/...`) resolve the same in dev, behind Caddy and in a

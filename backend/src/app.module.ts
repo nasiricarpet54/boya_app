@@ -1,3 +1,9 @@
+import { AccountingModule } from './modules/accounting/accounting.module';
+import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { TenantHierarchyGuard } from './modules/auth/guards/tenant-hierarchy.guard';
+import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
+import { Redis } from 'ioredis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Module } from '@nestjs/common';
@@ -46,25 +52,60 @@ import { UserModule } from './modules/user/user.module';
       inject: [ConfigService],
       useFactory: typeOrmConfig,
     }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    SlidingWindowThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: any) => ({
+        redis: {
+          host: config.get('REDIS_HOST', 'localhost'),
+          port: config.get('REDIS_PORT', 6380),
+          password: config.get('REDIS_PASSWORD'),
+        }
+      } as any),
+    }),
+    ThrottlerModule.forRootAsync({
+
+      inject: [SlidingWindowThrottlerStorage],
+      useFactory: (storage: SlidingWindowThrottlerStorage) => ({
+        throttlers: [{ ttl: 60_000, limit: 100 }],
+        storage,
+      }),
+    }),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
-    CacheModule.register({ isGlobal: true }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => {
+        const { createCache } = await import('cache-manager');
+        const { Keyv } = await import('keyv');
+        const KeyvRedis = (await import('@keyv/redis')).default;
+
+        return {
+          stores: [
+            new Keyv({
+              store: new KeyvRedis(`redis://${config.get<string>('REDIS_HOST', 'localhost')}:${config.get<number>('REDIS_PORT', 6380)}`)
+            })
+          ],
+        };
+      },
+    }),
     SmsModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       isGlobal: true,
-      useFactory: (config: ConfigService) => ({
+      useFactory: (config: any) => ({
         defaultDriver: DriverType.MELIPAYAMAK,
         timeout: 10_000,
         drivers: {
           melipayamak: {
-            url: config.get<string>(
+            url: config.get(
               'MELIPAYAMAK_URL',
               'https://rest.payamak-panel.com/api/SendSMS/',
             ),
-            username: config.get<string>('MELIPAYAMAK_USERNAME', ''),
-            password: config.get<string>('MELIPAYAMAK_PASSWORD', ''),
+            username: config.get('MELIPAYAMAK_USERNAME', ''),
+            password: config.get('MELIPAYAMAK_PASSWORD', ''),
           },
         },
       }),
@@ -86,14 +127,17 @@ import { UserModule } from './modules/user/user.module';
     ReviewModule,
     SupportModule,
     UploadModule,
+    AccountingModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
   // still rate limited before token verification, and `RolesGuard` last so
   // `@Roles()` is only read from a request whose token has already verified.
   providers: [
+    { provide: APP_INTERCEPTOR, useClass: TenantRlsInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: TenantHierarchyGuard },
   ],
 })
 export class AppModule {}

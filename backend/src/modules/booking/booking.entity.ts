@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 
 export enum BookingStatus {
-  Pending = 'pending',
+
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
   Completed = 'completed',
@@ -30,7 +30,7 @@ export type ApproverRole = (typeof APPROVER_ROLES)[number];
 @Index('idx_bookings_tenant_id', ['tenantId'])
 @Check(
   'bookings_status_check',
-  `"status" IN ('pending','confirmed','cancelled','completed','no_show','reviewed')`,
+  `"status" IN ('confirmed','cancelled','completed','no_show','reviewed')`,
 )
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
@@ -60,7 +60,7 @@ export class Booking {
   })
   timeSlot!: string;
 
-  @Column({ type: 'varchar', length: 20, default: BookingStatus.Pending })
+  @Column({ type: 'varchar', length: 20, default: BookingStatus.Confirmed })
   status!: BookingStatus;
 
   @Column({ name: 'total_price', type: 'numeric', precision: 10, scale: 2 })

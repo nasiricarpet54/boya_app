@@ -4,20 +4,20 @@ publish_to: none
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.12.0
-  flutter: ">=3.44.0"
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
   boya_shared:
     path: ../shared
-  flutter_riverpod: ^3.4.3
-  go_router: ^18.0.1
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.0.0
   dio: ^5.11.1
   shared_preferences: ^2.2.3
-  cached_network_image: ^4.0.3
-  shimmer: ^4.0.0
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
   # Device GPS for the «موقعیت من» entry and the «نزدیک من» feed. Pinned to the
   # same constraint as boya_shared so pub resolves a single copy of the plugin.
   geolocator: ^14.0.3
