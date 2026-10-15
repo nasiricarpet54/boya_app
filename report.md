@@ -4,6 +4,7 @@
    - `mobile/shared/pubspec.yaml`, `mobile/customer_app/pubspec.yaml`, `mobile/salon_app/pubspec.yaml` (Updated dependency version bounds and Dart SDK constraint to handle riverpod/freezed mismatches on Flutter 3.41).
    - `mobile/shared/lib/theme/boya_colors.dart` (Updated all hex constants to match the precise brand palette: Primary Teal, Warm Cream, Rose Earth, Silk Pink, Status Colors).
    - `mobile/shared/lib/theme/boya_typography.dart` (Modified line heights for display/headline/title to 1.35 and body to 1.8).
+   - `mobile/shared/lib/theme/boya_theme.dart` (Adjusted theme card radius to `20.0` and button border radius to `12.0`).
    - `mobile/shared/lib/widgets/boya_button.dart` (Created standard branded button using FilledButton, 12px radius, and loading states).
    - `mobile/shared/lib/widgets/boya_main_scaffold.dart` (Implemented standard `Scaffold` wrapper containing a `NavigationBar` with 5 core labeled tabs: Home, Discover, Bookings, Favorites, Profile).
    - `mobile/shared/lib/boya_shared.dart` (Exported the new core widgets).
