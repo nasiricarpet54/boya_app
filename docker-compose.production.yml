@@ -22,6 +22,7 @@ services:
       POSTGRES_USER: ${DATABASE_USER:-beauty}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me}
       POSTGRES_DB: ${DATABASE_NAME:-beauty_platform}
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "effective_cache_size=2GB", "-c", "work_mem=16MB", "-c", "maintenance_work_mem=128MB", "-c", "max_connections=50", "-c", "random_page_cost=1.1"]
     # Internal only — no host port published.
     volumes:
       - postgres_production_data:/var/lib/postgresql/data

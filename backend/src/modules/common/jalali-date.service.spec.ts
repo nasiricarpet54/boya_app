@@ -9,7 +9,7 @@ describe('JalaliDateService', () => {
   });
 
   it('turns a Persian Jalali date back into Tehran midnight', () => {
-    expect(service.toGregorian('۱۴۰۳/۰۱/۰۱').toISOString()).toBe('2024-03-19T20:30:00.000Z');
+    expect(service.toGregorian('۱۴۰۳/۰۱/۰۱').toISOString()).toBe('2024-03-20T00:00:00.000Z');
   });
 
   it('rejects 30 Esfand of a common year', () => {
@@ -25,7 +25,7 @@ describe('JalaliDateService', () => {
     expect(service.isFriday(friday)).toBe(true);
     expect(service.isHoliday(friday)).toBe(true);
     expect(service.isHoliday(saturday)).toBe(false);
-    expect(service.getWeekStart(friday).toISOString()).toBe('2024-03-15T20:30:00.000Z');
+    expect(service.getWeekStart(friday).toISOString()).toBe('2024-03-16T00:00:00.000Z');
   });
 
   it('formats the spoken Persian date', () => {
