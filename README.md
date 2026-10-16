@@ -192,3 +192,4 @@ cd mobile/customer_app && flutter test
 - [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) — چارچوب محصول و فازها
 - [`BACKLOG.md`](BACKLOG.md) — کارهای باز، شکاف‌های امنیتی، برنامهٔ استقرار
 - [`.cursorrules`](.cursorrules) و [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — قوانین ثابت برای هر دستیار AI در این repo (چند‑مستأجری، امنیت، دیتابیس، استایل کد، workflow)
+- ...
