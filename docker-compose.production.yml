@@ -29,9 +29,13 @@ services:
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-beauty} -d ${DATABASE_NAME:-beauty_platform}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 3
+      start_period: 30s
+      depends_on:
+      postgres:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -59,6 +63,13 @@ services:
     restart: "no"
     depends_on:
       postgres:
+      image: postgres:16
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
         condition: service_healthy
     environment:
       DATABASE_MIGRATION_HOST: postgres
