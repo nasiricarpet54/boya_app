@@ -41,8 +41,8 @@ class SalonsApi {
     final response = await _dio.get<Map<String, dynamic>>(
       '/salons',
       queryParameters: <String, dynamic>{
-        if (lat != null) 'lat': lat,
-        if (lng != null) 'lng': lng,
+        'lat': ?lat,
+        'lng': ?lng,
         if (cityId != null && cityId.isNotEmpty) 'cityId': cityId,
         if (categorySlug != null && categorySlug.isNotEmpty) 'category': categorySlug,
         if (sort != null && sort.isNotEmpty) 'sort': sort,

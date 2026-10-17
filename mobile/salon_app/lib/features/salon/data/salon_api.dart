@@ -58,11 +58,11 @@ class SalonApi {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me',
       data: <String, dynamic>{
-        if (name != null) 'name': name,
-        if (address != null) 'address': address,
-        if (phone != null) 'phone': phone,
-        if (coverImage != null) 'coverImage': coverImage,
-        if (workingHours != null) 'workingHours': workingHours,
+        'name': ?name,
+        'address': ?address,
+        'phone': ?phone,
+        'coverImage': ?coverImage,
+        'workingHours': ?workingHours,
       },
     );
     final status = SalonApprovalStatus.fromWire(response.data?['status'] as String?);

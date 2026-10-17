@@ -31,11 +31,11 @@ class BookingsApi {
     final response = await _dio.get<Map<String, dynamic>>(
       '/salon/me/bookings',
       queryParameters: <String, dynamic>{
-        if (status?.wire != null) 'status': status?.wire,
-        if (date != null) 'date': date,
-        if (from != null) 'from': from,
-        if (to != null) 'to': to,
-        if (specialistId != null) 'specialistId': specialistId,
+        'status': ?status?.wire,
+        'date': ?date,
+        'from': ?from,
+        'to': ?to,
+        'specialistId': ?specialistId,
         'page': page,
         'limit': limit,
       },

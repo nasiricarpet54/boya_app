@@ -13,7 +13,7 @@ export class ReassignmentService {
     private readonly bookings: Repository<Booking>,
   ) {}
 
-  async suggestAlternativeSpecialist(tenantId: string, bookingId: string): Promise<any[]> {
+  async suggestAlternativeSpecialist(tenantId: string, bookingId: string): Promise<unknown[]> {
     // Phase 3: lightweight dynamic reassignment service.
     // Identifies flexible bookings (flexible_specialist = true) when a specialist's schedule is fully booked.
     // For now we just return a stub or perform a basic query to find specialists in the same tenant who offer the same service.

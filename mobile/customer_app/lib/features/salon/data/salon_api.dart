@@ -33,7 +33,7 @@ class SalonApi {
       queryParameters: {
         'date': _isoDate(date),
         'serviceId': serviceId,
-        if (specialistId != null) 'specialistId': specialistId,
+        'specialistId': ?specialistId,
       },
     );
     final rows = response.data?['data'];

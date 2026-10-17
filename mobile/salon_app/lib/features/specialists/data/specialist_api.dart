@@ -57,10 +57,10 @@ class SpecialistApi {
       data: <String, dynamic>{
         'phone': phone,
         'fullName': fullName,
-        if (bio != null) 'bio': bio,
-        if (skills != null) 'skills': skills,
-        if (commissionRate != null) 'commissionRate': commissionRate,
-        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        'bio': ?bio,
+        'skills': ?skills,
+        'commissionRate': ?commissionRate,
+        'avatarUrl': ?avatarUrl,
       },
     );
     return CreatedSpecialist.fromJson(response.data ?? const {});
@@ -80,12 +80,12 @@ class SpecialistApi {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/specialists/$id',
       data: <String, dynamic>{
-        if (bio != null) 'bio': bio,
-        if (skills != null) 'skills': skills,
-        if (commissionRate != null) 'commissionRate': commissionRate,
-        if (isActive != null) 'isActive': isActive,
-        if (offersMobileService != null) 'offersMobileService': offersMobileService,
-        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        'bio': ?bio,
+        'skills': ?skills,
+        'commissionRate': ?commissionRate,
+        'isActive': ?isActive,
+        'offersMobileService': ?offersMobileService,
+        'avatarUrl': ?avatarUrl,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});

@@ -46,7 +46,7 @@ class ServicesApi {
   Future<PanelWriteResult> createLine({required String name, String? description}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/salon/me/lines',
-      data: <String, dynamic>{'name': name, if (description != null) 'description': description},
+      data: <String, dynamic>{'name': name, 'description': ?description},
     );
     return PanelWriteResult.fromJson(response.data ?? const {});
   }
@@ -60,9 +60,9 @@ class ServicesApi {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/lines/$id',
       data: <String, dynamic>{
-        if (name != null) 'name': name,
-        if (description != null) 'description': description,
-        if (isActive != null) 'isActive': isActive,
+        'name': ?name,
+        'description': ?description,
+        'isActive': ?isActive,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});
@@ -87,10 +87,10 @@ class ServicesApi {
       data: <String, dynamic>{
         'name': name,
         'price': price,
-        if (description != null) 'description': description,
-        if (durationMinutes != null) 'durationMinutes': durationMinutes,
-        if (depositRequired != null) 'depositRequired': depositRequired,
-        if (depositAmount != null) 'depositAmount': depositAmount,
+        'description': ?description,
+        'durationMinutes': ?durationMinutes,
+        'depositRequired': ?depositRequired,
+        'depositAmount': ?depositAmount,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});
@@ -110,14 +110,14 @@ class ServicesApi {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/salon/me/services/$id',
       data: <String, dynamic>{
-        if (name != null) 'name': name,
-        if (description != null) 'description': description,
-        if (price != null) 'price': price,
-        if (durationMinutes != null) 'durationMinutes': durationMinutes,
-        if (depositRequired != null) 'depositRequired': depositRequired,
-        if (depositAmount != null) 'depositAmount': depositAmount,
-        if (isActive != null) 'isActive': isActive,
-        if (isMobileAvailable != null) 'isMobileAvailable': isMobileAvailable,
+        'name': ?name,
+        'description': ?description,
+        'price': ?price,
+        'durationMinutes': ?durationMinutes,
+        'depositRequired': ?depositRequired,
+        'depositAmount': ?depositAmount,
+        'isActive': ?isActive,
+        'isMobileAvailable': ?isMobileAvailable,
       },
     );
     return PanelWriteResult.fromJson(response.data ?? const {});

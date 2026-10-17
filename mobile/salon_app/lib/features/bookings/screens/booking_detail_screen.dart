@@ -312,7 +312,7 @@ class _DetailRow extends StatelessWidget {
             child: Text(label, style: BoyaTypography.overline),
           ),
           Expanded(child: Text(value, style: BoyaTypography.body)),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
