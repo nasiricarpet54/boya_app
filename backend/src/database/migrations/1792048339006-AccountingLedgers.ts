@@ -15,7 +15,7 @@ export class AccountingLedgers1792048339006 implements MigrationInterface {
     // 3. Create accounting_ledgers table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS accounting_ledgers (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         tenant_id UUID NOT NULL,
         booking_id UUID REFERENCES bookings(id),
         payment_method VARCHAR NOT NULL CHECK (payment_method IN ('pos', 'cash', 'card_transfer', 'package')),
