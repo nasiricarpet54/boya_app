@@ -64,7 +64,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'  # ✅ استفاده از Flutter 3.29.0 (شامل Dart 3.7)
+          flutter-version: '3.47.5'
           channel: 'stable'
           cache: false
 
@@ -118,6 +118,15 @@ jobs:
           name: flutter-web-builds
           path: deploy_artifacts/
 
+      - name: Upload Flutter Artifacts to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "deploy_artifacts/"
+          target: "/opt/boya/"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -132,24 +141,28 @@ jobs:
             cd /opt/boya
             git fetch origin master
             git reset --hard origin/master
+            rm -rf mobile/customer_app/build/web mobile/salon_app/build/web
+            mkdir -p mobile/customer_app/build/web mobile/salon_app/build/web
+            cp -a deploy_artifacts/customer_app/. mobile/customer_app/build/web/
+            cp -a deploy_artifacts/salon_app/. mobile/salon_app/build/web/
+            rm -rf deploy_artifacts
 
             echo "=== Step 2: Login to GHCR ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "=== Step 3: Pull new backend image ==="
-            docker pull ghcr.io/${{ github.repository }}/boya-backend:${{ github.sha }}
-
-            echo "=== Step 4: Update compose to use new image ==="
             export BACKEND_IMAGE="ghcr.io/${{ github.repository }}/boya-backend:${{ github.sha }}"
-            sed -i "s|image:.*boya-backend.*|image: ${BACKEND_IMAGE}|" docker-compose.production.yml || true
+            PREVIOUS_BACKEND_IMAGE=$(docker inspect --format '{{.Config.Image}}' boya_backend_production 2>/dev/null || true)
+            echo "=== Step 3: Pull new backend image ==="
+            docker pull "$BACKEND_IMAGE"
 
-            echo "=== Step 5: Rolling update backend (zero-downtime) ==="
-            docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=2 backend
+            echo "=== Step 4: Update backend ==="
+            docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps backend
 
-            echo "=== Step 6: Wait for health check ==="
+            echo "=== Step 5: Wait for health check ==="
+            HEALTH_URL="http://127.0.0.1:${BACKEND_PORT:-3021}/api/v1/health"
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+              if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
                 echo "✅ Backend healthy after ${i} attempts"
                 break
               fi
@@ -157,17 +170,17 @@ jobs:
               sleep 5
             done
 
-            if ! curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+            if ! curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
               echo "❌ Health check failed! Rolling back..."
-              docker compose -f docker-compose.production.yml --env-file .env down backend
-              docker compose -f docker-compose.production.yml --env-file .env up -d backend
+              if [ -n "$PREVIOUS_BACKEND_IMAGE" ]; then
+                BACKEND_IMAGE="$PREVIOUS_BACKEND_IMAGE" docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps backend
+              else
+                docker compose -f docker-compose.production.yml --env-file .env restart backend || true
+              fi
               exit 1
             fi
 
-            echo "=== Step 7: Scale back to 1 instance ==="
-            docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=1 backend
-
-            echo "=== Step 8: Cleanup old images ==="
+            echo "=== Step 6: Cleanup old images ==="
             docker image prune -f
 
             echo "✅ Deployment complete!"
