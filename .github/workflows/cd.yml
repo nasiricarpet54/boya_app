@@ -31,7 +31,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ✅ اصلاحیه ۱: اضافه کردن این مرحله برای فعال‌سازی درایور مناسب داکر
+      # ✅ اصلاحیه ۱: فعال‌سازی درایور docker-container برای پشتیبانی از کش
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         id: buildx
@@ -39,7 +39,7 @@ jobs:
           driver: docker-container
 
       - name: Build and Push
-        uses: docker/build-push-action@v6 # آپدیت به نسخه ۶ برای پایداری بیشتر
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -58,6 +58,8 @@ jobs:
     name: Build Flutter Web Apps
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      PUB_HOSTED_URL: https://pub.myket.ir
     steps:
       - uses: actions/checkout@v4
 
@@ -65,9 +67,7 @@ jobs:
         with:
           flutter-version: '3.7.0'
           channel: 'stable'
-          cache: true
-          # ✅ اصلاحیه ۲: اضافه کردن cache-key تا از کش اشتباه (نسخه 2.19.0) جلوگیری شود
-          cache-key: flutter-3.7.0-${{ runner.os }}
+          cache: false # ✅ اصلاحیه ۲: غیرفعال کردن کش برای جلوگیری از استفاده از Dart 2.19.0
 
       - name: Generate API Clients
         run: |
