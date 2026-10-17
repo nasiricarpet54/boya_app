@@ -1,59 +1,27 @@
 name: boya_shared
-description: Shared package for BOYA platform.
-publish_to: none
+description: A starting point for Dart libraries or applications.
 version: 1.0.0
+publish_to: 'none'
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
+  flutter: '>=3.29.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.3
-
-  go_router: ^14.0.0
-
-  dio: ^5.11.1
-  retrofit: ^4.0.0
-  json_annotation: ^4.9.0
-
+  retrofit: 4.0.0
   freezed_annotation: ^3.1.0
-  flutter_secure_storage: ^11.2.0
-  shared_preferences: ^2.5.5
-
-  neshan_maps_flutter: ^1.1.0
-  geolocator: ^14.0.3
-
-  cached_network_image: ^3.3.1
-  shimmer: ^3.0.0
-  fl_chart: ^1.2.0
-
-  parsi_datetime_picker: ^0.0.2
-  text_fa: ^1.0.0
+  json_annotation: ^4.9.0
+  dio: ^5.4.0
+  equatable: ^2.0.5
   intl: ^0.20.2
-
-  firebase_core: ^4.15.0
-  firebase_messaging: ^16.7.0
-  flutter_local_notifications: ^22.3.1
-
-  equatable: ^2.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  freezed: ^3.1.0
-  build_runner: ^2.4.13
-  json_serializable: ^6.6.0
-  retrofit_generator: ^9.7.0
-  riverpod_generator: ^2.3.9
   flutter_lints: ^6.0.0
-
-flutter:
-  assets:
-    - lib/localization/fa.json
-    - lib/localization/en.json
-
+  retrofit_generator: ^9.7.0
+  freezed: ^3.1.0
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.13
