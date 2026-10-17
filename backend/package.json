@@ -12,7 +12,7 @@
     "lint": "eslint \"{src,test}/**/*.ts\" --max-warnings 0",
     "test": "jest --passWithNoTests",
     "test:e2e": "tsc -p tsconfig.test.json && node --test dist-test/test/auth.e2e-spec.js dist-test/test/otp.service.spec.js dist-test/test/availability.service.spec.js dist-test/test/cancellation-policy.service.spec.js dist-test/test/in-app-notification.service.spec.js dist-test/test/referral-code.service.spec.js dist-test/test/loyalty-point.service.spec.js dist-test/test/redis-otp.storage.spec.js",
-    "test:integration": "jest --config ./test/jest-integration.json",
+    "test:integration": "jest --config ./test/jest-integration.json --runInBand",
     "typeorm": "typeorm-ts-node-commonjs -d src/database/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs -d src/database/data-source.migration.ts migration:run",
     "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.migration.ts migration:revert",
