@@ -4,9 +4,9 @@ export class AccountingLedgers1792048339006 implements MigrationInterface {
   name = 'AccountingLedgers' + String(Date.now()); // Fallback name
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Remove pending from bookings check constraint
+    // 1. Keep the full booking lifecycle, including newly created pending rows.
     await queryRunner.query(`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check`);
-    await queryRunner.query(`ALTER TABLE bookings ADD CONSTRAINT bookings_status_check CHECK ("status" IN ('confirmed','cancelled','completed','no_show','reviewed'))`);
+    await queryRunner.query(`ALTER TABLE bookings ADD CONSTRAINT bookings_status_check CHECK ("status" IN ('pending','confirmed','cancelled','completed','no_show','reviewed'))`);
 
     // 2. Add no_show_count and late_cancel_count to users
     await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS no_show_count INT DEFAULT 0`);
