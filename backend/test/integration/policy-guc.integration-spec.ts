@@ -14,6 +14,7 @@ interface PolicyRow extends Record<string, unknown> {
  * tenant-scoped table is one added line rather than a reordering.
  */
 const TENANT_TABLES = [
+  'accounting_ledgers',
   'bookings',
   'invite_tokens',
   'notifications',
