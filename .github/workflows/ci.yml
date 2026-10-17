@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-  PUB_HOSTED_URL: https://pub.myket.ir
+      PUB_HOSTED_URL: https://pub.myket.ir
     defaults:
       run:
         working-directory: mobile/shared
@@ -68,6 +68,7 @@ jobs:
           flutter-version: '3.7.0'
           channel: 'stable'
           cache: true
+          cache-key: flutter-3.7.0-${{ runner.os }}
       - run: flutter pub get
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
@@ -91,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-  PUB_HOSTED_URL: https://pub.myket.ir
+      PUB_HOSTED_URL: https://pub.myket.ir
     needs: flutter-shared
     defaults:
       run:
@@ -103,6 +104,7 @@ jobs:
           flutter-version: '3.7.0'
           channel: 'stable'
           cache: true
+          cache-key: flutter-3.7.0-${{ runner.os }}
       - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
@@ -117,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-  PUB_HOSTED_URL: https://pub.myket.ir
+      PUB_HOSTED_URL: https://pub.myket.ir
     needs: flutter-shared
     defaults:
       run:
@@ -129,6 +131,7 @@ jobs:
           flutter-version: '3.7.0'
           channel: 'stable'
           cache: true
+          cache-key: flutter-3.7.0-${{ runner.os }}
       - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
