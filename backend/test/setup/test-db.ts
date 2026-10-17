@@ -27,8 +27,8 @@ const DB_ADMIN_NAME = process.env.DATABASE_MIGRATION_NAME ?? process.env.DATABAS
  * `beauty_app` is the RLS-subject role (NOBYPASSRLS). Every isolation
  * assertion runs as it, because `beauty` is a superuser and would bypass RLS.
  */
-export const APP_ROLE = process.env.TEST_APP_USER ?? process.env.DATABASE_USER ?? 'beauty_app';
-const APP_PASSWORD = process.env.TEST_APP_PASSWORD ?? process.env.DATABASE_PASSWORD ?? 'app_password_dev';
+export const APP_ROLE = process.env.TEST_APP_USER ?? 'beauty_app';
+const APP_PASSWORD = process.env.TEST_APP_PASSWORD ?? 'app_password_dev';
 
 /** Superuser connection: migrations, fixtures, catalogue reads. */
 export const adminConfig: PgConfig = {
