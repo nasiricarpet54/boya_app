@@ -57,8 +57,8 @@ jobs:
     name: Build Flutter Web Apps
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      PUB_HOSTED_URL: https://pub.myket.ir
+   # env:
+   #   PUB_HOSTED_URL: https://pub.myket.ir
     steps:
       - uses: actions/checkout@v4
 
@@ -69,11 +69,12 @@ jobs:
           cache: false
 
       - name: Generate API Clients
-      timeout-minutes: 5  
-      run: |
-      cd mobile/shared
-      flutter pub get -v
-      dart run build_runner build --delete-conflicting-outputs --delete-conflicting-outputs
+        timeout-minutes: 10
+        run: |
+         cd mobile/shared
+         flutter clean
+         flutter pub get
+         dart run build_runner build --delete-conflicting-outputs --delete-conflicting-outputs --delete-conflicting-outputs
 
       - name: Build Customer App
         run: |
