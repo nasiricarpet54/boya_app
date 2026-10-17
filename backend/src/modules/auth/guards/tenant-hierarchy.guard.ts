@@ -16,7 +16,7 @@ export class TenantHierarchyGuard implements CanActivate {
     if (!user) return false;
 
     // Check if super_admin bypasses
-    if (user.role === 'super_admin' as any || user.role === 'admin') {
+    if ((user.role as string) === 'super_admin' || user.role === 'admin') {
       return true;
     }
 
