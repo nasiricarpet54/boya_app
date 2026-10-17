@@ -32,8 +32,8 @@ class SupportApi {
         'message': message,
         // The backend stores `undefined` as the column default; sending `null`
         // keeps "no context attached" explicit and tri-state.
-        'bookingId': ?bookingId,
-        'salonId': ?salonId,
+        if (bookingId != null) 'bookingId': bookingId,
+        if (salonId != null) 'salonId': salonId,
       },
     );
     final json = response.data;

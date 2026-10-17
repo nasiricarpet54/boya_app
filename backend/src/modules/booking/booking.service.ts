@@ -396,7 +396,7 @@ export class BookingService {
       if (booking.status !== BookingStatus.Confirmed) {
         throw new ConflictException('فقط رزرو تأییدشده را می‌توان به عنوان عدم حضور ثبت کرد');
       }
-      booking.status = BookingStatus.NoShow;
+      booking.status = BookingStatus.NoShow as any;
       await this.dataSource.query(`UPDATE users SET no_show_count = no_show_count + 1 WHERE id = $1`, [booking.customerId]);
       return bookings.save(booking);
     });

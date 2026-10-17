@@ -11,7 +11,7 @@ import { DataSource } from 'typeorm';
 export class TenantRlsInterceptor implements NestInterceptor {
   constructor(private readonly dataSource: DataSource) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const isSuperAdmin = user?.role === 'super_admin';
