@@ -3,7 +3,7 @@ import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantHierarchyGuard } from './modules/auth/guards/tenant-hierarchy.guard';
 import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
-import { Redis } from 'ioredis';
+import { RedisFailureStrategy } from 'nestjs-sliding-window-throttler/dist/config/enums';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Module } from '@nestjs/common';
@@ -55,13 +55,19 @@ import { UserModule } from './modules/user/user.module';
     SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: any) => ({
-        redis: {
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: config.get('REDIS_PORT', 6380),
-          password: config.get('REDIS_PASSWORD'),
-        }
-      } as any),
+      useFactory: (config: unknown) => {
+        const conf = config as ConfigService;
+        return {
+          redis: {
+            host: conf.get('REDIS_HOST', 'localhost'),
+            port: conf.get('REDIS_PORT', 6380),
+            password: conf.get('REDIS_PASSWORD'),
+          },
+          throttler: {
+            failureStrategy: RedisFailureStrategy.FAIL_OPEN,
+          },
+        };
+      },
     }),
     ThrottlerModule.forRootAsync({
 
@@ -78,7 +84,6 @@ import { UserModule } from './modules/user/user.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
-        const { createCache } = await import('cache-manager');
         const { Keyv } = await import('keyv');
         const KeyvRedis = (await import('@keyv/redis')).default;
 
@@ -95,20 +100,23 @@ import { UserModule } from './modules/user/user.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       isGlobal: true,
-      useFactory: (config: any) => ({
-        defaultDriver: DriverType.MELIPAYAMAK,
-        timeout: 10_000,
-        drivers: {
-          melipayamak: {
-            url: config.get(
-              'MELIPAYAMAK_URL',
-              'https://rest.payamak-panel.com/api/SendSMS/',
-            ),
-            username: config.get('MELIPAYAMAK_USERNAME', ''),
-            password: config.get('MELIPAYAMAK_PASSWORD', ''),
+      useFactory: (config: unknown) => {
+        const conf = config as ConfigService;
+        return {
+          defaultDriver: DriverType.MELIPAYAMAK,
+          timeout: 10_000,
+          drivers: {
+            melipayamak: {
+              url: conf.get(
+                'MELIPAYAMAK_URL',
+                'https://rest.payamak-panel.com/api/SendSMS/',
+              ),
+              username: conf.get('MELIPAYAMAK_USERNAME', ''),
+              password: conf.get('MELIPAYAMAK_PASSWORD', ''),
+            },
           },
-        },
-      }),
+        };
+      },
     }),
     AuthModule,
     TenantModule,

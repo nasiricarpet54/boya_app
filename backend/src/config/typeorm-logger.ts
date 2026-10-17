@@ -4,10 +4,10 @@ import { Logger } from '@nestjs/common';
 export class AdvancedQueryLogger implements TypeOrmLogger {
   private readonly logger = new Logger('QueryLogger');
 
-  logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQuery(query: string, parameters?: unknown[], queryRunner?: QueryRunner) {
     if (process.env.NODE_ENV !== 'production') {
       if (queryRunner && queryRunner.data && typeof queryRunner.data.request === 'object') {
-        const req = queryRunner.data.request as any;
+        const req = queryRunner.data.request as { queryCount?: number };
         req.queryCount = (req.queryCount || 0) + 1;
         if (req.queryCount > 5) {
           this.logger.warn(`N+1 Query Alert: Query count exceeded 5 (${req.queryCount}) for request. Query: ${query}`);
@@ -18,15 +18,15 @@ export class AdvancedQueryLogger implements TypeOrmLogger {
     }
   }
 
-  logQueryError(error: string | Error, query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQueryError(error: string | Error, query: string, parameters?: unknown[], _queryRunner?: QueryRunner) {
     this.logger.error(`Query Error: ${error} -- Query: ${query} -- Parameters: ${JSON.stringify(parameters)}`);
   }
 
-  logQuerySlow(time: number, query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQuerySlow(time: number, query: string, parameters?: unknown[], _queryRunner?: QueryRunner) {
     this.logger.warn(`Slow Query (${time}ms): ${query} -- Parameters: ${JSON.stringify(parameters)}`);
   }
 
-  logSchemaBuild(message: string, queryRunner?: QueryRunner) {}
-  logMigration(message: string, queryRunner?: QueryRunner) {}
-  log(level: 'log' | 'info' | 'warn', message: any, queryRunner?: QueryRunner) {}
+  logSchemaBuild(_message: string, _queryRunner?: QueryRunner) {}
+  logMigration(_message: string, _queryRunner?: QueryRunner) {}
+  log(_level: 'log' | 'info' | 'warn', _message: unknown, _queryRunner?: QueryRunner) {}
 }

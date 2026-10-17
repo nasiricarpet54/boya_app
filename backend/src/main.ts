@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { Request, Response, NextFunction } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import helmet from 'helmet';
@@ -11,8 +12,8 @@ import { UPLOAD_DIR_DEFAULT } from './modules/upload/upload.service';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   if (process.env.NODE_ENV !== 'production') {
-    app.use((req: any, res: any, next: () => void) => {
-      req.queryCount = 0;
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      (req as Request & { queryCount?: number }).queryCount = 0;
       next();
     });
   }
