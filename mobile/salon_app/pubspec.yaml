@@ -16,7 +16,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   dio: ^5.4.0
-  shared_preferences: ^2.5.5
+  shared_preferences: 2.5.3
   # Session storage. The refresh token is long-lived and single-use, so it lives
   # in the platform keystore (Keychain / EncryptedSharedPreferences) rather than
   # a readable preferences file. Constraint matches boya_shared so pub resolves
