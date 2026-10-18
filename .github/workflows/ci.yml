@@ -5,6 +5,7 @@ on:
     branches: [master]
   push:
     branches-ignore: [master]
+  workflow_dispatch: # ✅ اضافه کردن این خط
 
 concurrency:
   group: ci-${{ github.ref }}
