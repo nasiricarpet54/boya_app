@@ -6,6 +6,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { AccountingLedger } from './accounting-ledger.entity';
 import { Booking } from '../booking/booking.entity';
 import { SpecialistService } from '../specialist/specialist.service';
+import { BOOKING_CONFIRMED } from '../../common/domain-events'; // Wait, the prompt says "whenever a booking status updates to `completed`"
 
 @Injectable()
 export class AccountingService {
