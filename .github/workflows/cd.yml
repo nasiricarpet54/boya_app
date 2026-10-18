@@ -151,7 +151,7 @@ jobs:
 
             echo "=== Step 6: Wait for health check ==="
 for i in $(seq 1 30); do
-  # ✅ استفاده از وضعیت سلامت داخلی داکر (بدون نیاز به curl)
+  # ✅ استفاده از وضعیت سلامت خود داکر (بدون نیاز به پورت 3000)
   HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' boya-backend-1 2>/dev/null || echo "starting")
   if [ "$HEALTH_STATUS" = "healthy" ]; then
     echo "✅ Backend healthy after ${i} attempts"
