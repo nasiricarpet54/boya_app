@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -15,6 +17,7 @@ import { SupportService } from './support.service';
  */
 @ApiTags('support')
 @Roles('customer', 'salon_owner', 'specialist')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('support')
 export class SupportController {
   constructor(private readonly support: SupportService) {}

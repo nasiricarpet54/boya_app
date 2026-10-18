@@ -1,4 +1,6 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
@@ -28,6 +30,7 @@ class NotificationQuery {
  * always comes from the token.
  */
 @ApiTags('notifications')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly inApp: InAppNotificationService) {}

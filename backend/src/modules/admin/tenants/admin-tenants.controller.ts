@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -10,6 +12,7 @@ import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 
 /** Admin tenants management. Global JwtAuthGuard rejects anonymous; service enforces role=admin. */
 @ApiTags('admin/tenants')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/tenants')
 export class AdminTenantsController {
   constructor(private readonly tenants: AdminTenantsService) {}

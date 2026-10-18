@@ -1,4 +1,6 @@
-import {
+import { RolesGuard } from './guards/roles.guard';
+import { TenantHierarchyGuard } from './guards/tenant-hierarchy.guard';
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -30,6 +32,7 @@ import { RefreshTokenService } from './refresh-token.service';
 import type { AuthenticatedUser } from './guards/jwt-auth.guard';
 
 @ApiTags('auth')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('auth')
 export class AuthController {
   constructor(

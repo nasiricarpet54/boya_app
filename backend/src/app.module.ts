@@ -1,7 +1,6 @@
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { TenantHierarchyGuard } from './modules/auth/guards/tenant-hierarchy.guard';
 import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
 import { RedisFailureStrategy } from 'nestjs-sliding-window-throttler/dist/config/enums';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -18,7 +17,6 @@ import { SmsModule } from '@mirad-work/sms-nestjs';
 import { validateEnv } from './config/env.validation';
 import { typeOrmConfig } from './config/typeorm.config';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
-import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingModule } from './modules/booking/booking.module';
@@ -86,7 +84,6 @@ import { UserModule } from './modules/user/user.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
-        const { createCache } = await import('cache-manager');
         const { Keyv } = await import('keyv');
         const KeyvRedis = (await import('@keyv/redis')).default;
 
@@ -103,7 +100,7 @@ import { UserModule } from './modules/user/user.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       isGlobal: true,
-      useFactory: (config: any) => ({
+      useFactory: (config: ConfigService) => ({
         defaultDriver: DriverType.MELIPAYAMAK,
         timeout: 10_000,
         drivers: {
@@ -144,8 +141,7 @@ import { UserModule } from './modules/user/user.module';
     { provide: APP_INTERCEPTOR, useClass: TenantRlsInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
-    { provide: APP_GUARD, useClass: TenantHierarchyGuard },
+
   ],
 })
 export class AppModule {}

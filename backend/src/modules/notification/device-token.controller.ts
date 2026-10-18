@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Post } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Delete, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 
@@ -28,6 +30,7 @@ class RegisterDeviceDto {
  * so the global JwtAuthGuard already rejects an anonymous call.
  */
 @ApiTags('devices')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('devices')
 export class DeviceTokenController {
   constructor(private readonly push: PushNotificationService) {}
