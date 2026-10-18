@@ -150,23 +150,22 @@ jobs:
             docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=2 backend
 
             echo "=== Step 6: Wait for health check ==="
-            for i in $(seq 1 30); do
-              # ✅ تغییر مسیر: استفاده از Caddy به جای پورت مستقیم داکر
-              if curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
-                echo "✅ Backend healthy after ${i} attempts"
-                break
-              fi
-              echo "Waiting for backend... (${i}/30)"
-              sleep 5
-            done
+for i in $(seq 1 30); do
+  # ✅ تست مستقیم داخل کانتینر جدید (بدون واسطه Caddy)
+  if docker exec boya-backend-1 curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+    echo "✅ Backend healthy after ${i} attempts"
+    break
+  fi
+  echo "Waiting for backend... (${i}/30)"
+  sleep 5
+done
 
-            if ! curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
-              echo "❌ Health check failed! Rolling back..."
-              docker compose -f docker-compose.production.yml --env-file .env down backend
-              docker compose -f docker-compose.production.yml --env-file .env up -d backend
-              exit 1
-            fi
-
+if ! docker exec boya-backend-1 curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+  echo "❌ Health check failed! Rolling back..."
+  docker compose -f docker-compose.production.yml --env-file .env down backend
+  docker compose -f docker-compose.production.yml --env-file .env up -d backend
+  exit 1
+fi
             echo "=== Step 7: Scale back to 1 instance ==="
             docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=1 backend
 
