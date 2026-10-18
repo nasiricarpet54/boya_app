@@ -151,7 +151,8 @@ jobs:
 
             echo "=== Step 6: Wait for health check ==="
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+              # ✅ تغییر مسیر: استفاده از Caddy به جای پورت مستقیم داکر
+              if curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
                 echo "✅ Backend healthy after ${i} attempts"
                 break
               fi
@@ -159,7 +160,7 @@ jobs:
               sleep 5
             done
 
-            if ! curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+            if ! curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
               echo "❌ Health check failed! Rolling back..."
               docker compose -f docker-compose.production.yml --env-file .env down backend
               docker compose -f docker-compose.production.yml --env-file .env up -d backend
