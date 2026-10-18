@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  retrofit: 4.7.3
+  retrofit: 4.6.0
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   dio: ^5.4.0
