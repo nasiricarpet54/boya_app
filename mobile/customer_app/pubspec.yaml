@@ -17,26 +17,19 @@ dependencies:
   shared_preferences: ^2.2.3
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
-  # Device GPS for the «موقعیت من» entry and the «نزدیک من» feed. Pinned to the
-  # same constraint as boya_shared so pub resolves a single copy of the plugin.
   geolocator: ^13.0.2
-  # Session storage. The refresh token is long-lived and single-use, so it lives
-  # in the platform keystore (Keychain / EncryptedSharedPreferences) rather than
-  # a readable preferences file. Constraint matches boya_shared so pub resolves
-  # one copy of the plugin instead of two.
   flutter_secure_storage: ^9.2.4
-
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-dependency_overrides:
-  intl: ^0.20.2
 
 flutter:
   uses-material-design: true
   assets:
-    # Static FAQ, bundled rather than fetched: it changes with releases, not per
-    # user, so the support page loads instantly and works offline.
     - assets/faq.json
+
+# ✅ این بخش باید دقیقاً بدون فاصله در انتهای فایل باشد
+dependency_overrides:
+  intl: ^0.20.2
