@@ -19,12 +19,12 @@ dependencies:
   shimmer: ^3.0.0
   # Device GPS for the «موقعیت من» entry and the «نزدیک من» feed. Pinned to the
   # same constraint as boya_shared so pub resolves a single copy of the plugin.
-  geolocator: ^14.0.3
+  geolocator: ^13.0.2
   # Session storage. The refresh token is long-lived and single-use, so it lives
   # in the platform keystore (Keychain / EncryptedSharedPreferences) rather than
   # a readable preferences file. Constraint matches boya_shared so pub resolves
   # one copy of the plugin instead of two.
-  flutter_secure_storage: ^11.2.0
+  flutter_secure_storage: ^9.2.4
 
 
 dev_dependencies:
