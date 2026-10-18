@@ -201,7 +201,7 @@ class _AddPhotoDialogState extends ConsumerState<_AddPhotoDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<String>(
-            Value: _specialistId,
+            value: _specialistId,
             decoration: const InputDecoration(labelText: 'متخصص'),
             items: [
               for (final specialist in widget.specialists)
