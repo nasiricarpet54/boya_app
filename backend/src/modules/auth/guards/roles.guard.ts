@@ -28,6 +28,7 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    console.log('DEBUG GUARD:', 'RolesGuard', context.getClass().name, context.getHandler().name, 'isPublic:', isPublic);
     if (isPublic) return true;
 
     const required = this.reflector.getAllAndOverride<AuthenticatedUser['role'][] | undefined>(

@@ -17,6 +17,7 @@ export class TenantHierarchyGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    console.log('DEBUG GUARD:', 'TenantHierarchyGuard', context.getClass().name, context.getHandler().name, 'isPublic:', isPublic);
     if (isPublic) return true;
 
     const user = context.switchToHttp().getRequest().user as AuthenticatedUser | undefined;
