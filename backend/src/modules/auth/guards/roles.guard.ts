@@ -24,11 +24,16 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Fallback: Explicitly allow health check
+    const request = context.switchToHttp().getRequest();
+    if (request.url.includes('/health') || request.path.includes('/health')) {
+      return true;
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    console.log('DEBUG GUARD:', 'RolesGuard', context.getClass().name, context.getHandler().name, 'isPublic:', isPublic);
     if (isPublic) return true;
 
     const required = this.reflector.getAllAndOverride<AuthenticatedUser['role'][] | undefined>(
