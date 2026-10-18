@@ -229,7 +229,7 @@ class _MobileSection extends StatelessWidget {
               SwitchListTile(
                 value: enabled && isMobile,
                 onChanged: enabled ? onMobile : null,
-                activeThumbColor: BoyaColors.primary,
+                activeColor: BoyaColors.primary,
                 title: const Text('خدمت در محل من', style: BoyaTypography.body),
                 subtitle: enabled
                     ? null
