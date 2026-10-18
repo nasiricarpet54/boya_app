@@ -30,7 +30,7 @@ dependencies:
   # but depending on it does not put it in *this* package's dependency set, and
   # importing it here without declaring it trips depend_on_referenced_packages.
   # Keep the constraint aligned with boya_shared so pub resolves one copy.
-  fl_chart: ^1.2.0
+  fl_chart: 0.68.0
   image_picker: 1.1.2
 
 dev_dependencies:
