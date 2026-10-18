@@ -149,24 +149,24 @@ jobs:
             echo "=== Step 5: Rolling update backend (zero-downtime) ==="
             docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=2 backend
 
-            echo "=== Step 6: Wait for health check ==="
-for i in $(seq 1 30); do
-  # ✅ استفاده از وضعیت سلامت خود داکر (بدون نیاز به پورت 3000)
-  HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' boya-backend-1 2>/dev/null || echo "starting")
-  if [ "$HEALTH_STATUS" = "healthy" ]; then
-    echo "✅ Backend healthy after ${i} attempts"
-    break
-  fi
-  echo "Waiting for backend... (${i}/30) - Status: $HEALTH_STATUS"
-  sleep 5
-done
+                        echo "=== Step 6: Wait for health check ==="
+            for i in $(seq 1 30); do
+              # ✅ تست مستقیم وضعیت سلامت داکر (بدون نیاز به curl)
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' boya-backend-1 2>/dev/null || echo "starting")
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "✅ Backend healthy after ${i} attempts"
+                break
+              fi
+              echo "Waiting for backend... (${i}/30) - Status: $HEALTH_STATUS"
+              sleep 5
+            done
 
-if [ "$HEALTH_STATUS" != "healthy" ]; then
-  echo "❌ Health check failed! Rolling back..."
-  docker compose -f docker-compose.production.yml --env-file .env down backend
-  docker compose -f docker-compose.production.yml --env-file .env up -d backend
-  exit 1
-fi
+            if [ "$HEALTH_STATUS" != "healthy" ]; then
+              echo "❌ Health check failed! Rolling back..."
+              docker compose -f docker-compose.production.yml --env-file .env down backend
+              docker compose -f docker-compose.production.yml --env-file .env up -d backend
+              exit 1
+            fi
             echo "=== Step 7: Scale back to 1 instance ==="
             docker compose -f docker-compose.production.yml --env-file .env up -d --no-deps --scale backend=1 backend
 
