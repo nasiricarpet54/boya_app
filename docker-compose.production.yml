@@ -96,8 +96,8 @@ services:
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads_data:/app/uploads
-    ports:
-      - "${BACKEND_PORT:-3021}:3000"
+    #ports:
+      # "${BACKEND_PORT:-3021}:3000"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"const n=require('net');n.connect(3000,()=>process.exit(0)).on('error',()=>process.exit(1))\""]
       interval: 10s
