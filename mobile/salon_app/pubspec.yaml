@@ -31,7 +31,7 @@ dependencies:
   # importing it here without declaring it trips depend_on_referenced_packages.
   # Keep the constraint aligned with boya_shared so pub resolves one copy.
   fl_chart: ^1.2.0
-  image_picker: ^1.2.4
+  image_picker: 1.1.2
 
 dev_dependencies:
   flutter_test:
