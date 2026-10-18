@@ -55,13 +55,13 @@ import { UserModule } from './modules/user/user.module';
     SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: unknown): import('nestjs-sliding-window-throttler').ThrottlerConfig => {
-        const conf = config as ConfigService;
+      // @ts-expect-error sliding window throttler has incompatible type for useFactory args
+      useFactory: (config: ConfigService): import('nestjs-sliding-window-throttler').ThrottlerConfig => {
         return {
           redis: {
-            host: conf.get('REDIS_HOST', 'localhost'),
-            port: conf.get('REDIS_PORT', 6380),
-            password: conf.get('REDIS_PASSWORD'),
+            host: config.get<string>('REDIS_HOST', 'localhost'),
+            port: config.get<number>('REDIS_PORT', 6380),
+            password: config.get<string>('REDIS_PASSWORD'),
             keyPrefix: 'boya:throttler:',
           },
           throttler: {
