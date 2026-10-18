@@ -13,9 +13,9 @@ export class TenantHierarchyGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Fallback: Explicitly allow health check
-    const request = context.switchToHttp().getRequest();
-    if (request.url.includes('/health') || request.path.includes('/health')) {
+    // Bulletproof fallback: explicitly bypass for HealthController
+    const controllerName = context.getClass().name;
+    if (controllerName === 'HealthController') {
       return true;
     }
 
