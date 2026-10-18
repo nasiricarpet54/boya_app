@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Param, ParseIntPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Get, Param, ParseIntPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -12,6 +14,7 @@ import { ReviewService } from './review.service';
  * else's booking.
  */
 @ApiTags('reviews')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('reviews')
 export class ReviewController {
   constructor(private readonly reviews: ReviewService) {}

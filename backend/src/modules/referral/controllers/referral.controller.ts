@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { ReferralService } from '../services/referral.service';
 
 /** The acting user is always the verified token, never a query parameter. */
 @ApiTags('referrals')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('referrals')
 export class ReferralController {
   constructor(private readonly referrals: ReferralService) {}

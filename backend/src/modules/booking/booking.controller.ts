@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -72,6 +74,7 @@ class CreateBookingDto {
  * caller cannot act on a salon they do not belong to by editing a query string.
  */
 @ApiTags('bookings')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookings: BookingService) {}

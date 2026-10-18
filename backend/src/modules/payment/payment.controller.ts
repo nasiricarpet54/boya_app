@@ -1,3 +1,5 @@
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
 import { Body, Controller, ForbiddenException, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
@@ -18,6 +20,7 @@ class InitiatePaymentDto {
 }
 
 @ApiTags('payments')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('payments')
 @UseGuards(PaymentFeatureFlag)
 export class PaymentController {

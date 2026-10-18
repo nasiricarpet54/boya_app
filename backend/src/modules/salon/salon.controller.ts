@@ -1,4 +1,6 @@
-import {
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -68,6 +70,7 @@ import {
  */
 @Public()
 @ApiTags('salons')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('salons')
 export class SalonController {
   constructor(private readonly salons: SalonService) {}

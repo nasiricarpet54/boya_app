@@ -1,4 +1,6 @@
-import {
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,
   Body,
   Controller,
   Get,
@@ -33,6 +35,7 @@ import {
  * future caller of the service cannot skip the check.
  */
 @ApiTags('admin/approvals')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/approvals')
 export class ApprovalsController {
   constructor(private readonly approvals: ApprovalsService) {}

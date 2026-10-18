@@ -1,4 +1,6 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -8,6 +10,7 @@ import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 
 /** Admin audit trail. Global JwtAuthGuard rejects anonymous; service enforces role=admin. */
 @ApiTags('admin/audit-logs')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/audit-logs')
 export class AdminAuditLogsController {
   constructor(private readonly auditLogs: AdminAuditLogsService) {}

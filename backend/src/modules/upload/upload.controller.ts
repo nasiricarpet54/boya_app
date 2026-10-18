@@ -1,4 +1,6 @@
-import {
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,
   Body,
   Controller,
   Delete,
@@ -25,6 +27,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
  */
 @ApiTags('upload')
 @ApiBearerAuth()
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('upload')
 export class UploadController {
   constructor(private readonly service: UploadService) {}

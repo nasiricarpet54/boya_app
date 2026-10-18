@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../auth/decorators/public.decorator';
@@ -14,6 +16,7 @@ import { LocationService } from './location.service';
  */
 @Public()
 @ApiTags('locations')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('locations')
 export class LocationController {
   constructor(private readonly service: LocationService) {}

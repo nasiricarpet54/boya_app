@@ -1,4 +1,6 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { UseGuards,  Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -7,6 +9,7 @@ import { LoyaltyPointService } from '../services/loyalty-point.service';
 
 /** Read-only while redemption has no booking integration yet. */
 @ApiTags('loyalty')
+@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('loyalty')
 export class LoyaltyController {
   constructor(private readonly loyalty: LoyaltyPointService) {}
