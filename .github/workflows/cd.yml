@@ -151,16 +151,17 @@ jobs:
 
             echo "=== Step 6: Wait for health check ==="
 for i in $(seq 1 30); do
-  # ✅ تست مستقیم داخل کانتینر جدید (بدون واسطه Caddy)
-  if docker exec boya-backend-1 curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+  # ✅ استفاده از وضعیت سلامت داخلی داکر (بدون نیاز به curl)
+  HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' boya-backend-1 2>/dev/null || echo "starting")
+  if [ "$HEALTH_STATUS" = "healthy" ]; then
     echo "✅ Backend healthy after ${i} attempts"
     break
   fi
-  echo "Waiting for backend... (${i}/30)"
+  echo "Waiting for backend... (${i}/30) - Status: $HEALTH_STATUS"
   sleep 5
 done
 
-if ! docker exec boya-backend-1 curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+if [ "$HEALTH_STATUS" != "healthy" ]; then
   echo "❌ Health check failed! Rolling back..."
   docker compose -f docker-compose.production.yml --env-file .env down backend
   docker compose -f docker-compose.production.yml --env-file .env up -d backend
