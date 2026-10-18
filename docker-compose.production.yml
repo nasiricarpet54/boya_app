@@ -71,7 +71,7 @@ services:
 
   backend:
     image: ${BACKEND_IMAGE:-ghcr.io/nasiricarpet/boya/boya-backend:latest}
-    container_name: boya_backend_production
+    #container_name: boya_backend_production
     restart: unless-stopped
     depends_on:
       postgres:
