@@ -2,6 +2,7 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
+import { RedisFailureStrategy } from 'nestjs-sliding-window-throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Module } from '@nestjs/common';
