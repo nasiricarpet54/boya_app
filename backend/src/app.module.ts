@@ -50,23 +50,19 @@ import { UserModule } from './modules/user/user.module';
       inject: [ConfigService],
       useFactory: typeOrmConfig,
     }),
-    SlidingWindowThrottlerModule.forRootAsync({
+        SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => { ... }
-        return {
-          redis: {
-            host: (config as ConfigService).get('REDIS_HOST', 'localhost'),
-            port: (config as ConfigService).get('REDIS_PORT', 6380),
-            password: (config as ConfigService).get('REDIS_PASSWORD'),
-            keyPrefix: 'boya:throttler:',
-          },
-          throttler: {
-            failureStrategy: RedisFailureStrategy.FAIL_OPEN,
-            keyPrefix: 'boya:throttler:',
-          },
-        };
-      },
+      useFactory: (config: ConfigService) => ({
+        redis: {
+          host: config.get('REDIS_HOST', 'localhost'),
+          port: config.get('REDIS_PORT', 6380),
+          password: config.get('REDIS_PASSWORD'),
+        },
+        throttler: {
+          keyPrefix: 'throttler',
+        },
+      }),
     }),
     ThrottlerModule.forRootAsync({
 
