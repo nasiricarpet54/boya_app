@@ -64,7 +64,7 @@ import { UserModule } from './modules/user/user.module';
           throttler: {
             keyPrefix: 'throttler',
             // ✅ اضافه کردن این خط برای رفع خطای Type
-            failureStrategy: new RedisFailureStrategy(), 
+            failureStrategy: RedisFailureStrategy.FAIL_OPEN, 
           },
         } as unknown as import('nestjs-sliding-window-throttler').ThrottlerConfig; // ✅ کست کردن به تایپ درست
       },
