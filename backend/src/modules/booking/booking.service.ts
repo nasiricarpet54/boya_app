@@ -144,7 +144,7 @@ export class BookingService {
             customerId: input.customerId,
             serviceId: input.serviceId,
             timeSlot: `[${input.startsAt.toISOString()},${end.toISOString()})`,
-            status: BookingStatus.Confirmed,
+            status: BookingStatus.Pending,
             totalPrice: service.price,
             notes: input.notes ?? null,
             isMobile: input.isMobile ?? false,
@@ -344,7 +344,7 @@ export class BookingService {
     const tenantId = this.requireApprover(user);
     const saved = await this.inTenant(tenantId, async (bookings) => {
       const booking = await this.findScoped(bookings, tenantId, id);
-      if (booking.status !== BookingStatus.Confirmed) {
+      if (booking.status !== BookingStatus.Pending) {
         throw new ConflictException('این رزرو قبلاً بررسی شده است');
       }
       booking.status = BookingStatus.Confirmed;
@@ -372,7 +372,7 @@ export class BookingService {
     const tenantId = this.requireApprover(user);
     const saved = await this.inTenant(tenantId, async (bookings) => {
       const booking = await this.findScoped(bookings, tenantId, id);
-      if (booking.status !== BookingStatus.Confirmed) {
+      if (booking.status !== BookingStatus.Pending) {
         throw new ConflictException('این رزرو قبلاً بررسی شده است');
       }
       booking.status = BookingStatus.Cancelled;
