@@ -52,17 +52,19 @@ import { UserModule } from './modules/user/user.module';
         SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        redis: {
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: config.get('REDIS_PORT', 6380),
-          password: config.get('REDIS_PASSWORD'),
-        },
-        throttler: {
-          keyPrefix: 'throttler',
-        },
-      }),
-    }),
+      useFactory: (...args: unknown[]) => {
+        const config = args[0] as ConfigService;
+        return {
+          redis: {
+            host: config.get<string>('REDIS_HOST', 'localhost'),
+            port: config.get<number>('REDIS_PORT', 6380),
+            password: config.get<string>('REDIS_PASSWORD'),
+          },
+          throttler: {
+            keyPrefix: 'throttler',
+          },
+        };
+      },
     ThrottlerModule.forRootAsync({
 
       inject: [SlidingWindowThrottlerStorage],
