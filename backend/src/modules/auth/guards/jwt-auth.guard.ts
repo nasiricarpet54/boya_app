@@ -14,7 +14,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 export interface AuthenticatedUser {
   userId: string;
   phoneNumber: string;
-  role: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin';
+  role: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin' | 'super_admin';
   tenantId: string | null;
 }
 
