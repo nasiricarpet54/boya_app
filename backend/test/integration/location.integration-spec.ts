@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 
 import { City } from '../../src/modules/location/entities/city.entity';
 import { Province } from '../../src/modules/location/entities/province.entity';
@@ -105,6 +106,8 @@ describeIntegration('locations: provinces, cities and the salon city filter', ()
 
     const moduleRef = await Test.createTestingModule({
       imports: [
+        ConfigModule.forRoot({ isGlobal: true }), // ✅ این خط را اضافه کنید
+        TypeOrmModule.forRoot({
         // Owns and exports the connection so that both the `forFeature`
         // repositories in `LocationModule` and `SalonService`'s injected
         // `DataSource` resolve to the same migration-owner client. The two
