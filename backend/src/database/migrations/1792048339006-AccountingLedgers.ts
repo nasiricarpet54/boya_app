@@ -38,7 +38,8 @@ export class AccountingLedgers1792048339006 implements MigrationInterface {
     if (res.length === 0) {
       await queryRunner.query(`
         CREATE POLICY accounting_ledgers_tenant_isolation ON accounting_ledgers
-        USING (tenant_id = current_setting('app.current_tenant_id', true)::UUID)
+        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID)
       `);
     }
   }
