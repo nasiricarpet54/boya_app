@@ -53,12 +53,12 @@ import { UserModule } from './modules/user/user.module';
     SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: any) => {
+      useFactory: (config: unknown) => {
         return {
           redis: {
-            host: config.get('REDIS_HOST', 'localhost'),
-            port: config.get('REDIS_PORT', 6380),
-            password: config.get('REDIS_PASSWORD'),
+            host: (config as ConfigService).get('REDIS_HOST', 'localhost'),
+            port: (config as ConfigService).get('REDIS_PORT', 6380),
+            password: (config as ConfigService).get('REDIS_PASSWORD'),
             keyPrefix: 'boya:throttler:',
           },
           throttler: {
