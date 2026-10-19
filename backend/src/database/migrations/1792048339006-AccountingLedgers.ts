@@ -32,16 +32,15 @@ export class AccountingLedgers1792048339006 implements MigrationInterface {
     // Optional: Enable RLS on accounting_ledgers
     await queryRunner.query(`ALTER TABLE accounting_ledgers ENABLE ROW LEVEL SECURITY`);
     await queryRunner.query(`ALTER TABLE accounting_ledgers FORCE ROW LEVEL SECURITY`);
-    const res = await queryRunner.query(`
-      SELECT policyname FROM pg_policies WHERE tablename = 'accounting_ledgers' AND policyname = 'accounting_ledgers_tenant_isolation'
+
+    // ✅ حذف پالیسی قبلی و ساخت پالیسی جدید با WITH CHECK
+    await queryRunner.query(`DROP POLICY IF EXISTS accounting_ledgers_tenant_isolation ON accounting_ledgers`);
+    
+    await queryRunner.query(`
+      CREATE POLICY accounting_ledgers_tenant_isolation ON accounting_ledgers
+      USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID)
+      WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID);
     `);
-    if (res.length === 0) {
-      await queryRunner.query(`
-        CREATE POLICY accounting_ledgers_tenant_isolation ON accounting_ledgers
-        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID)
-        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID)
-      `);
-    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
