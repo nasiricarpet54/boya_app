@@ -9,12 +9,11 @@ import {
 } from 'typeorm';
 
 export enum BookingStatus {
-
+  Pending = 'pending', // ✅ این خط باید وجود داشته باشد
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
   Completed = 'completed',
   NoShow = 'no_show',
-  /** Customer submitted the mandatory post-visit feedback. Terminal. */
   Reviewed = 'reviewed',
 }
 
