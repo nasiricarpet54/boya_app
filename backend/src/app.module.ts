@@ -53,7 +53,7 @@ import { UserModule } from './modules/user/user.module';
     SlidingWindowThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: unknown) => {
+      useFactory: (config: ConfigService) => { ... }
         return {
           redis: {
             host: (config as ConfigService).get('REDIS_HOST', 'localhost'),
