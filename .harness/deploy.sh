@@ -1,21 +1,6 @@
 #!/bin/sh
-set -e
-
-echo "==============================="
-echo "  شروع فرایند استقرار پروژه Boya  "
-echo "==============================="
-
-# اطمینان از قرار داشتن در پوشه ریشه پروژه
-cd "$(dirname "$0")/.."
-
-# بازسازی ایمیج‌ها و اجرای مجدد کانتینرها در پس‌زمینه
-echo "--> در حال به‌روزرسانی و ساخت کانتینرهای داکر..."
+apk add --no-cache docker-cli docker-cli-compose
+echo "=== Starting deployment ==="
 docker compose -f docker-compose.production.yml up -d --build
-
-# پاکسازی ایمیج‌های بلااستفاده و قدیمی جهت آزادسازی فضای سرور
-echo "--> پاکسازی ایمیج‌های بدون استفاده..."
 docker image prune -f
-
-echo "==============================="
-echo "   استقرار با موفقیت پایان یافت   "
-echo "==============================="
+echo "=== Deployment finished successfully ==="
