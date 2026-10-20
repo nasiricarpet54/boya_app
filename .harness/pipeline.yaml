@@ -1,3 +1,4 @@
+# Trigger build to sync deploy.sh
 kind: pipeline
 type: docker
 name: boya-cd
