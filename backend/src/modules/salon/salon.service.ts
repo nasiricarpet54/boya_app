@@ -46,6 +46,7 @@ import {
   UpdateServiceLineDto,
 } from './dto/update-service-line.dto';
 import { MatchSalonsDto } from './dto/match-salons.dto';
+import { CreateScheduleBlockDto } from './dto/salon-schedule-block.dto';
 import { SalonAvailabilityQueryDto } from './dto/salon-availability-query.dto';
 import {
   SalonBookingStatus,
@@ -1223,14 +1224,56 @@ export class SalonService {
    * exactly like the profile fields. A separate route only so the salon app can
    * save the schedule form without having to know the profile payload.
    */
-  async updateStaffSchedule(
+    async updateStaffSchedule(
     user: AuthenticatedUser,
     dto: UpdateSalonScheduleDto,
   ): Promise<SalonPendingUpdate> {
     const tenantId = this.requireStaffTenant(user);
     return this.stagePendingChanges(tenantId, { workingHours: dto.workingHours });
   }
+  /**
+   * POST /salon/me/schedule/block — blocks a time range for the salon or a
+   * specific specialist. Used for walk-in customers or personal time off.
+   */
+  async createScheduleBlock(
+    user: AuthenticatedUser,
+    dto: CreateScheduleBlockDto,
+  ): Promise<void> {
+    const tenantId = this.requireStaffTenant(user);
+    const start = new Date(dto.startTime);
+    const end = new Date(dto.endTime);
 
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException('تاریخ نامعتبر است');
+    }
+    if (start >= end) {
+      throw new BadRequestException('زمان پایان باید پس از زمان شروع باشد');
+    }
+
+    await this.withPanelTenant(tenantId, async (manager) => {
+      await manager.query(
+        `INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [tenantId, dto.specialistId ?? null, start, end, dto.reason ?? null],
+      );
+    });
+  }
+
+  /**
+   * DELETE /salon/me/schedule/block/:id — removes a previously created block.
+   */
+  async deleteScheduleBlock(user: AuthenticatedUser, id: string): Promise<void> {
+    const tenantId = this.requireStaffTenant(user);
+    await this.withPanelTenant(tenantId, async (manager) => {
+      const result = await manager.query<Array<{ id: string }>>(
+        `DELETE FROM schedule_blocks WHERE id = $1 AND tenant_id = $2 RETURNING id`,
+        [id, tenantId],
+      );
+      if (!Array.isArray(result) || result.length === 0) {
+        throw new NotFoundException('مسدودی یافت نشد');
+      }
+    });
+  }
   /**
    * Overlay `changes` on whatever is already pending and mark the tenant as
    * awaiting review. The live columns stay untouched, which is the whole point
