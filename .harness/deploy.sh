@@ -1,35 +1,21 @@
 #!/bin/sh
 set -e
 
-echo "=== Setting up SSH ==="
-apk add --no-cache openssh-client
-mkdir -p ~/.ssh
-echo "$SSH_KEY" > ~/.ssh/id_rsa
-chmod 600 ~/.ssh/id_rsa
+echo "==============================="
+echo "  شروع فرایند استقرار پروژه Boya  "
+echo "==============================="
 
-echo "=== Connecting to Production Server ==="
-ssh -p 9011 -o StrictHostKeyChecking=no root@"$SERVER_IP" << 'EOF'
-  set -e
-  echo "=== Step 1: Pull latest code ==="
-  cd /opt/boya
-  git fetch origin master
-  git reset --hard origin/master
-  
-  COMMIT_HASH=$(git rev-parse HEAD)
-  echo "Deploying commit: $COMMIT_HASH"
-  
-  echo "=== Step 2: Build Backend ==="
-  docker build -t ghcr.io/nasiricarpet/boya/boya-backend:$COMMIT_HASH -f backend/Dockerfile ./backend
-  sed -i "s|image:.*boya-backend.*|image: ghcr.io/nasiricarpet/boya/boya-backend:$COMMIT_HASH|" docker-compose.production.yml
-  
-  echo "=== Step 3: Run Migrations ==="
-  docker compose -f docker-compose.production.yml run --rm backend-migrate
-  
-  echo "=== Step 4: Restart Backend ==="
-  docker compose -f docker-compose.production.yml up -d --no-deps backend
-  
-  echo "=== Step 5: Build & Restart Frontends ==="
-  docker compose -f docker-compose.production.yml up -d --build salon-web customer-web
-  
-  echo "✅ CD Deployment complete!"
-EOF
+# اطمینان از قرار داشتن در پوشه ریشه پروژه
+cd "$(dirname "$0")/.."
+
+# بازسازی ایمیج‌ها و اجرای مجدد کانتینرها در پس‌زمینه
+echo "--> در حال به‌روزرسانی و ساخت کانتینرهای داکر..."
+docker compose -f docker-compose.production.yml up -d --build
+
+# پاکسازی ایمیج‌های بلااستفاده و قدیمی جهت آزادسازی فضای سرور
+echo "--> پاکسازی ایمیج‌های بدون استفاده..."
+docker image prune -f
+
+echo "==============================="
+echo "   استقرار با موفقیت پایان یافت   "
+echo "==============================="
