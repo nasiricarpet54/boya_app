@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 
 export enum BookingStatus {
-  Pending = 'pending', // ✅ این خط باید وجود داشته باشد
+  Pending = 'pending',
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
   Completed = 'completed',
@@ -17,19 +17,14 @@ export enum BookingStatus {
   Reviewed = 'reviewed',
 }
 
-/** Roles allowed to act on a booking on the salon's side. */
 export const APPROVER_ROLES = ['salon_owner', 'line_manager', 'specialist'] as const;
 export type ApproverRole = (typeof APPROVER_ROLES)[number];
 
-/**
- * A specialist appointment. `time_slot` is a UTC tstzrange.
- * Jalali is display-only and is formatted in the app, not stored.
- */
 @Entity('bookings')
 @Index('idx_bookings_tenant_id', ['tenantId'])
 @Check(
   'bookings_status_check',
-  `"status" IN ('confirmed','cancelled','completed','no_show','reviewed')`,
+  `"status" IN ('pending','confirmed','cancelled','completed','no_show','reviewed')`,
 )
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
@@ -47,7 +42,6 @@ export class Booking {
   @Column({ name: 'service_id', type: 'uuid' })
   serviceId!: string;
 
-  /** Inclusive start, exclusive end. Half-open so back-to-back slots do not overlap. */
   @Column({
     name: 'time_slot',
     type: 'tstzrange',
@@ -59,7 +53,7 @@ export class Booking {
   })
   timeSlot!: string;
 
-  @Column({ type: 'varchar', length: 20, default: BookingStatus.Confirmed })
+  @Column({ type: 'varchar', length: 20, default: BookingStatus.Pending })
   status!: BookingStatus;
 
   @Column({ name: 'total_price', type: 'numeric', precision: 10, scale: 2 })
@@ -74,37 +68,24 @@ export class Booking {
   @Column({ type: 'text', nullable: true })
   notes!: string | null;
 
-  /**
-   * On-site services (ADR-011): the customer asked the specialist to come to
-   * them. Requires `specialists.offers_mobile_service` *and*
-   * `services.is_mobile_available`, and an address.
-   */
   @Column({ name: 'is_mobile', type: 'boolean', default: false })
   isMobile!: boolean;
 
-  /** Free-form; the address the specialist travels to when `is_mobile`. */
   @Column({ name: 'customer_address', type: 'text', nullable: true })
   customerAddress!: string | null;
 
-  /**
-   * Optional coordinates of `customer_address`. `numeric` arrives from Postgres
-   * as a string, hence the entity type; the caller sends numbers.
-   */
   @Column({ name: 'customer_latitude', type: 'numeric', precision: 10, scale: 7, nullable: true })
   customerLatitude!: string | null;
 
   @Column({ name: 'customer_longitude', type: 'numeric', precision: 10, scale: 7, nullable: true })
   customerLongitude!: string | null;
 
-  /** When the "your visit is coming up" reminder was sent. Set by the cron job. */
   @Column({ name: 'booking_reminder_sent_at', type: 'timestamptz', nullable: true })
   bookingReminderSentAt!: Date | null;
 
-  /** When the "how was it?" feedback reminder was sent. Set by the cron job. */
   @Column({ name: 'feedback_reminder_sent_at', type: 'timestamptz', nullable: true })
   feedbackReminderSentAt!: Date | null;
 
-  /** Customer-side confirmation that the visit happened. Stops no-show sweep. */
   @Column({ name: 'visit_confirmed_by_customer_at', type: 'timestamptz', nullable: true })
   visitConfirmedByCustomerAt!: Date | null;
 
