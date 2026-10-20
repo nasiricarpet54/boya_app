@@ -6,7 +6,7 @@
 # ---- Builder ---------------------------------------------------------------
 # Full install (devDependencies included): `nest build` needs the @nestjs/cli
 # and typescript, which both live in devDependencies.
-FROM node:22-alpine AS builder
+FROM node:22-slim
 WORKDIR /app
 # The repo pins npm to a reliable mirror (see the root .npmrc), but that file is
 # outside the backend build context. Apply the same registry here so the Docker
