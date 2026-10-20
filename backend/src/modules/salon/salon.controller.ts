@@ -1,6 +1,7 @@
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
-import { UseGuards,
+import {
+  UseGuards,
   Body,
   Controller,
   Delete,
@@ -24,6 +25,7 @@ import {
   SalonPanelRejectBookingDto,
 } from './dto/salon-bookings-query.dto';
 import { SalonAvailabilityQueryDto } from './dto/salon-availability-query.dto';
+import { CreateScheduleBlockDto } from './dto/salon-schedule-block.dto';
 import { SalonQueryDto } from './dto/salon-query.dto';
 import {
   AddPortfolioItemDto,
@@ -244,6 +246,39 @@ export class SalonPanelController {
     @Body() dto: UpdateSalonScheduleDto,
   ): Promise<SalonPendingUpdate> {
     return this.salons.updateStaffSchedule(user, dto);
+  }
+
+  /**
+   * Block a time range in the schedule (for walk-in customers, breaks, or
+   * personal time off). Blocking a time excludes it from the public
+   * availability list, exactly as if a booking already existed.
+   */
+  @Post('me/schedule/block')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'ایجاد مسدودی زمان در تقویم سالن یا متخصص',
+    description:
+      'زمان مسدود شده از لیست نوبت‌های خالی حذف می‌شود (مشابه زمانی که رزرو ثبت شده باشد). ' +
+      'برای مشتریان حضوری یا استراحت استفاده می‌شود.',
+  })
+  createScheduleBlock(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateScheduleBlockDto,
+  ): Promise<void> {
+    return this.salons.createScheduleBlock(user, dto);
+  }
+
+  /**
+   * Remove a schedule block. The freed time immediately becomes bookable again.
+   */
+  @Delete('me/schedule/block/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'حذف مسدودی زمان از تقویم' })
+  deleteScheduleBlock(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.salons.deleteScheduleBlock(user, id);
   }
 
   /** Service lines of the signed-in salon, with each line's service count. */
@@ -476,6 +511,7 @@ export class SalonPanelController {
     return this.salons.staffDashboard(user);
   }
 }
+
 @Public()
 @ApiTags('salons')
 @Controller('categories')
