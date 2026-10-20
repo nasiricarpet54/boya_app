@@ -11,9 +11,8 @@ import { UPLOAD_DIR_DEFAULT } from './modules/upload/upload.service';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    app.use((req: any, res: unknown, next: () => void) => {
-      req.queryCount = 0;
+    app.use((req: import("express").Request, res: import("express").Response, next: () => void) => {
+      (req as unknown as Record<string, unknown>).queryCount = 0; // ✅ اصلاح تایپ‌اسکریپت اینجاست
       next();
     });
   }
