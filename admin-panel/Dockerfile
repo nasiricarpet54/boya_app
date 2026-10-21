@@ -1,8 +1,19 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 ENV npm_config_registry=https://registry.npmmirror.com
+ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV CI=true
+ENV npm_config_fund=false
+ENV npm_config_audit=false
+ENV npm_config_progress=false
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+ENV npm_config_fetch_retries=5
 COPY package*.json ./
-RUN npm ci
+RUN npm cache clean --force && \
+    (npm ci --no-audit --no-fund \
+     || (echo ">>> retry 1 with npm ci..." && sleep 5 && npm ci --no-audit --no-fund) \
+     || (echo ">>> fallback to npm install..." && sleep 10 && npm install --no-audit --no-fund))
 COPY . .
 # The repo has no `public/` directory; create it so the runtime COPY below
 # never fails (Docker COPY has no `|| true` escape hatch).
