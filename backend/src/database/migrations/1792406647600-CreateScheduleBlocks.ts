@@ -27,6 +27,7 @@ export class CreateScheduleBlocks1792406647600 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "schedule_blocks" ENABLE ROW LEVEL SECURITY`);
     await queryRunner.query(`ALTER TABLE "schedule_blocks" FORCE ROW LEVEL SECURITY`);
 
+    await queryRunner.query(`DROP POLICY IF EXISTS tenant_isolation_policy ON "schedule_blocks"`);
     await queryRunner.query(`
       CREATE POLICY tenant_isolation_policy ON "schedule_blocks"
       FOR ALL
