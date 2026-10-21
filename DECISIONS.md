@@ -351,4 +351,9 @@ name = 'ExclusionConstraint' + String(Date.now()); // Fallback name
 کند، TypeORM آن را «اجراشده» می‌بیند و اجرا نمی‌کند. برای تغییر محتوای یک
 migration اعمال‌شده باید migration جدید نوشته شود، نه ویرایش migration قدیمی.
 
+**نگه‌دارنده:** `backend/src/database/migration-names.spec.ts` سه چیز را در هر
+`npm test` چک می‌کند: پوشهٔ migrations وجود دارد، هیچ نامی از `Date.now()` ساخته
+نشده، و هیچ دو migration هم‌نام نیستند. این همان چیزی است که اگر از روز اول
+بود، شش ردیف تکراری روی production پیش نمی‌آمد.
+
 
