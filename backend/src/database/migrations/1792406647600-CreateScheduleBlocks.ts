@@ -4,8 +4,12 @@ export class CreateScheduleBlocks1792406647600 implements MigrationInterface {
   name = 'CreateScheduleBlocks1792406647600';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // The table is created with IF NOT EXISTS so a re-run against a database
+    // that already has it (created outside the migration ledger) is a no-op
+    // instead of a hard failure. The tenant FK points at `tenants`: there is
+    // no `salons` table in this schema — a salon *is* a tenant row.
     await queryRunner.query(`
-      CREATE TABLE "schedule_blocks" (
+      CREATE TABLE IF NOT EXISTS "schedule_blocks" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "tenant_id" uuid NOT NULL,
         "specialist_id" uuid,
@@ -15,7 +19,7 @@ export class CreateScheduleBlocks1792406647600 implements MigrationInterface {
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "PK_schedule_blocks_id" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_schedule_blocks_tenant_id" FOREIGN KEY ("tenant_id") REFERENCES "salons"("id") ON DELETE CASCADE ON UPDATE NO ACTION,
+        CONSTRAINT "FK_schedule_blocks_tenant_id" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE NO ACTION,
         CONSTRAINT "FK_schedule_blocks_specialist_id" FOREIGN KEY ("specialist_id") REFERENCES "specialists"("id") ON DELETE CASCADE ON UPDATE NO ACTION
       )
     `);

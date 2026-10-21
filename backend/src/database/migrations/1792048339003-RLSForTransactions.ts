@@ -1,7 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class RLSForTransactions1792048339003 implements MigrationInterface {
-  name = 'RLSForTransactions' + String(Date.now()); // Fallback name
+  // Fixed name — see ExclusionConstraint for why a runtime-built name breaks.
+  name = 'RLSForTransactions1792554473159';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE transactions ENABLE ROW LEVEL SECURITY`);

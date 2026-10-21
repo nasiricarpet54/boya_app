@@ -1,7 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class RLSForSpecialists1792048339004 implements MigrationInterface {
-  name = 'RLSForSpecialists' + String(Date.now()); // Fallback name
+  // Fixed name — see ExclusionConstraint for why a runtime-built name breaks.
+  // This is the name already in the migrations ledger.
+  name = 'RLSForSpecialists1792554473158';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // The booking flow resolves a specialist before the tenant context is

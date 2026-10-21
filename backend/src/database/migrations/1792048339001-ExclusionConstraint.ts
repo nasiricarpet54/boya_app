@@ -1,7 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class ExclusionConstraint1792048339001 implements MigrationInterface {
-  name = 'ExclusionConstraint' + String(Date.now()); // Fallback name
+  // Fixed name. A name built at runtime (`'ExclusionConstraint' + Date.now()`)
+  // is different on every boot, so TypeORM never recognises the migration as
+  // applied and re-runs it on every deploy. This is the name already in the
+  // migrations ledger.
+  name = 'ExclusionConstraint1792554473159';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS btree_gist`);

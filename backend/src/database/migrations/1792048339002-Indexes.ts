@@ -1,7 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class Indexes1792048339002 implements MigrationInterface {
-  name = 'Indexes' + String(Date.now()); // Fallback name
+  // Fixed name — see ExclusionConstraint for why a runtime-built name breaks.
+  name = 'Indexes1792554473159';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_bookings_tenant_time ON bookings (tenant_id, created_at DESC)`);

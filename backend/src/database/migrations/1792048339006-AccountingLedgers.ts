@@ -1,7 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AccountingLedgers1792048339006 implements MigrationInterface {
-  name = 'AccountingLedgers' + String(Date.now()); // Fallback name
+  // Fixed name — see ExclusionConstraint for why a runtime-built name breaks.
+  // This is the name already in the migrations ledger.
+  name = 'AccountingLedgers1792554473158';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Keep the full booking lifecycle, including newly created pending rows.
