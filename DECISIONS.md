@@ -304,4 +304,51 @@ timezone می‌توانست یک روز جلو/عقب بیفتد.
 **تست:** `backend/src/modules/common/jalali-date.service.spec.ts` — ۵ سناریو، شامل
 «تبدیل یک تاریخ جلالی به نیمه‌شب UTC» و «شروع هفته = شنبه ۰۰:۰۰ UTC».
 
+---
+
+## ADR-013: نام migration همیشه ثابت است (2026-10-21)
+
+**مسئله:** شش migration نامشان را در زمان اجرا می‌ساختند:
+
+```ts
+name = 'ExclusionConstraint' + String(Date.now()); // Fallback name
+```
+
+نام در هر boot متفاوت است، پس TypeORM هرگز آن‌ها را با جدول `migrations` تطبیق
+نمی‌دهد و **هر بار استقرار دوباره اجراشان می‌کند**. در سرور production برای هر
+کدام ۱۲ ردیف ثبت شده بود — یعنی ۱۱ بار تکرار در ۱۱ استقرار. ضمناً چون
+`ExclusionConstraint` هر بار با نام تازه اجرا می‌شد، ledger پر از نام‌های تکراری
+شد و migration واقعاً «کار کرده» به نظر می‌رسید در حالی که وضعیت واقعی DB با
+محتوای migration هم‌خوانی نداشت.
+
+**عوارض واقعی روی production:**
+
+1. `migration:run` با خطای `42P07: relation "schedule_blocks" already exists` شکست
+   خورد و استقرار را متوقف کرد.
+2. `CreateScheduleBlocks` به جدول `salons` ارجاع می‌داد که اصلاً وجود ندارد — یک
+   سالن، همان رکورد `tenants` است. به‌علاوه `CREATE TABLE` بدون `IF NOT EXISTS` بود،
+   پس روی دیتابیسی که جدول از قبل ساخته شده بود (خارج از ledger) همیشه شکست
+   می‌خورد.
+3. قید `no_double_booking` ساخته نشد، چون گارد migration فقط `contype='x'` را
+   می‌بیند در حالی که `bookings` از قبل قید معادل `no_overlapping_bookings` دارد.
+
+**تصمیم:** نام migration یک **ثابت** است — هرگز از `Date.now()` ساخته نمی‌شود.
+نام ثابت باید دقیقاً برابر با ردیف موجود در ledger باشد، وگرنه TypeORM آن را
+«نو» می‌بیند و دوباره اجرا می‌کند.
+
+- شش migration پویا نام‌شان ثابت شد و برابر با آخرین ردیف ledger تولید قرار گرفت
+  (مثلاً `ExclusionConstraint1792554473159`).
+- `CreateScheduleBlocks` هم‌زمان `CREATE TABLE IF NOT EXISTS` و
+  `DROP POLICY IF EXISTS` گرفت (هم‌سبک با migrationهای هم‌خانواده) و FK آن از
+  `salons` به `tenants` اصلاح شد.
+- ردیف‌های تکراری ledger پاک نشدند: حذفشان خطرناک است (تاریخچهٔ اجرا را گم
+  می‌کند) و بی‌اثر (TypeORM فقط «آخرین» ردیف هر نام را می‌بیند).
+
+**پیامد:** ledger production از ۱۱۶ به ۱۱۷ ردیف رسید و اجرای مجدد
+`migration:run` پیام «No migrations are pending» می‌دهد.
+
+**نکتهٔ باقی‌مانده:** یک migration جدید که نام ثابت داشته باشد ولی محتوایش تغییر
+کند، TypeORM آن را «اجراشده» می‌بیند و اجرا نمی‌کند. برای تغییر محتوای یک
+migration اعمال‌شده باید migration جدید نوشته شود، نه ویرایش migration قدیمی.
+
 

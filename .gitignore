@@ -51,3 +51,6 @@ Thumbs.db
 # -f docker-compose.production.yml build`.
 mobile/customer_app/build/
 mobile/salon_app/build/
+
+# Local deploy/inspect helpers copied to the production host, not part of the repo.
+.tmp-*.sh
