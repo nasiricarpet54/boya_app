@@ -106,8 +106,7 @@ describeIntegration('locations: provinces, cities and the salon city filter', ()
 
     const moduleRef = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({ isGlobal: true }), // ✅ این خط را اضافه کنید
-        TypeOrmModule.forRoot({
+        ConfigModule.forRoot({ isGlobal: true }),
         // Owns and exports the connection so that both the `forFeature`
         // repositories in `LocationModule` and `SalonService`'s injected
         // `DataSource` resolve to the same migration-owner client. The two

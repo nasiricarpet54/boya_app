@@ -8,7 +8,7 @@ describe('JalaliDateService', () => {
     expect(service.toJalali(nowruz)).toBe('۱۴۰۳/۱/۱');
   });
 
-  it('turns a Persian Jalali date back into Tehran midnight', () => {
+  it('turns a Persian Jalali date back into the UTC midnight of that day', () => {
     expect(service.toGregorian('۱۴۰۳/۰۱/۰۱').toISOString()).toBe('2024-03-20T00:00:00.000Z');
   });
 

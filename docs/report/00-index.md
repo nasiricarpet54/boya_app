@@ -15,6 +15,7 @@
 | `03-auth-booking.md` | **(اولویت)** احراز هویت/امنیت (OTP/JWT) + رزرو (الگوریتم slot، Exclusion، تراکنش، no-show) |
 | `04-payment-cancellation.md` | **(اولویت)** پرداخت/Zarinpal، کنسلی/no-show (جریمه ۵۰٪/۱۰۰٪، refund دستی) |
 | `05-flutter-tests-bugs-deploy.md` | **(اولویت)** اپ‌های Flutter، تست‌ها (unit/e2e/integration)، باگ‌ها، داکر/CI، سؤال‌های مشاور |
+| `07-code-review-2026-10-21.md` | بررسی کد ۲۱ اکتبر: رفع باگ timezone تاریخ جلالی (ADR-012)، رفع `TypeOrmModule` تکراری، وضعیت lint/test/build و استقرار |
 
 بخش‌های کلیدی درخواستی (۳، ۵، ۶، ۹، ۱۰) در فایل‌های 02 تا 05 با کد کامل آمده‌اند.
 
