@@ -10,7 +10,7 @@ abstract final class BoyaTheme {
       brightness: Brightness.light,
       primary: BoyaColors.primary,
       onPrimary: BoyaColors.white,
-      secondary: BoyaColors.rose,
+      secondary: BoyaColors.sage,
       onSecondary: BoyaColors.ink,
       error: BoyaColors.error,
       onError: BoyaColors.white,
@@ -75,12 +75,14 @@ abstract final class BoyaTheme {
 
   /// Optional dark surfaces from the design system. Light remains the default.
   static ThemeData dark() {
-    const darkPrimary = Color(0xFFD4925A);
+    // The petrol teal is too dark to read on a dark surface, so it is lifted
+    // to a lighter tint of the same hue rather than a different colour.
+    const darkPrimary = Color(0xFF6E9B99);
     final colorScheme = ColorScheme(
       brightness: Brightness.dark,
       primary: darkPrimary,
       onPrimary: BoyaColors.ink,
-      secondary: BoyaColors.rose,
+      secondary: BoyaColors.sage,
       onSecondary: BoyaColors.ink,
       error: BoyaColors.error,
       onError: BoyaColors.white,

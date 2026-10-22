@@ -56,7 +56,7 @@ export default function AuditLogsPage() {
                 type="button"
                 aria-pressed={v === action}
                 onClick={() => { setAction(v); setPage(1); }}
-                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === action ? 'bg-surface font-semibold text-brand-copper shadow-1' : 'text-ink-muted hover:text-ink')}
+                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === action ? 'bg-surface font-semibold text-brand-primary shadow-1' : 'text-ink-muted hover:text-ink')}
               >
                 {chipLabel(v)}
               </button>
@@ -70,7 +70,7 @@ export default function AuditLogsPage() {
                 type="button"
                 aria-pressed={v === targetType}
                 onClick={() => { setTargetType(v); setPage(1); }}
-                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === targetType ? 'bg-surface font-semibold text-brand-copper shadow-1' : 'text-ink-muted hover:text-ink')}
+                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === targetType ? 'bg-surface font-semibold text-brand-primary shadow-1' : 'text-ink-muted hover:text-ink')}
               >
                 {v === 'all' ? t('filters.all') : v}
               </button>

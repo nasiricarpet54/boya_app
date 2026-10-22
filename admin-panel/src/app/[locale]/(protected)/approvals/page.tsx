@@ -180,7 +180,7 @@ export default function ApprovalsPage() {
               onClick={() => setActiveTab(tab.type)}
               className={
                 isActive
-                  ? 'flex-1 rounded-md bg-brand-subtle px-4 py-2.5 text-body font-semibold text-brand-copper'
+                  ? 'flex-1 rounded-md bg-brand-subtle px-4 py-2.5 text-body font-semibold text-brand-primary'
                   : 'flex-1 rounded-md px-4 py-2.5 text-body text-ink-muted transition-colors hover:text-ink'
               }
             >

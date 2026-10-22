@@ -253,7 +253,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
                 onClick={() => setFeaturedDraft(!featuredValue)}
                 disabled={updateMutation.isPending}
                 className={featuredValue
-                  ? 'relative h-6 w-11 shrink-0 rounded-full bg-brand-copper transition-colors'
+                  ? 'relative h-6 w-11 shrink-0 rounded-full bg-brand-primary transition-colors'
                   : 'relative h-6 w-11 shrink-0 rounded-full bg-line transition-colors'}
               >
                 <span

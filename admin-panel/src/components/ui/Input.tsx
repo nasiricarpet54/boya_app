@@ -44,7 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           className={cn(
             'h-12 w-full rounded-md border bg-surface px-4 text-body text-ink',
             'placeholder:text-ink-muted',
-            'focus:border-brand-copper focus:outline-none focus:ring-2 focus:ring-brand-copper/20',
+            'focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20',
             'disabled:cursor-not-allowed disabled:bg-line/60 disabled:text-ink-muted',
             error ? 'border-error focus:border-error focus:ring-error/20' : 'border-line',
             // In an RTL document the field is right-aligned by default; only a

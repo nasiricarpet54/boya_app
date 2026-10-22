@@ -20,7 +20,7 @@ export function PlaceholderPage({
       <div className="flex flex-col items-center gap-3 py-10 text-center">
         <span
           aria-hidden
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-subtle text-brand-copper"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-subtle text-brand-primary"
         >
           <Construction className="h-6 w-6" />
         </span>

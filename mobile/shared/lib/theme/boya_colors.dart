@@ -3,23 +3,23 @@ import 'package:flutter/material.dart';
 /// BOYA color tokens matching the official brand guidelines.
 abstract final class BoyaColors {
   // رنگ‌های اصلی و زمینه
-  static const Color primary = Color(0xFF173B3F);        // سبز نفتی بویا
-  static const Color primaryHover = Color(0xFF132F32);
-  static const Color primaryPressed = Color(0xFF0E2528);
-  static const Color primarySubtle = Color(0xFFEDF3F3);
+  static const Color primary = Color(0xFF133E3E);        // سبز نفتی بویا (Deep Petrol Teal)
+  static const Color primaryHover = Color(0xFF0F3232);
+  static const Color primaryPressed = Color(0xFF0B2626);
+  static const Color primarySubtle = Color(0xFFE8F0EF);
 
-  static const Color cream = Color(0xFFF7F3EE);          // شیری گرم (پس‌زمینه اصلی)
+  static const Color cream = Color(0xFFF8F9FA);          // سطح خنثی روشن
   static const Color surface = Color(0xFFFFFFFF);        // سفید کارت‌ها و سطوح
   static const Color white = Color(0xFFFFFFFF);
 
   // رنگ‌های تأکیدی
-  static const Color rose = Color(0xFFD9A2B0);           // رز خاکی
-  static const Color silk = Color(0xFFE6B5C0);           // صورتی ابریشمی
+  static const Color sage = Color(0xFF8A9684);           // مریم/زیتونی ملایم (accent)
+  static const Color sageSubtle = Color(0xFFEFF1EE);    // پس‌زمینهٔ بج و هایلایت
 
   // متون و خطوط
-  static const Color ink = Color(0xFF173B3F);            // قلم اصلی
-  static const Color inkMuted = Color(0xFF46565A);       // خاکستری زغالی
-  static const Color line = Color(0xFFD9D2CA);           // خاکستری گرم (دیوایدرها و بردرها)
+  static const Color ink = Color(0xFF133E3E);            // قلم اصلی
+  static const Color inkMuted = Color(0xFF5A6B6B);       // خاکستری زغالی
+  static const Color line = Color(0xFFD9DEDB);           // خاکستری گرم (دیوایدرها و بردرها)
 
   // رنگ‌های وضعیت
   static const Color success = Color(0xFF6F9A8D);        // سبز مریم‌گلی

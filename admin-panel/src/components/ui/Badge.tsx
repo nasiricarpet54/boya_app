@@ -2,17 +2,19 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils/cn';
 
-export type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'error' | 'info';
+export type BadgeTone = 'neutral' | 'brand' | 'accent' | 'success' | 'warning' | 'error' | 'info';
 
 /**
  * Status pill on `radius.full`.
  *
  * Tinted background plus text in the same semantic colour: the design system
  * rejects white text on the light values (`success`, `warning`) for contrast.
+ * `brand` carries the petrol teal, `accent` the sage.
  */
 const TONES: Record<BadgeTone, string> = {
   neutral: 'bg-line/60 text-ink-muted',
-  brand: 'bg-brand-subtle text-brand-copper',
+  brand: 'bg-brand-subtle text-brand-primary',
+  accent: 'bg-brand-sage-subtle text-brand-sage',
   success: 'bg-success/10 text-success',
   warning: 'bg-warning/10 text-warning',
   error: 'bg-error/10 text-error',

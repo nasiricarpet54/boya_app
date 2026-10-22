@@ -10,6 +10,7 @@ import { useSignOut } from '@/lib/api/sign-out';
 import { Link, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils/cn';
 import { faNumber } from '@/lib/utils/persian';
+import { BoyaLogo } from '@/components/ui/BoyaLogo';
 
 /**
  * Right-hand sidebar. In an RTL document "right" is the *start* edge, which is
@@ -41,14 +42,9 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface">
       <div className="flex h-16 items-center gap-3 border-b border-line px-6">
-        <span
-          aria-hidden
-          className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-copper text-body font-bold text-white"
-        >
-          ب
-        </span>
+        <BoyaLogo className="h-9 w-auto" title={tCommon('appName')} />
         <div className="min-w-0">
-          <p className="text-title font-bold text-ink">{tCommon('panelName')}</p>
+          <p className="text-title font-bold text-ink">{tCommon('appName')}</p>
           <p className="truncate text-overline text-ink-muted">{tCommon('tagline')}</p>
         </div>
       </div>
@@ -73,7 +69,7 @@ export function Sidebar() {
                       className={cn(
                         'flex h-11 items-center gap-3 rounded-md px-3 text-body transition-colors',
                         isActive
-                          ? 'bg-brand-subtle font-semibold text-brand-copper'
+                          ? 'bg-brand-subtle font-semibold text-brand-primary'
                           : 'text-ink-muted hover:bg-brand-subtle/60 hover:text-ink',
                       )}
                     >
@@ -82,7 +78,7 @@ export function Sidebar() {
 
                       {item.showsApprovalBadge && isFetched && pendingCount > 0 ? (
                         <span
-                          className="min-w-6 rounded-full bg-brand-copper px-1.5 py-0.5 text-center text-overline font-semibold text-white"
+                          className="min-w-6 rounded-full bg-brand-primary px-1.5 py-0.5 text-center text-overline font-semibold text-white"
                           title={tNav('approvals')}
                         >
                           {faNumber(pendingCount)}

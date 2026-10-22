@@ -92,7 +92,7 @@ export default function TenantsPage() {
         <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <Link
           href="/tenants/create"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-copper px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-copper-hover"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-primary px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-primary-hover"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {t('newSalon')}
@@ -104,7 +104,7 @@ export default function TenantsPage() {
           <div role="group" aria-label={t('searchLabel')} className="flex flex-wrap gap-1 rounded-lg bg-cream/60 p-1">
             {FILTERS.map((v) => (
               <button key={v} type="button" aria-pressed={v === filter} onClick={() => { setFilter(v); setPage(1); }}
-                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === filter ? 'bg-surface font-semibold text-brand-copper shadow-1' : 'text-ink-muted hover:text-ink')}>
+                className={cn('rounded-md px-4 py-2 text-body transition-colors', v === filter ? 'bg-surface font-semibold text-brand-primary shadow-1' : 'text-ink-muted hover:text-ink')}>
                 {filterLabel(v)}
               </button>
             ))}
@@ -158,7 +158,7 @@ export default function TenantsPage() {
                       <td className="whitespace-nowrap px-3 py-3 text-caption text-ink-muted">{formatDate(item.createdAt, locale)}</td>
                       <td className="whitespace-nowrap px-3 py-3">
                         <div className="flex items-center justify-end gap-2">
-                          <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle">
+                          <Link href={`/tenants/${item.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-semibold text-brand-primary transition-colors hover:bg-brand-subtle">
                             <Eye className="h-4 w-4" aria-hidden />{t('table.view')}
                           </Link>
                           {item.status === 'archived' ? (

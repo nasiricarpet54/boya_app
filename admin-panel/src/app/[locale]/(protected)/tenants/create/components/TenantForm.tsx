@@ -159,7 +159,7 @@ export function TenantForm() {
           <div className="mt-2 flex flex-wrap gap-2">
             <Link
               href={`/tenants/${result.tenant.id}`}
-              className="inline-flex h-12 items-center rounded-md bg-brand-copper px-4 text-body font-semibold text-white transition-colors hover:bg-brand-copper-hover"
+              className="inline-flex h-12 items-center rounded-md bg-brand-primary px-4 text-body font-semibold text-white transition-colors hover:bg-brand-primary-hover"
             >
               {t('goToTenant')}
             </Link>
@@ -233,7 +233,7 @@ export function TenantForm() {
         </Button>
         <Link
           href="/tenants"
-          className="inline-flex h-12 items-center rounded-md border border-brand-copper px-4 text-body font-semibold text-ink transition-colors hover:bg-brand-subtle"
+          className="inline-flex h-12 items-center rounded-md border border-brand-primary px-4 text-body font-semibold text-ink transition-colors hover:bg-brand-subtle"
         >
           {t('cancel')}
         </Link>

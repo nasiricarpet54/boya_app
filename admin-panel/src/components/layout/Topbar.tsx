@@ -105,7 +105,7 @@ export function Topbar() {
                   <Globe className="h-4 w-4 shrink-0" aria-hidden />
                   <span className="flex-1">{LOCALE_LABEL[candidate]}</span>
                   {candidate === locale ? (
-                    <Check className="h-4 w-4 text-brand-copper" aria-hidden />
+                    <Check className="h-4 w-4 text-brand-primary" aria-hidden />
                   ) : null}
                 </DropdownMenu.Item>
               ))}

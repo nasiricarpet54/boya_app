@@ -161,7 +161,7 @@ export function UserCreateForm() {
         </Button>
         <Link
           href="/users"
-          className="inline-flex h-12 items-center rounded-md border border-brand-copper px-4 text-body font-semibold text-ink transition-colors hover:bg-brand-subtle"
+          className="inline-flex h-12 items-center rounded-md border border-brand-primary px-4 text-body font-semibold text-ink transition-colors hover:bg-brand-subtle"
         >
           {tc('cancel')}
         </Link>

@@ -191,7 +191,7 @@ export default function UsersPage() {
         />
         <Link
           href="/users/new"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-copper px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-copper-hover"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-primary px-3 text-caption font-semibold text-white transition-colors hover:bg-brand-primary-hover"
         >
           <Plus className="h-4 w-4" aria-hidden />
           {t('newUser')}
@@ -220,7 +220,7 @@ export default function UsersPage() {
                 className={cn(
                   'rounded-md px-4 py-2 text-body transition-colors',
                   v === roleFilter
-                    ? 'bg-surface font-semibold text-brand-copper shadow-1'
+                    ? 'bg-surface font-semibold text-brand-primary shadow-1'
                     : 'text-ink-muted hover:text-ink',
                 )}
               >
@@ -242,7 +242,7 @@ export default function UsersPage() {
                 className={cn(
                   'rounded-md px-4 py-2 text-body transition-colors',
                   v === statusFilter
-                    ? 'bg-surface font-semibold text-brand-copper shadow-1'
+                    ? 'bg-surface font-semibold text-brand-primary shadow-1'
                     : 'text-ink-muted hover:text-ink',
                 )}
               >
@@ -271,7 +271,7 @@ export default function UsersPage() {
               }}
               className={cn(
                 'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                statusFilter !== 'active' ? 'bg-brand-copper' : 'bg-line',
+                statusFilter !== 'active' ? 'bg-brand-primary' : 'bg-line',
               )}
             >
               <span
@@ -356,7 +356,7 @@ export default function UsersPage() {
                           <Link
                             href={`/users/${item.id}`}
                             aria-label={`${tActions('edit')}: ${item.phoneNumber}`}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-caption font-semibold text-brand-copper transition-colors hover:bg-brand-subtle"
+                            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-caption font-semibold text-brand-primary transition-colors hover:bg-brand-subtle"
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                             {tActions('edit')}

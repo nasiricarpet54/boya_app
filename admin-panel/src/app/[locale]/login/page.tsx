@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { BoyaLogo } from '@/components/ui/BoyaLogo';
 import { useToast } from '@/components/providers/ToastProvider';
 import { ADMIN_ROLE } from '@/lib/constants';
 import { authApi } from '@/lib/api/auth';
@@ -148,12 +149,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
       <div className="w-full max-w-md">
         <header className="mb-8 text-center">
-          <span
-            aria-hidden
-            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-copper text-headline font-bold text-white"
-          >
-            ب
-          </span>
+          <BoyaLogo className="mx-auto mb-4 h-14 w-auto" title={tCommon('appName')} />
           <h1 className="text-headline font-bold text-ink">{tLogin('title')}</h1>
           <p className="mt-2 text-caption text-ink-muted">{tLogin('subtitle')}</p>
         </header>

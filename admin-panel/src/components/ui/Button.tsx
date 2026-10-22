@@ -12,11 +12,11 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-copper text-white hover:bg-brand-copper-hover active:bg-brand-copper-pressed disabled:bg-line disabled:text-ink-muted',
+    'bg-brand-primary text-white hover:bg-brand-primary-hover active:bg-brand-primary-pressed disabled:bg-line disabled:text-ink-muted',
   secondary:
-    'border border-brand-copper bg-transparent text-ink hover:bg-brand-subtle active:bg-brand-subtle disabled:opacity-40',
+    'border border-brand-primary bg-transparent text-ink hover:bg-brand-subtle active:bg-brand-subtle disabled:opacity-40',
   ghost:
-    'bg-transparent text-brand-copper hover:bg-brand-subtle active:bg-brand-subtle disabled:opacity-40',
+    'bg-transparent text-brand-primary hover:bg-brand-subtle active:bg-brand-subtle disabled:opacity-40',
   danger: 'bg-error text-white hover:opacity-90 active:opacity-80 disabled:opacity-40',
 };
 

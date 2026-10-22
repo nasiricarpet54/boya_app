@@ -8,39 +8,41 @@
  * Light is the default surface of the product.
  */
 :root {
-  --color-cream: 250 247 242; /* #FAF7F2 soft cream, page background */
+  --color-cream: 248 249 250; /* #F8F9FA neutral light, page background */
   --color-surface: 255 255 255; /* #FFFFFF card, sheet, dialog */
-  --color-line: 231 226 218; /* #E7E2DA input border, divider */
-  --color-ink: 26 26 46; /* #1A1A2E ink black, text + dark bars */
-  --color-ink-muted: 107 107 128; /* #6B6B80 warm grey, secondary text */
-  --color-brand-copper: 184 115 51; /* #B87333 deep copper, primary */
-  --color-brand-copper-hover: 163 100 44; /* #A3642C */
-  --color-brand-copper-pressed: 140 85 38; /* #8C5526 */
-  --color-brand-subtle: 248 241 234; /* #F8F1EA selected / chip background */
-  --color-brand-rose: 232 180 160; /* #E8B4A0 rose gold */
-  --color-brand-sage: 124 154 126; /* #7C9A7E soft sage */
-  --color-success: 46 125 50; /* #2E7D32 */
-  --color-warning: 237 108 2; /* #ED6C02 */
-  --color-error: 211 47 47; /* #D32F2F */
-  --color-info: 2 136 209; /* #0288D1 */
+  --color-line: 217 222 219; /* #D9DEDB input border, divider */
+  --color-ink: 19 62 62; /* #133E3E deep petrol teal, text + dark bars */
+  --color-ink-muted: 90 107 107; /* #5A6B6B warm grey, secondary text */
+  --color-brand-primary: 19 62 62; /* #133E3E deep petrol teal, primary */
+  --color-brand-primary-hover: 15 50 50; /* #0F3232 */
+  --color-brand-primary-pressed: 11 38 38; /* #0B2626 */
+  --color-brand-subtle: 232 240 239; /* #E8F0EF selected / chip background */
+  --color-brand-sage: 138 150 132; /* #8A9684 sage / muted olive, accent */
+  --color-brand-sage-subtle: 239 241 238; /* #EFF1EE badge background */
+  --color-success: 111 154 141; /* #6F9A8D */
+  --color-warning: 201 149 88; /* #C99558 */
+  --color-error: 179 93 103; /* #B35D67 */
+  --color-info: 94 139 149; /* #5E8B95 */
   color-scheme: light;
 }
 
 /*
  * Dark surfaces. The design system marks dark mode as optional and gives these
- * four values; deep copper is lightened to #D4925A so it keeps its contrast on
+ * four values; the petrol teal is lifted to #6E9B99 so it keeps its contrast on
  * a dark surface. Nothing else changes — semantics stay semantic.
  */
 .dark {
   --color-cream: 18 18 28; /* #12121C */
   --color-surface: 30 30 46; /* #1E1E2E */
   --color-line: 46 46 64; /* raised divider on a dark surface */
-  --color-ink: 250 247 242; /* #FAF7F2 */
+  --color-ink: 248 249 250; /* #F8F9FA */
   --color-ink-muted: 160 158 176;
-  --color-brand-copper: 212 146 90; /* #D4925A */
-  --color-brand-copper-hover: 224 164 116;
-  --color-brand-copper-pressed: 196 130 76;
-  --color-brand-subtle: 46 34 26;
+  --color-brand-primary: 110 155 153; /* #6E9B99 */
+  --color-brand-primary-hover: 134 172 170;
+  --color-brand-primary-pressed: 152 184 182;
+  --color-brand-subtle: 24 40 40;
+  --color-brand-sage: 138 150 132;
+  --color-brand-sage-subtle: 34 40 36;
   color-scheme: dark;
 }
 
@@ -56,7 +58,7 @@
   /* Keyboard focus stays on the brand colour everywhere, per the design
      system: inputs get a 2px focus border, focus rings use the same hue. */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-copper ring-offset-2 ring-offset-cream;
+    @apply outline-none ring-2 ring-brand-primary ring-offset-2 ring-offset-cream;
   }
 }
 

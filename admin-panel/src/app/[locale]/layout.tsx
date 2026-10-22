@@ -40,7 +40,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#FAF7F2',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F8F9FA' },
+    { media: '(prefers-color-scheme: dark)', color: '#12121C' },
+  ],
 };
 
 /** Pre-paint theme application, mirroring `readInitialTheme` in ThemeProvider. */

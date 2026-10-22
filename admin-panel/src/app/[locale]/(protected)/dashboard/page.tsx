@@ -164,7 +164,7 @@ export default function DashboardPage() {
                   }}
                   formatter={(value: number) => [locale === 'fa' ? faDigits(value) : String(value), '']}
                 />
-                <Bar dataKey="bookings" fill="rgb(var(--color-brand-copper))" radius={8} maxBarSize={48} />
+                <Bar dataKey="bookings" fill="rgb(var(--color-brand-primary))" radius={8} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -30,7 +30,7 @@ export function StatCard({
     <Card className={cn('flex items-start gap-4', className)}>
       <span
         aria-hidden
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-brand-subtle text-brand-copper"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-brand-subtle text-brand-primary"
       >
         <Icon className="h-5 w-5" />
       </span>

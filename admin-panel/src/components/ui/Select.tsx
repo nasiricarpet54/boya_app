@@ -50,8 +50,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           aria-invalid={error ? true : undefined}
           className={cn(
             'flex h-12 w-full items-center justify-between gap-2 rounded-md border bg-surface',
-            'px-4 text-body text-ink focus:border-brand-copper focus:outline-none focus:ring-2',
-            'focus:ring-brand-copper/20 disabled:cursor-not-allowed disabled:opacity-60',
+            'px-4 text-body text-ink focus:border-brand-primary focus:outline-none focus:ring-2',
+            'focus:ring-brand-primary/20 disabled:cursor-not-allowed disabled:opacity-60',
             error ? 'border-error' : 'border-line',
             !value && 'text-ink-muted',
           )}
@@ -83,7 +83,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                 >
                   <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                   <SelectPrimitive.ItemIndicator>
-                    <Check className="h-4 w-4 text-brand-copper" aria-hidden />
+                    <Check className="h-4 w-4 text-brand-primary" aria-hidden />
                   </SelectPrimitive.ItemIndicator>
                 </SelectPrimitive.Item>
               ))}
