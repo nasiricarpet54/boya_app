@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
-ENV npm_config_registry=https://registry.npmmirror.com
+ENV npm_config_registry=https://registry.npmjs.org
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ENV CI=true
 ENV npm_config_fund=false
