@@ -20,3 +20,33 @@ jobs:
           script: |
             cd /opt/boya
             bash update_sop.sh
+            #!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Running Production Post-Deploy Smoke Checks..."
+
+# 1. بررسی وضعیت کانتینرها (عدم وجود Restarting یا Exited)
+UNHEALTHY_CONTAINERS=$(docker ps -a --format '{{.Names}}: {{.Status}}' | grep -iE 'restarting|exited\(1' || true)
+if [ -n "$UNHEALTHY_CONTAINERS" ]; then
+    echo "❌ Deployment Verification Failed: Containers found in failure state:"
+    echo "$UNHEALTHY_CONTAINERS"
+    exit 1
+fi
+
+# 2. تست زنده بودن اندپوینت بک‌اند
+echo "==> Checking Backend Health Endpoint..."
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:3000/api/v1/health || true)
+if [ "$HTTP_STATUS" != "200" ]; then
+    echo "❌ Backend Healthcheck failed with HTTP status: $HTTP_STATUS"
+    exit 1
+fi
+
+# 3. تست پاسخگویی معکوس Caddy
+echo "==> Checking Caddy Gateway..."
+GATEWAY_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 5 https://127.0.0.1/api/v1/health || true)
+if [ "$GATEWAY_STATUS" != "200" ]; then
+    echo "❌ Caddy reverse proxy failed with HTTP status: $GATEWAY_STATUS"
+    exit 1
+fi
+
+echo "✅ All smoke tests passed successfully. Deployment is stable."
