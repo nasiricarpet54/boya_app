@@ -90,10 +90,7 @@ describe('AvailabilityService: blocking with schedule blocks', () => {
   test('zero duration schedule block is rejected on creation', () => {
     assert.throws(
       () => {
-        const block: ScheduleBlock = {
-          startTime: new Date(2026, 9, 17, 10),
-          endTime: new Date(2026, 9, 17, 10),
-        };
+     
         // In real app, validation should happen before calling filterAvailableWithBlocks
       },
       new Error('Invalid schedule block duration')
