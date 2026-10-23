@@ -62,6 +62,15 @@ export class AdminUsersController {
     return this.users.list(user, query);
   }
 
+  @Get('mobile')
+  @ApiOperation({
+    summary: 'فهرست متخصصان سیار',
+    description: 'دریافت لیست کلیه متخصصان سیار (نقش freelance_mobile) در سراسر پلتفرم. مرتب createdAt DESC.',
+  })
+  getMobileSpecialists(@CurrentUser() user: AuthenticatedUser): Promise<AdminUserListPage> {
+    return this.users.list(user, { role: 'freelance_mobile' } as ListUsersQueryDto);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'جزئیات کاربر',

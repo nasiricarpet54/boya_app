@@ -11,12 +11,12 @@ export class ListUsersQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'all'],
+    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile', 'all'],
     example: 'all',
   })
   @IsOptional()
-  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'all'], {
-    message: 'role باید یکی از customer، salon_owner، line_manager، specialist، admin یا all باشد',
+  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile', 'all'], {
+    message: 'role باید یکی از customer، salon_owner، line_manager، specialist، admin، freelance_mobile یا all باشد',
   })
   role?: string;
 
