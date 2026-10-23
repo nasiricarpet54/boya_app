@@ -21,7 +21,7 @@ import { useAuthStore, type UserRole } from '@/lib/stores/auth';
 import { formatDateTime } from '@/lib/utils/format-date';
 import { faCurrency, faDigits, faNumber } from '@/lib/utils/persian';
 
-const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'];
+const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'];
 /** Roles bound to a tenant — the dialog shows the salon dropdown for these. */
 const TENANT_ROLES: UserRole[] = ['salon_owner', 'line_manager', 'specialist'];
 

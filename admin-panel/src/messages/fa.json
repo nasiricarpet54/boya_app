@@ -19,6 +19,7 @@
     "transactions": "تراکنش‌ها",
     "auditLogs": "لاگ اقدامات",
     "settings": "تنظیمات",
+    "mobileSpecialists": "متخصصان سیار",
     "sections": {
       "main": "اصلی",
       "manage": "مدیریت",
@@ -265,7 +266,8 @@
       "salon_owner": "مالک سالن",
       "line_manager": "مدیر لاین",
       "specialist": "متخصص",
-      "admin": "ادمین"
+      "admin": "ادمین",
+      "freelance_mobile": "متخصص سیار"
     },
     "statusFilters": {
       "all": "همه",

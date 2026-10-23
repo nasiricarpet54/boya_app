@@ -19,6 +19,7 @@
     "transactions": "Transactions",
     "auditLogs": "Audit log",
     "settings": "Settings",
+    "mobileSpecialists": "Mobile Specialists",
     "sections": {
       "main": "Main",
       "manage": "Management",
@@ -265,7 +266,8 @@
       "salon_owner": "Salon owner",
       "line_manager": "Line manager",
       "specialist": "Specialist",
-      "admin": "Admin"
+      "admin": "Admin",
+      "freelance_mobile": "Freelance mobile"
     },
     "statusFilters": {
       "all": "All",
