@@ -18,8 +18,8 @@ export class ScheduleBlock {
   tenantId!: string;  // <--- علامت تعجب را اضافه کنید
 
   /** NULL = the whole salon is blocked, not one specialist. */
-  @Column({ name: 'specialist_id', nullable: true })
-  specialistId!: string | null;
+  @Column('uuid')
+  specialistId!: string;
 
   @Column({ name: 'start_time', type: 'timestamptz' })
   startTime!: Date;
