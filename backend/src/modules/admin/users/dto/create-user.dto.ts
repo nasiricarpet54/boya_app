@@ -15,14 +15,14 @@ export class CreateUserDto {
   phone!: string;
 
   @ApiProperty({
-    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'],
+    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'],
     example: 'specialist',
   })
   @IsString()
-  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'], {
-    message: 'role باید یکی از customer، salon_owner، line_manager، specialist یا admin باشد',
+  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'], {
+    message: 'role باید یکی از customer، salon_owner، line_manager، specialist، admin یا freelance_mobile باشد',
   })
-  role!: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin';
+  role!: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin' | 'freelance_mobile';
 
   @ApiPropertyOptional({ example: 'مریم رضایی', maxLength: 100 })
   @IsOptional()
