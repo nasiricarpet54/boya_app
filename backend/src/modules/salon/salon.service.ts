@@ -2331,7 +2331,7 @@ export class SalonService {
     tenantId: string,
   ): Promise<PanelBookingScope> {
     if (user.role === 'salon_owner' || user.role === 'admin') {
-      return { fragment: 'TRUE', params: [] };
+      return { fragment: 'b.tenant_id = $1', params: [tenantId] };
     }
 
     if (user.role === 'line_manager') {
@@ -2345,8 +2345,8 @@ export class SalonService {
       );
       if (rows.length === 0) return { fragment: 'FALSE', params: [] };
       return {
-        fragment: 'sv.line_id = ANY($1::uuid[])',
-        params: [rows.map((row) => row.id)],
+        fragment: 'b.tenant_id = $1 AND sv.line_id = ANY($2::uuid[])',
+        params: [tenantId, rows.map((row) => row.id)],
       };
     }
 
@@ -2357,8 +2357,8 @@ export class SalonService {
       );
       if (rows.length === 0) return { fragment: 'FALSE', params: [] };
       return {
-        fragment: 'b.specialist_id = $1',
-        params: [rows[0].id],
+        fragment: 'b.tenant_id = $1 AND b.specialist_id = $2',
+        params: [tenantId, rows[0].id],
       };
     }
 
