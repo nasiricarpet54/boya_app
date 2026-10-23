@@ -202,6 +202,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     line_manager: t('filters.line_manager'),
     specialist: t('filters.specialist'),
     admin: t('filters.admin'),
+    freelance_mobile: t('filters.freelance_mobile'), // این خط را اضافه کنید
   };
 
   const tenantOptions: SelectOption[] = (tenantsQuery.data?.data ?? []).map((tenant) => ({
