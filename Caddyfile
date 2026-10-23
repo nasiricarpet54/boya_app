@@ -25,9 +25,11 @@ boya.bcshopir.ir {
 
     # Customer Web App
     handle_path /app/* {
+        header Permissions-Policy "geolocation=(self \"https://boya.bcshopir.ir\")"
         reverse_proxy customer-web:80
     }
     handle /app {
+        header Permissions-Policy "geolocation=(self \"https://boya.bcshopir.ir\")"
         redir * /app/ 308
     }
 
