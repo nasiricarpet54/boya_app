@@ -242,6 +242,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
               category: 'specialist',
               value: _avatarUrl,
               onChanged: (url) => setState(() => _avatarUrl = url),
+              isAvatar: true,
             ),
             const SizedBox(height: 16),
             if (_isEditing) ...[
@@ -314,9 +315,9 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                   }
                   return null;
                 },
+                onFieldSubmitted: (_) => _save(),
               ),
               const SizedBox(height: 16),
-                onFieldSubmitted: (_) => _save(),
             ],
             Text('بیوگرافی', style: BoyaTypography.caption),
             const SizedBox(height: 4),
@@ -377,9 +378,8 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                 hintText: 'مثلاً ۵۰',
                 counterText: '',
               ),
-              validator: (value) =>
-                onFieldSubmitted: (_) => _save(),
-                  form.validateCommission(form.parseCommission(value ?? '')),
+              validator: (value) => form.validateCommission(form.parseCommission(value ?? '')),
+              onFieldSubmitted: (_) => _save(),
             ),
             if (_isEditing) ...[
               const SizedBox(height: 8),

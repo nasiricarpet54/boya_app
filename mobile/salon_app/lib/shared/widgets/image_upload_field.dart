@@ -22,6 +22,7 @@ class ImageUploadField extends ConsumerStatefulWidget {
     required this.value,
     required this.onChanged,
     this.aspectRatio = 16 / 9,
+    this.isAvatar = false,
   });
 
   final String label;
@@ -37,6 +38,9 @@ class ImageUploadField extends ConsumerStatefulWidget {
 
   /// Preview shape; portrait contexts (a specialist avatar) pass 1.
   final double aspectRatio;
+
+  /// If true, display the image as a circular avatar with radius 48.
+  final bool isAvatar;
 
   @override
   ConsumerState<ImageUploadField> createState() => _ImageUploadFieldState();
@@ -79,26 +83,87 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
   @override
   Widget build(BuildContext context) {
     final hasImage = widget.value.isNotEmpty;
+    final resolvedUrl = widget.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.label, style: BoyaTypography.caption),
         const SizedBox(height: 4),
         if (hasImage)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: widget.aspectRatio,
-              child: Image.network(
-                resolveUploadUrl(widget.value),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const ColoredBox(
-                  color: BoyaColors.line,
-                  child: Icon(Icons.broken_image_outlined, color: BoyaColors.inkMuted),
+          widget.isAvatar
+              ? Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Colors.transparent,
+                      child: resolvedUrl.isNotEmpty
+                          ? Image.network(
+                              resolveUploadUrl(resolvedUrl),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) =>
+                                  const Icon(Icons.broken_image_outlined,
+                                      size: 48, color: BoyaColors.inkMuted),
+                            )
+                          : const Icon(Icons.person,
+                              size: 48, color: BoyaColors.inkMuted),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: _uploading
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.camera_alt,
+                                      color: BoyaColors.white, size: 16),
+                              onPressed: _uploading ? null : _pickAndUpload,
+                              tooltip: 'تغییر تصویر',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: BoyaColors.white, size: 16),
+                              onPressed: _uploading
+                                  ? null
+                                  : () => widget.onChanged(''),
+                              tooltip: 'حذف',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: AspectRatio(
+                    aspectRatio: widget.aspectRatio,
+                    child: Image.network(
+                      resolveUploadUrl(resolvedUrl),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) => const ColoredBox(
+                        color: BoyaColors.line,
+                        child: Icon(Icons.broken_image_outlined,
+                            color: BoyaColors.inkMuted),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
         const SizedBox(height: 8),
         Row(
           children: [
