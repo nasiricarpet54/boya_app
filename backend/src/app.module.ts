@@ -32,6 +32,7 @@ import { ServiceModule } from './modules/service/service.module';
 import { SpecialistModule } from './modules/specialist/specialist.module';
 import { SupportModule } from './modules/support/support.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { TicketModule } from './modules/tickets/ticket.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -131,6 +132,7 @@ import { UserModule } from './modules/user/user.module';
     SalonModule,
     ReviewModule,
     SupportModule,
+    TicketModule,
     UploadModule,
     AccountingModule,
   ],
