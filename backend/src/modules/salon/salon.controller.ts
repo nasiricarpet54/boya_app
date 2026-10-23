@@ -1,3 +1,4 @@
+import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
 import {
@@ -235,6 +236,7 @@ export class SalonPanelController {
   }
 
   /** The weekly schedule, approval-gated exactly like the profile fields. */
+  @Roles('salon_owner')
   @Patch('me/schedule')
   @ApiOperation({
     summary: 'ویرایش ساعات کاری سالن (نیازمند تایید ادمین)',
@@ -254,6 +256,7 @@ export class SalonPanelController {
    * personal time off). Blocking a time excludes it from the public
    * availability list, exactly as if a booking already existed.
    */
+  @Roles('salon_owner')
   @Post('me/schedule/block')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -272,6 +275,7 @@ export class SalonPanelController {
   /**
    * Remove a schedule block. The freed time immediately becomes bookable again.
    */
+  @Roles('salon_owner')
   @Delete('me/schedule/block/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف مسدودی زمان از تقویم' })
@@ -288,6 +292,7 @@ export class SalonPanelController {
    * blocked range; use `specialistId`/`salonId` to tell a whole-salon block
    * (or a mobile block) from a single specialist's.
    */
+  @Roles('salon_owner')
   @Get('me/schedule/blocks')
   @ApiOperation({ summary: 'فهرست مسدودی‌های زمان تقویم' })
   listScheduleBlocks(
@@ -297,6 +302,7 @@ export class SalonPanelController {
   }
 
   /** Service lines of the signed-in salon, with each line's service count. */
+  @Roles('salon_owner')
   @Get('me/lines')
   @ApiOperation({ summary: 'لاین‌های خدماتی سالن کاربر واردشده' })
   listLines(@CurrentUser() user: AuthenticatedUser): Promise<SalonServiceLineItem[]> {
@@ -304,6 +310,7 @@ export class SalonPanelController {
   }
 
   /** Create a service line; the line waits for admin approval. */
+  @Roles('salon_owner')
   @Post('me/lines')
   @ApiOperation({ summary: 'افزودن لاین خدماتی (نیازمند تایید ادمین)' })
   createLine(
@@ -314,6 +321,7 @@ export class SalonPanelController {
   }
 
   /** Edit a service line; only a name change re-queues approval. */
+  @Roles('salon_owner')
   @Patch('me/lines/:id')
   @ApiOperation({ summary: 'ویرایش لاین خدماتی' })
   updateLine(
@@ -325,6 +333,7 @@ export class SalonPanelController {
   }
 
   /** Soft-delete a line; blocked if any of its services has an active booking. */
+  @Roles('salon_owner')
   @Delete('me/lines/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف لاین خدماتی' })
@@ -336,6 +345,7 @@ export class SalonPanelController {
   }
 
   /** Services of one line. */
+  @Roles('salon_owner')
   @Get('me/lines/:lineId/services')
   @ApiOperation({ summary: 'خدمات یک لاین خدماتی' })
   listServices(
@@ -346,6 +356,7 @@ export class SalonPanelController {
   }
 
   /** Add a service to a line; effective immediately (no approval workflow). */
+  @Roles('salon_owner')
   @Post('me/lines/:lineId/services')
   @ApiOperation({ summary: 'افزودن خدمت به لاین' })
   createService(
@@ -357,6 +368,7 @@ export class SalonPanelController {
   }
 
   /** Edit a service; effective immediately. */
+  @Roles('salon_owner')
   @Patch('me/services/:id')
   @ApiOperation({ summary: 'ویرایش خدمت' })
   updateService(
@@ -368,6 +380,7 @@ export class SalonPanelController {
   }
 
   /** Soft-delete a service. */
+  @Roles('salon_owner')
   @Delete('me/services/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف خدمت' })
@@ -379,6 +392,7 @@ export class SalonPanelController {
   }
 
   /** Specialists of the signed-in salon, inactive ones included. */
+  @Roles('salon_owner')
   @Get('me/specialists')
   @ApiOperation({ summary: 'متخصصان سالن کاربر واردشده' })
   listSpecialists(@CurrentUser() user: AuthenticatedUser): Promise<SalonPanelSpecialistItem[]> {
@@ -386,6 +400,7 @@ export class SalonPanelController {
   }
 
   /** Register a specialist; effective immediately (no approval workflow). */
+  @Roles('salon_owner')
   @Post('me/specialists')
   @ApiOperation({ summary: 'افزودن متخصص' })
   createSpecialist(
@@ -396,6 +411,7 @@ export class SalonPanelController {
   }
 
   /** Edit a specialist's bio/skills/commission or toggle their visibility. */
+  @Roles('salon_owner')
   @Patch('me/specialists/:id')
   @ApiOperation({ summary: 'ویرایش متخصص' })
   updateSpecialist(
@@ -407,6 +423,7 @@ export class SalonPanelController {
   }
 
   /** Soft-delete a specialist; blocked while active bookings exist. */
+  @Roles('salon_owner')
   @Delete('me/specialists/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف متخصص' })
@@ -418,6 +435,7 @@ export class SalonPanelController {
   }
 
   /** Portfolio photos of the salon's specialists, inactive ones included. */
+  @Roles('salon_owner')
   @Get('me/portfolio')
   @ApiOperation({ summary: 'نمونه‌کارهای سالن کاربر واردشده' })
   listPortfolio(@CurrentUser() user: AuthenticatedUser): Promise<SalonPanelPortfolio> {
@@ -425,6 +443,7 @@ export class SalonPanelController {
   }
 
   /** Add a portfolio photo; the tenant goes to pending approval. */
+  @Roles('salon_owner')
   @Post('me/portfolio')
   @ApiOperation({ summary: 'افزودن نمونه‌کار (نیازمند تایید ادمین)' })
   addPortfolioItem(
@@ -435,6 +454,7 @@ export class SalonPanelController {
   }
 
   /** Delete a portfolio photo; the tenant goes to pending approval. */
+  @Roles('salon_owner')
   @Delete('me/portfolio/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف نمونه‌کار (نیازمند تایید ادمین)' })
@@ -453,6 +473,7 @@ export class SalonPanelController {
    * the reply carries the per-status counts for the same window so the filter
    * tabs agree with the rows underneath them.
    */
+  @Roles('salon_owner', 'specialist')
   @Get('me/bookings')
   @ApiOperation({ summary: 'لیست رزروهای سالن کاربر واردشده' })
   listBookings(
@@ -463,6 +484,7 @@ export class SalonPanelController {
   }
 
   /** One booking of the signed-in salon, with the working hours to judge it against. */
+  @Roles('salon_owner', 'specialist')
   @Get('me/bookings/:id')
   @ApiOperation({ summary: 'جزئیات یک رزرو' })
   getBooking(
@@ -473,6 +495,7 @@ export class SalonPanelController {
   }
 
   /** Confirm a pending booking; the customer is notified. */
+  @Roles('salon_owner', 'specialist')
   @Post('me/bookings/:id/approve')
   @ApiOperation({ summary: 'تایید رزرو' })
   approveBooking(
@@ -486,6 +509,7 @@ export class SalonPanelController {
    * Decline a pending booking. The reason is required because it is the text
    * the customer is shown, so an unexplained cancellation is not possible.
    */
+  @Roles('salon_owner', 'specialist')
   @Post('me/bookings/:id/reject')
   @ApiOperation({ summary: 'رد رزرو' })
   rejectBooking(
@@ -497,6 +521,7 @@ export class SalonPanelController {
   }
 
   /** Mark a confirmed booking as done; only the salon can assert the visit happened. */
+  @Roles('salon_owner', 'specialist')
   @Post('me/bookings/:id/mark-visited')
   @ApiOperation({ summary: 'ثبت مراجعه انجام‌شده' })
   markVisitedBooking(
@@ -510,6 +535,7 @@ export class SalonPanelController {
    * Mark a confirmed booking as a no-show. The service only allows this once
    * the slot has started, so a booking cannot be written off in advance.
    */
+  @Roles('salon_owner', 'specialist')
   @Post('me/bookings/:id/no-show')
   @ApiOperation({ summary: 'ثبت عدم مراجعه' })
   noShowBooking(
@@ -520,6 +546,7 @@ export class SalonPanelController {
   }
 
   /** Today/week snapshot of the signed-in staff user's salon. */
+  @Roles('salon_owner')
   @Get('dashboard')
   @ApiOperation({ summary: 'داشبورد سالن کاربر واردشده' })
   dashboard(@CurrentUser() user: AuthenticatedUser): Promise<SalonDashboardPayload> {
