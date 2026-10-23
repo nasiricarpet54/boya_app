@@ -41,8 +41,8 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface">
-      <div className="flex h-16 items-center gap-3 border-b border-line px-6">
-        <BoyaLogo className="h-9 w-auto" title={tCommon('appName')} />
+      <div className="flex h-16 items-center gap-2 border-b border-line px-6">
+        <BoyaLogo className="flex-shrink-0 h-10 w-auto max-h-[40px]" title={tCommon('appName')} />
         <div className="min-w-0">
           <p className="text-title font-bold text-ink">{tCommon('appName')}</p>
           <p className="truncate text-overline text-ink-muted">{tCommon('tagline')}</p>
