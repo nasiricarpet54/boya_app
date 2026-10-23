@@ -16,7 +16,7 @@ import { tenantsApi } from '@/lib/api/tenants';
 import type { UserRole } from '@/lib/stores/auth';
 import { isValidPhone, normalizePhone } from '@/lib/utils/persian';
 
-const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'];
+const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'];
 /**
  * Roles that must belong to a salon — the backend rejects these without a
  * `tenantId` (400), so the form shows the salon dropdown for exactly this set.
@@ -60,6 +60,7 @@ export function UserCreateForm() {
     line_manager: t('filters.line_manager'),
     specialist: t('filters.specialist'),
     admin: t('filters.admin'),
+    freelance_mobile: t('filters.freelance_mobile'),
   };
 
   const tenantOptions: SelectOption[] = (tenantsQuery.data?.data ?? []).map((tenant) => ({

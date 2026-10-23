@@ -28,9 +28,10 @@ const ROLE_FILTERS: Array<UserRole | 'all'> = [
   'line_manager',
   'specialist',
   'admin',
+  'freelance_mobile',
 ];
 const STATUS_FILTERS: UserStatusFilter[] = ['all', 'active', 'inactive'];
-const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'];
+const ALL_ROLES: UserRole[] = ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'];
 /** Roles bound to a tenant — the role dialog shows the salon dropdown for these. */
 const TENANT_ROLES: UserRole[] = ['salon_owner', 'line_manager', 'specialist'];
 

@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { TOKEN_STORAGE_KEY } from '../constants';
 
 /** Roles the API can put on a token; `backend/.../user.entity.ts` is canonical. */
-export type UserRole = 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin';
+export type UserRole = 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin' | 'freelance_mobile';
 
 export interface AdminUser {
   id: string;
