@@ -46,6 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { href: '/tenants', icon: Building2, labelKey: 'tenants' },
       { href: '/users', icon: Users, labelKey: 'users' },
+      { href: '/mobile-specialists', icon: Users, labelKey: 'mobileSpecialists' },
       { href: '/invites', icon: Mail, labelKey: 'invites' },
       { href: '/transactions', icon: Receipt, labelKey: 'transactions' },
     ],

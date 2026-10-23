@@ -86,6 +86,7 @@ export default function UsersPage() {
     line_manager: t('filters.line_manager'),
     specialist: t('filters.specialist'),
     admin: t('filters.admin'),
+    freelance_mobile: t('filters.freelance_mobile'),
   };
 
   const tActions = useTranslations('users.actions');
