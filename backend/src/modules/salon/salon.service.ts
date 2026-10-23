@@ -2336,7 +2336,7 @@ export class SalonService {
 
     if (user.role === 'line_manager') {
       const rows = await manager.query<Array<{ id: string }>>(
-        `SELECT sl.line_id AS id
+        `SELECT sl.id AS id
            FROM service_lines sl
           WHERE sl.tenant_id = $1
             AND sl.manager_id = $2
