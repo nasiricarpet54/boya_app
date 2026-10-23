@@ -14,7 +14,8 @@ export class ScheduleBlock {
 
   /** The salon (`tenants.id`), or NULL for a mobile specialist's block. */
   @Column({ name: 'tenant_id', nullable: true })
-  tenantId!: string | null;
+  @Column('uuid') // یا @Column({ type: 'uuid' })
+  tenantId: string;
 
   /** NULL = the whole salon is blocked, not one specialist. */
   @Column({ name: 'specialist_id', nullable: true })
