@@ -17,8 +17,9 @@ dependencies:
   shared_preferences: ^2.2.3
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
-  geolocator: ^13.0.2
+  geolocator: ^14.0.3
   flutter_secure_storage: ^9.2.4
+  neshan_maps_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:

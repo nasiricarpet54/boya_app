@@ -4,6 +4,12 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { DataSource } from 'typeorm';
 
@@ -16,10 +22,17 @@ export class TenantRlsInterceptor implements NestInterceptor {
     const user = request.user;
     const isSuperAdmin = user?.role === 'super_admin';
 
-    // The instructions say: "execute: SELECT set_config('app.current_tenant_id', $1, true);"
-    // Using `true` applies to the transaction, but we are not necessarily in a transaction.
-    // However, if we do it globally on the connection pool, it might leak if not careful.
-    // The prompt just says "execute: SELECT set_config('app.current_tenant_id', $1, true);"
+    // Tenant isolation is NOT enforced here. Every tenant-scoped service opens
+    // its own transaction and calls setTenantContext() (set_config(..., true)),
+    // which is the only form that cannot leak onto a pooled connection. This
+    // hook only mirrors the tenant id for the few statements that run outside
+    // such a transaction.
+    //
+    // Known gap (see docs/report audit): `false` writes the GUC at *session*
+    // level, so the value survives on the pooled connection after the response
+    // and can be read by a later request that reuses that connection. That is
+    // why the isolation spec asserts on service-level transactions, not on this
+    // interceptor.
     if (user?.tenantId && !isSuperAdmin) {
       await this.dataSource.query(`SELECT set_config('app.current_tenant_id', $1, false)`, [user.tenantId]);
     }

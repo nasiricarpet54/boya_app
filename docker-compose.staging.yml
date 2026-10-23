@@ -21,12 +21,16 @@ services:
     image: postgres:16-alpine
     container_name: boya_postgres_staging
     restart: unless-stopped
+    # 4GB single-host budget: shared_buffers + effective_cache_size reserve ~1.5GB
+    # of the actual data; the container itself is capped at 1GB.
+    mem_limit: 1024m
+    cpus: 1.5
     environment:
       POSTGRES_USER: beauty
       POSTGRES_PASSWORD: change-me
       POSTGRES_DB: beauty_platform
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432" # localhost only; no external access to the data plane.
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -40,9 +44,10 @@ services:
     image: redis:7-alpine
     container_name: boya_redis_staging
     restart: unless-stopped
+    mem_limit: 256m
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "6381:6379"
+      - "127.0.0.1:6381:6379" # localhost only; no external access to the data plane.
     volumes:
       - redis_staging_data:/data
     healthcheck:
@@ -140,6 +145,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     volumes:
       - uploads_data:/app/uploads
+    mem_limit: 256m
     ports:
       - "3001:3000" # direct API access for debugging (Caddy also proxies it)
     healthcheck:
@@ -153,6 +159,7 @@ services:
     image: caddy:2-alpine
     container_name: boya_caddy_staging
     restart: unless-stopped
+    mem_limit: 128m
     depends_on:
       - backend
     ports:

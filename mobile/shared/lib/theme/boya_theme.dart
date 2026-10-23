@@ -10,7 +10,7 @@ abstract final class BoyaTheme {
       brightness: Brightness.light,
       primary: BoyaColors.primary,
       onPrimary: BoyaColors.white,
-      secondary: BoyaColors.sage,
+      secondary: BoyaColors.rose, // Accent (10%)
       onSecondary: BoyaColors.ink,
       error: BoyaColors.error,
       onError: BoyaColors.white,
@@ -42,6 +42,15 @@ abstract final class BoyaTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         ),
       ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: BoyaColors.primary,
+          minimumSize: const Size.fromHeight(48),
+          textStyle: BoyaTypography.body.copyWith(fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          side: const BorderSide(color: BoyaColors.line, width: 2),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: false,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -59,7 +68,7 @@ abstract final class BoyaTheme {
           borderSide: const BorderSide(color: BoyaColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          radius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.error),
         ),
       ),
@@ -70,10 +79,10 @@ abstract final class BoyaTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       ),
       dividerColor: BoyaColors.line,
+      // Optional high-contrast feedback via rose/grenade (no)
     );
   }
 
-  /// Optional dark surfaces from the design system. Light remains the default.
   static ThemeData dark() {
     // The petrol teal is too dark to read on a dark surface, so it is lifted
     // to a lighter tint of the same hue rather than a different colour.
@@ -82,7 +91,7 @@ abstract final class BoyaTheme {
       brightness: Brightness.dark,
       primary: darkPrimary,
       onPrimary: BoyaColors.ink,
-      secondary: BoyaColors.sage,
+      secondary: BoyaColors.rose,
       onSecondary: BoyaColors.ink,
       error: BoyaColors.error,
       onError: BoyaColors.white,

@@ -18,6 +18,11 @@ services:
     image: postgres:16-alpine
     container_name: boya_postgres_production
     restart: unless-stopped
+    # Hard cap: this machine has 4GB. shared_buffers=1GB + effective_cache_size=2GB
+    # already reserve ~1.5-2GB under load; the container itself must never grow
+    # past 1GB (reserve room for Redis/OS).
+    mem_limit: 1024m
+    cpus: 1.5
     environment:
       POSTGRES_USER: ${DATABASE_USER:-beauty}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me}
@@ -38,6 +43,9 @@ services:
     image: redis:7-alpine
     container_name: boya_redis_production
     restart: unless-stopped
+    # maxmemory (hard) 256MB inside + container cap on top: the policy is
+    # allkeys-lru so eviction can't OOM the host.
+    mem_limit: 256m
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     # Internal only — no host port published.
     volumes:
@@ -73,6 +81,7 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/nasiricarpet/boya/boya-backend:latest}
     #container_name: boya_backend_production
     restart: unless-stopped
+    mem_limit: 256m
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,6 +125,7 @@ services:
         NEXT_PUBLIC_API_URL: https://boya.bcshopir.ir/api/v1
     container_name: boya_admin_production
     restart: unless-stopped
+    mem_limit: 256m
     depends_on:
       - backend
     expose:
@@ -132,6 +142,7 @@ services:
       context: ./mobile/customer_app
     container_name: boya_customer_web
     restart: unless-stopped
+    mem_limit: 128m
     expose:
       - "80"
 
@@ -142,6 +153,7 @@ services:
       context: ./mobile/salon_app
     container_name: boya_salon_web
     restart: unless-stopped
+    mem_limit: 128m
     expose:
       - "80"
 
@@ -149,6 +161,7 @@ services:
     image: caddy:2-alpine
     container_name: boya_caddy_production
     restart: unless-stopped
+    mem_limit: 128m
     depends_on:
       - backend
     ports:
