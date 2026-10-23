@@ -12,9 +12,10 @@ import { AdminTenantsController } from './tenants/admin-tenants.controller';
 import { AdminTenantsService } from './tenants/admin-tenants.service';
 import { AdminUsersController } from './users/admin-users.controller';
 import { AdminUsersService } from './users/admin-users.service';
+import { AdminSpecialistsController } from './specialists/admin-specialists.controller';
 
 @Module({
-  controllers: [AdminController, ApprovalsController, DashboardController, AdminTenantsController, AdminUsersController, AdminAuditLogsController],
+  controllers: [AdminController, ApprovalsController, DashboardController, AdminTenantsController, AdminUsersController, AdminAuditLogsController, AdminSpecialistsController],
   providers: [AdminService, ApprovalsService, DashboardService, AdminTenantsService, AdminUsersService, AdminAuditLogsService],
 })
 export class AdminModule {}
