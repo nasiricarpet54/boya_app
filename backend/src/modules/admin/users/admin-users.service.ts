@@ -19,13 +19,18 @@ export const ADMIN_USER_ROLES: readonly UserRole[] = [
   'line_manager',
   'specialist',
   'admin',
+  'employed',
+  'booth_renter',
+  'freelance_mobile',
 ] as const;
 
-/** Roles that must belong to a tenant. `customer`/`admin` are tenant-free. */
+/** Roles that must belong to a tenant. `customer`/`admin`/`freelance_mobile` are tenant-free. */
 const TENANT_SCOPED_ROLES: readonly UserRole[] = [
   'salon_owner',
   'line_manager',
   'specialist',
+  'employed',
+  'booth_renter',
 ] as const;
 
 export interface AdminUserListItem {
@@ -226,6 +231,10 @@ export class AdminUsersService {
       line_manager: 0,
       specialist: 0,
       admin: 0,
+      employed: 0,
+      booth_renter: 0,
+      freelance_mobile: 0,
+      super_admin: 0,
     };
     for (const row of countsRows) {
       if ((ADMIN_USER_ROLES as readonly string[]).includes(row.role)) {
@@ -463,7 +472,9 @@ export class AdminUsersService {
       tenantId = dto.tenantId;
     }
 
-    const specialistCreated = role === 'specialist' && tenantId !== null;
+    // `freelance_mobile` is tenant-free (ADR-011): their `specialists` row
+    // carries a NULL `tenant_id` and is scoped by `user_id` instead.
+    const specialistCreated = role === 'specialist' || role === 'freelance_mobile';
 
     let id: string;
     try {
@@ -533,7 +544,7 @@ export class AdminUsersService {
         user.userId,
         target.tenant_id,
         'user.deleted',
-        `user:${id} role=${target.role}${target.role === 'specialist' ? ' specialist=deactivated' : ''}`,
+        `user:${id} role=${target.role}${['specialist', 'employed', 'booth_renter', 'freelance_mobile'].includes(target.role) ? ' specialist=deactivated' : ''}`,
       ],
     );
 

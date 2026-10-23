@@ -61,6 +61,7 @@ import {
   SalonServiceLineItem,
   SalonSpecialists,
   SalonStaffProfile,
+  SalonScheduleBlockList,
 } from './salon.service';
 
 /**
@@ -264,7 +265,7 @@ export class SalonPanelController {
   createScheduleBlock(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateScheduleBlockDto,
-  ): Promise<void> {
+  ): Promise<{ id: string }> {
     return this.salons.createScheduleBlock(user, dto);
   }
 
@@ -279,6 +280,20 @@ export class SalonPanelController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
     return this.salons.deleteScheduleBlock(user, id);
+  }
+
+  /**
+   * All schedule blocks of the signed-in provider: the salon's blocks for
+   * staff, the caller's own blocks for a mobile specialist. One row per
+   * blocked range; use `specialistId`/`salonId` to tell a whole-salon block
+   * (or a mobile block) from a single specialist's.
+   */
+  @Get('me/schedule/blocks')
+  @ApiOperation({ summary: 'فهرست مسدودی‌های زمان تقویم' })
+  listScheduleBlocks(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<SalonScheduleBlockList> {
+    return this.salons.listScheduleBlocks(user);
   }
 
   /** Service lines of the signed-in salon, with each line's service count. */
@@ -524,3 +539,4 @@ export class CategoryController {
     return this.salons.listCategories();
   }
 }
+

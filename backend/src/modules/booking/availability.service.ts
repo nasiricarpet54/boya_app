@@ -19,6 +19,13 @@ export interface TimeSlot {
   end: Date;
 }
 
+export interface ScheduleBlock {
+  startTime: Date;
+  endTime: Date;
+  note?: string;
+  categoryId?: string; // optional linking to some category
+}
+
 export interface GenerateSlotsInput {
   workingHours: WorkingHours;
   date: Date;
@@ -64,6 +71,11 @@ export class AvailabilityService {
 
   isFriday(date: Date): boolean {
     return date.getDay() === 5;
+  }
+
+  filterAvailableWithBlocks(candidates: TimeSlot[], blocks: ScheduleBlock[]): TimeSlot[] {
+    const blockTimes: TimeSlot[] = blocks.map(b => ({ start: b.startTime, end: b.endTime }));
+    return this.filterAvailable(candidates, blockTimes);
   }
 
   private at(date: Date, hhmm: string): Date {

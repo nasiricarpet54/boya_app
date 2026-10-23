@@ -9,12 +9,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { UserRole } from '../../user/entities/user.entity';
 
 /** Claims lifted off a verified access token. */
 export interface AuthenticatedUser {
   userId: string;
   phoneNumber: string;
-  role: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin' | 'super_admin';
+  role: UserRole;
   tenantId: string | null;
 }
 

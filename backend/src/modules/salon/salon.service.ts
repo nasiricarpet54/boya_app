@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -9,7 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { createHash, randomUUID } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
 
-import { setTenantContext } from '../../database/tenant-context';
+import { setTenantContext, setUserContext } from '../../database/tenant-context';
 
 import {
   endOfTehranWeek,
@@ -218,6 +218,31 @@ export interface SalonAvailabilitySlot {
 
 export interface SalonAvailability {
   data: SalonAvailabilitySlot[];
+}
+
+/**
+ * One blocked range of the schedule (`schedule_blocks`).
+ *
+ * `salonId` is NULL when the block belongs to a salon-independent
+ * `freelance_mobile` specialist, whose calendar hangs off their
+ * `specialists` row instead of a tenant.
+ */
+export interface SalonScheduleBlockItem {
+  id: string;
+  /** NULL = the whole salon is blocked, not one specialist. */
+  specialistId: string | null;
+  /** NULL = a mobile specialist's block, not a salon's. */
+  salonId: string | null;
+  /** Gregorian `YYYY-MM-DD` of `startTime`; the panel shows Jalali. */
+  date: string;
+  startTime: Date;
+  endTime: Date;
+  reason: string | null;
+}
+
+/** Response of `GET /salon/me/schedule/blocks`. */
+export interface SalonScheduleBlockList {
+  data: SalonScheduleBlockItem[];
 }
 
 /** Response of `GET /salon/me`, the signed-in staff user's own salon. */
@@ -1011,6 +1036,15 @@ export class SalonService {
                   WHERE b.status NOT IN ('cancelled', 'no_show')
                     AND b.time_slot && tstzrange(c.slot_start, c.slot_end, '[)')
                     AND ($4::uuid IS NULL OR b.specialist_id = $4::uuid)
+                )
+                -- A blocked range occupies a slot exactly like a booking would:
+                -- the whole-salon block (specialist_id IS NULL) counts for
+                -- every specialist, a specialist block only for that one.
+                OR EXISTS (
+                  SELECT 1
+                  FROM schedule_blocks sb
+                  WHERE tstzrange(sb.start_time, sb.end_time, '[)') && tstzrange(c.slot_start, c.slot_end, '[)')
+                    AND ($4::uuid IS NULL OR sb.specialist_id IS NULL OR sb.specialist_id = $4::uuid)
                 ) AS busy
          FROM candidate c
          ORDER BY c.start_minute`,
@@ -1234,12 +1268,18 @@ export class SalonService {
   /**
    * POST /salon/me/schedule/block — blocks a time range for the salon or a
    * specific specialist. Used for walk-in customers or personal time off.
+   *
+   * A salon-independent `freelance_mobile` specialist has no tenant in the
+   * token, so their block carries `tenant_id IS NULL` and is scoped to the
+   * `specialists` row that points back at them (migration 1792700000000).
+   * The two kinds never mix: a staff caller always blocks inside their own
+   * tenant, a mobile caller always blocks their own calendar.
    */
   async createScheduleBlock(
     user: AuthenticatedUser,
     dto: CreateScheduleBlockDto,
-  ): Promise<void> {
-    const tenantId = this.requireStaffTenant(user);
+  ): Promise<{ id: string }> {
+    const scope = await this.blockScope(user);
     const start = new Date(dto.startTime);
     const end = new Date(dto.endTime);
 
@@ -1250,29 +1290,76 @@ export class SalonService {
       throw new BadRequestException('زمان پایان باید پس از زمان شروع باشد');
     }
 
-    await this.withPanelTenant(tenantId, async (manager) => {
+    const specialistId = await this.assertBlockTarget(scope, dto.specialistId);
+
+    const rows = await this.withBlockScope(scope, async (manager) => {
+      // Serialises block creation against booking creation for the same
+      // calendar: both take this advisory lock before checking, so a booking
+      // cannot slip into a slot while its block is being written (and vice
+      // versa). Memory-only, released at COMMIT.
       await manager.query(
+        `SELECT pg_advisory_xact_lock(hashtext($1)), pg_advisory_xact_lock(hashtext($2))`,
+        [`block:spec:${specialistId ?? 'any'}`, `block:salon:${scope.tenantId ?? 'none'}`],
+      );
+
+      return manager.query<Array<{ id: string }>>(
         `INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [tenantId, dto.specialistId ?? null, start, end, dto.reason ?? null],
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [scope.tenantId, specialistId, start, end, dto.reason ?? null],
       );
     });
+
+    return { id: rows[0].id };
   }
 
   /**
    * DELETE /salon/me/schedule/block/:id — removes a previously created block.
+   * A mobile caller may only remove a block on their own calendar.
    */
   async deleteScheduleBlock(user: AuthenticatedUser, id: string): Promise<void> {
-    const tenantId = this.requireStaffTenant(user);
-    await this.withPanelTenant(tenantId, async (manager) => {
+    const scope = await this.blockScope(user);
+    await this.withBlockScope(scope, async (manager) => {
       const result = await manager.query<Array<{ id: string }>>(
-        `DELETE FROM schedule_blocks WHERE id = $1 AND tenant_id = $2 RETURNING id`,
-        [id, tenantId],
+        scope.tenantId
+          ? `DELETE FROM schedule_blocks WHERE id = $1 AND tenant_id = $2 RETURNING id`
+          : `DELETE FROM schedule_blocks
+              WHERE id = $1
+                AND tenant_id IS NULL
+                AND specialist_id IN (SELECT id FROM specialists WHERE user_id = $2 AND is_active = true)
+              RETURNING id`,
+        scope.tenantId ? [id, scope.tenantId] : [id, scope.userId!],
       );
       if (!Array.isArray(result) || result.length === 0) {
         throw new NotFoundException('مسدودی یافت نشد');
       }
     });
+  }
+
+  /**
+   * GET /salon/me/schedule/blocks — the caller's own blocks, earliest first.
+   * RLS keeps each salon's blocks private from the others; the mobile
+   * specialist sees only the rows that carry their own `specialists.id`.
+   */
+  async listScheduleBlocks(user: AuthenticatedUser): Promise<SalonScheduleBlockList> {
+    const scope = await this.blockScope(user);
+    const rows = await this.withBlockScope(scope, (manager) =>
+      manager.query<ScheduleBlockRow[]>(
+        scope.tenantId
+          ? `SELECT id, tenant_id, specialist_id, start_time, end_time, reason
+               FROM schedule_blocks
+              WHERE tenant_id = $1
+              ORDER BY start_time ASC, id ASC`
+          : `SELECT id, tenant_id, specialist_id, start_time, end_time, reason
+               FROM schedule_blocks
+              WHERE tenant_id IS NULL
+                AND specialist_id IN (SELECT id FROM specialists WHERE user_id = $1 AND is_active = true)
+              ORDER BY start_time ASC, id ASC`,
+        scope.tenantId ? [scope.tenantId] : [scope.userId!],
+      ),
+    );
+
+    return { data: rows.map((row) => this.toScheduleBlockItem(row)) };
   }
   /**
    * Overlay `changes` on whatever is already pending and mark the tenant as
@@ -2811,6 +2898,88 @@ export class SalonService {
   }
 
   /**
+   * The actor of a schedule-block request.
+   *
+   * Salon staff act through their token tenant; a mobile specialist has none
+   * and acts through the `specialists` row that belongs to them. Anything
+   * else — a customer, or a caller whose mobile profile does not exist — is
+   * refused before any SQL reaches the table.
+   */
+  private async blockScope(user: AuthenticatedUser): Promise<BlockScope> {
+    if (!user) {
+      throw new ForbiddenException('این بخش فقط برای پرسنل سالن است');
+    }
+    if (MOBILE_SPECIALIST_ROLES.has(user.role)) {
+      const rows = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM specialists WHERE user_id = $1 AND is_active = true`,
+        [user.userId],
+      );
+      const specialistId = rows[0]?.id;
+      if (!specialistId) {
+        throw new NotFoundException('پروفایل متخصص سیار شما یافت نشد');
+      }
+      // shortcut: one mobile specialist owns one active specialists row
+      // (admin provisioning, migration 1792700000000); a second row would
+      // need a calendar picker here, not just the first match.
+      return { tenantId: null, specialistId, userId: user.userId, blockAsSpecialist: true };
+    }
+    const tenantId = this.requireStaffTenant(user);
+    return { tenantId, specialistId: null, userId: null, blockAsSpecialist: false };
+  }
+
+  /**
+   * Resolves which specialist a block belongs to and rejects any id the
+   * caller cannot touch: staff may only block a specialist of their own
+   * salon, a mobile specialist only themselves.
+   */
+  private async assertBlockTarget(
+    scope: BlockScope,
+    requestedId: string | undefined,
+  ): Promise<string | null> {
+    if (scope.blockAsSpecialist) {
+      return scope.specialistId;
+    }
+    if (!requestedId) return null;
+
+    const rows = await this.dataSource.query<Array<{ id: string }>>(
+      `SELECT id FROM specialists WHERE id = $1 AND tenant_id = $2 AND is_active = true`,
+      [requestedId, scope.tenantId!],
+    );
+    if (rows.length === 0) {
+      throw new BadRequestException('این متخصص متعلق به سالن شما نیست');
+    }
+    return requestedId;
+  }
+
+  /** `withTenant`/`withPanelTenant` counterpart for the block endpoints. */
+  private withBlockScope<T>(
+    scope: BlockScope,
+    work: (manager: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    return this.dataSource.transaction(async (manager) => {
+      if (scope.tenantId) {
+        await setTenantContext(manager, scope.tenantId);
+      } else {
+        await setUserContext(manager, scope.userId!);
+      }
+      return work(manager);
+    });
+  }
+
+  private toScheduleBlockItem(row: ScheduleBlockRow): SalonScheduleBlockItem {
+    return {
+      id: row.id,
+      specialistId: row.specialist_id,
+      salonId: row.tenant_id,
+      // Stored as an instant; the panel renders the Jalali calendar day.
+      date: new Date(row.start_time).toISOString().slice(0, 10),
+      startTime: row.start_time,
+      endTime: row.end_time,
+      reason: row.reason,
+    };
+  }
+
+  /**
    * Active specialists of one salon, joined with the user row that carries the
    * display name and avatar. Read through get_public_salon_specialists() because
    * `users` is FORCE ROW LEVEL SECURITY and this public feed has no tenant
@@ -3011,8 +3180,56 @@ function parseCivilDate(value: string): { year: number; month: number; day: numb
 /** Milliseconds in one day, used to close the half-open "today" window. */
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Roles that may read the salon panel. Customers have no tenant and are 403. */
-const STAFF_ROLES = new Set(['salon_owner', 'line_manager', 'specialist', 'admin']);
+/**
+ * Roles that may read the salon panel. Customers have no tenant and are 403.
+ *
+ * `specialist`, `employed` and `booth_renter` all staff a salon (the latter
+ * two are the ADR-003 specialist kinds the admin panel manages), so they
+ * enter through the same staff gate. `freelance_mobile` is salon-independent
+ * (ADR-011 mobile service) and reaches only the schedule-block routes, whose
+ * `blockScope` resolves them through their own `specialists` row instead of
+ * a tenant.
+ */
+const STAFF_ROLES = new Set<string>([
+  'salon_owner',
+  'line_manager',
+  'specialist',
+  'employed',
+  'booth_renter',
+  'admin',
+]);
+
+/**
+ * Roles that act on the schedule as an *independent specialist* rather than
+ * as salon staff: they have no `tenantId` in the token (mobile, ADR-011), so
+ * their writes are scoped to the `specialists` row that points back at them.
+ */
+const MOBILE_SPECIALIST_ROLES = new Set<string>(['freelance_mobile']);
+
+/** Who is acting in a schedule-block request, and on whose calendar. */
+interface BlockScope {
+  /**
+   * The salon the block is written into. `null` for a mobile specialist,
+   * whose block carries `schedule_blocks.tenant_id IS NULL`.
+   */
+  tenantId: string | null;
+  /** The mobile caller's own `specialists.id`; `null` for salon staff. */
+  specialistId: string | null;
+  /** The mobile caller's `users.id`, which their RLS branch keys on. */
+  userId: string | null;
+  /** True when the caller acts as a mobile specialist, not as salon staff. */
+  blockAsSpecialist: boolean;
+}
+
+/** Raw `schedule_blocks` row behind [SalonScheduleBlockItem]. */
+interface ScheduleBlockRow {
+  id: string;
+  tenant_id: string | null;
+  specialist_id: string | null;
+  start_time: Date;
+  end_time: Date;
+  reason: string | null;
+}
 
 /** Bookings that count toward the dashboard's booking totals. */
 const ACTIVE_BOOKING_STATUSES = `b.status IN ('pending', 'confirmed', 'completed')`;

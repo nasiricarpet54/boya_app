@@ -137,6 +137,25 @@ export class BookingService {
       // (set_config(..., true) is transaction-local), matching body.tenantId.
       saved = await this.dataSource.transaction(async (manager) => {
         await setTenantContext(manager, tenantId);
+        // A blocked range (POST /salon/me/schedule/block) occupies the same
+        // tstzrange a booking would, so it must reject the booking the same
+        // way an existing booking would. The check runs under the same
+        // advisory lock the blocker takes, so a concurrent block cannot land
+        // underneath us; the `EXCLUDE` constraint below never sees blocks.
+        await manager.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1)), pg_advisory_xact_lock(hashtext($2))`,
+          [`block:spec:${input.specialistId}`, `block:salon:${tenantId}`],
+        );
+        const blocked = await manager.query<Array<{ ok: number }>>(
+          `SELECT 1 AS ok FROM schedule_blocks
+            WHERE tstzrange(start_time, end_time, '[)') && tstzrange($1, $2, '[)')
+              AND (specialist_id IS NULL OR specialist_id = $3::uuid)
+            LIMIT 1`,
+          [input.startsAt, end, input.specialistId],
+        );
+        if (blocked.length > 0) {
+          throw new ConflictException('این زمان در تقویم ارائه‌دهنده مسدود شده است');
+        }
         return manager.save(
           manager.create(Booking, {
             tenantId,
