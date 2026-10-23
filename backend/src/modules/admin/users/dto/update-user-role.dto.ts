@@ -4,14 +4,14 @@ import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 /** Body of `PATCH /admin/users/:id/role`. */
 export class UpdateUserRoleDto {
   @ApiProperty({
-    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'],
+    enum: ['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'],
     example: 'specialist',
   })
   @IsString()
-  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin'], {
-    message: 'role باید یکی از customer، salon_owner، line_manager، specialist یا admin باشد',
+  @IsIn(['customer', 'salon_owner', 'line_manager', 'specialist', 'admin', 'freelance_mobile'], {
+    message: 'role باید یکی از customer، salon_owner، line_manager، specialist، admin یا freelance_mobile باشد',
   })
-  role!: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin';
+  role!: 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'admin' | 'freelance_mobile';
 
   @ApiPropertyOptional({
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
