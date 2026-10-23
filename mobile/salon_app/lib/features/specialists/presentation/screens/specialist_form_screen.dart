@@ -292,6 +292,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                   }
                   return null;
                 },
+                onFieldSubmitted: (_) => _save(),
               ),
               const SizedBox(height: 16),
               Text('شماره موبایل', style: BoyaTypography.caption),
@@ -315,6 +316,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
+                onFieldSubmitted: (_) => _save(),
             ],
             Text('بیوگرافی', style: BoyaTypography.caption),
             const SizedBox(height: 4),
@@ -376,6 +378,7 @@ class _SpecialistFormScreenState extends ConsumerState<SpecialistFormScreen> {
                 counterText: '',
               ),
               validator: (value) =>
+                onFieldSubmitted: (_) => _save(),
                   form.validateCommission(form.parseCommission(value ?? '')),
             ),
             if (_isEditing) ...[

@@ -112,6 +112,7 @@ class _InviteSpecialistScreenState extends ConsumerState<InviteSpecialistScreen>
               _form.phone = _phoneController.text;
               return _form.validatePhone();
             },
+            onFieldSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 16),
           Text('نقش', style: BoyaTypography.caption),

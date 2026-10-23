@@ -76,6 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: Icon(Icons.phone_android, color: BoyaColors.primary),
                     counterText: '',
                   ),
+                  onFieldSubmitted: (_) => _sendOtp(),
                   validator: (value) {
                     final normalized = toLatinDigits((value ?? '').trim());
                     if (normalized.isEmpty) return 'لطفاً شماره موبایل را وارد کنید';

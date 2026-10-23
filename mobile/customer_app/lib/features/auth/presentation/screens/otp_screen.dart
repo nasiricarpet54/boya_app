@@ -115,6 +115,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹٠-٩]'))],
                   style: BoyaTypography.headline.copyWith(letterSpacing: 8),
                   decoration: const InputDecoration(labelText: 'کد تأیید', counterText: '', hintText: '۱۲۳۴۵۶'),
+                  onFieldSubmitted: (_) => _verify(),
                   validator: (value) {
                     final code = toLatinDigits((value ?? '').trim());
                     if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) return 'کد وارد شده صحیح نیست';
