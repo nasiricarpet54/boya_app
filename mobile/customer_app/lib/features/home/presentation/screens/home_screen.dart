@@ -17,7 +17,7 @@ import '../widgets/search_bar.dart';
 import '../widgets/top_bar.dart';
 
 /// Salons around [locationProvider], nearest first, optionally filtered by
-/// [selectedCategoryProvider].
+/// [selectedCategoryProvider] and, if filtered, by [homeSameDayFilterProvider].
 ///
 /// This mirrors [nearbySalonsProvider] but lets errors surface: the shared
 /// provider catches every failure and returns an empty list so the search
@@ -29,19 +29,20 @@ final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final categorySlug = ref.watch(selectedCategoryProvider);
   final mobileOnly = ref.watch(homeMobileFilterProvider);
   final city = ref.watch(cityProvider);
+  final sameDay = ref.watch(homeSameDayFilterProvider);
 
-  return ref.watch(salonsApiProvider).getSalons(
+  final salons = await ref.watch(salonsApiProvider).getSalons(
         lat: location.lat,
         lng: location.lng,
-        // The picker's selection drives the feed. `null` before the customer has
-        // chosen anything, which asks for the whole catalogue rather than none.
         cityId: city.cityId,
         categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
         sort: 'distance',
-        // ADR-011: `?mobile=true`. Kept off the request entirely while the chip
-        // is unselected so the unfiltered feed stays cache-compatible.
         mobile: mobileOnly ? true : null,
       );
+  if (sameDay) {
+    return salons.where((s) => s.isOpenNow).toList();
+  }
+  return salons;
 });
 
 /// Snappfood-style landing screen: header, search, categories, banner,
@@ -73,6 +74,33 @@ class HomeScreen extends ConsumerWidget {
             const CategoryGrid(),
             const SizedBox(height: 16),
             const PromoBanner(),
+            const SizedBox(height: 16),
+            // Mobile specialists banner
+            InkWell(
+              onTap: () => context.push('/mobile-specialists'),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: BoyaColors.primary),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.directions_car, color: BoyaColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'متخصصان سیار',
+                        style: BoyaTypography.body.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: BoyaColors.inkMuted, size: 20),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             const FilterChips(),
             const SizedBox(height: 8),

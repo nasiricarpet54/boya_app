@@ -177,6 +177,19 @@ class HomeMobileFilterController extends Notifier<bool> {
 final homeMobileFilterProvider =
     NotifierProvider<HomeMobileFilterController, bool>(HomeMobileFilterController.new);
 
+/// Same-day acceptance filter. When true, only salons that are open now are shown.
+class HomeSameDayFilterController extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+
+  void select(bool value) => state = value;
+}
+
+final homeSameDayFilterProvider =
+    NotifierProvider<HomeSameDayFilterController, bool>(HomeSameDayFilterController.new);
+
 /// Locally toggled favourites. Kept in memory only; no endpoint yet.
 class FavoriteSalonsController extends Notifier<Set<String>> {
   @override

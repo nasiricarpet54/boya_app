@@ -85,6 +85,10 @@ final _router = GoRouter(
       path: '/loyalty',
       builder: (_, _) => const PlaceholderScreen(title: 'امتیاز وفاداری'),
     ),
+    GoRoute(
+      path: '/mobile-specialists',
+      builder: (_, _) => const PlaceholderScreen(title: 'متخصصان سیار'),
+    ),
     // Support area: FAQ is static bundle content, tickets are the dynamic half.
     GoRoute(path: '/support', builder: (_, _) => const SupportScreen()),
     GoRoute(path: '/support/faq', builder: (_, _) => const FaqScreen()),

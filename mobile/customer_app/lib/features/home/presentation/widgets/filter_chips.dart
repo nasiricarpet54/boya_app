@@ -13,8 +13,19 @@ class FilterChips extends ConsumerWidget {
   static const _nearMeLabel = 'نزدیک من';
 
   Future<void> _select(BuildContext context, WidgetRef ref, String label) async {
-    // Every chip but «نزدیک من» is a plain filter the catalogue already knows,
-    // so it applies instantly with no device round-trip.
+    // "همه" resets all filters
+    if (label == 'همه') {
+      ref.read(homeFilterProvider.notifier).select(label);
+      ref.read(homeSameDayFilterProvider.notifier).select(false);
+      return;
+    }
+    // "پذیرش امروز" toggles the same-day acceptance filter
+    if (label == 'پذیرش امروز') {
+      ref.read(homeSameDayFilterProvider.notifier).toggle();
+      ref.read(homeFilterProvider.notifier).select(label);
+      return;
+    }
+    // "نزدیک من" requires GPS resolution
     if (label != _nearMeLabel) {
       ref.read(homeFilterProvider.notifier).select(label);
       return;
