@@ -1,0 +1,24 @@
+resolution: workspace
+name: specialist_app
+description: "Specialist application for Boya Platform."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.7.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  boya_shared:
+    path: ../shared
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

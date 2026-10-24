@@ -1,3 +1,4 @@
+resolution: workspace
 name: boya_shared
 description: A starting point for Dart libraries or applications.
 version: 1.0.0
@@ -5,7 +6,6 @@ publish_to: 'none'
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
-  flutter: '>=3.29.0'
 
 dependencies:
   flutter:
@@ -30,6 +30,15 @@ dev_dependencies:
   json_serializable: ^6.8.0
   build_runner: ^2.4.13
 
-# ✅ این بخش باید دقیقاً بدون فاصله (چسبیده به گوشه سمت چپ) باشد
-dependency_overrides:
-  intl: 0.20.2
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Vazirmatn-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Vazirmatn-Light.ttf
+          weight: 300
