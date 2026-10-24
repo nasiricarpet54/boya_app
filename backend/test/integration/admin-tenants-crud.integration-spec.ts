@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { TenantRlsInterceptor } from '../../src/modules/tenant/tenant-rls.interceptor';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
@@ -112,6 +113,7 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
         // Same guard the app registers globally; no RolesGuard here because the
         // admin gate lives in the service (requireAdmin), not on a decorator.
         { provide: APP_GUARD, useClass: JwtAuthGuard },
+        { provide: APP_INTERCEPTOR, useClass: TenantRlsInterceptor },
         AdminTenantsService,
         { provide: DataSource, useValue: getDataSource() },
         { provide: JwtService, useValue: new JwtService({ secret: ACCESS_SECRET }) },
