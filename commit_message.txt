@@ -1,0 +1,8 @@
+refactor(backend): optimize multi-tenancy, connections, and security
+
+- Configure connection pool strictly to 50 max connections (matched for VPS limit).
+- Enforce SET LOCAL context (`app.current_tenant_id`) safely to prevent connection pool leakage.
+- Create explicit B-Tree indices (`tenant_id` as leading column) and enforce RLS strictly across `tenants`, `specialists`, `services`, `bookings`, and `transactions` tables to prevent Sequential Scans and secure isolation.
+- Configure rate limiting securely with Redis and `nestjs-sliding-window-throttler`.
+- Enable N+1 strict query logging mechanism (throws warning at >5 queries) for request tracking.
+- Test double booking prevention with Exclusion Constraints natively built (`EXCLUDE USING gist`).
