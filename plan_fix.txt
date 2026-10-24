@@ -1,0 +1,8 @@
+1. We have two CI failures: one in `Flutter Shared (Code Gen + Test)` and one in `test` (Backend).
+2. The Backend test CI failed because: `function uuid_generate_v4() does not exist`.
+    - This means the `uuid-ossp` extension is not created or activated in the DB before the `CreateScheduleBlocks` migration runs.
+    - Solution: We need to ensure the extension `uuid-ossp` is created *before* the `1792406647600-CreateScheduleBlocks.ts` migration uses `uuid_generate_v4()`. Specifically, `1792406647600-CreateScheduleBlocks.ts` or its predecessor should run `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`.
+3. The Flutter CI failed because:
+    - `error • The named parameter 'radius' isn't defined • lib/theme/boya_theme.dart:71:11 • undefined_named_parameter`
+    - `error • The getter 'sage' isn't defined for the type 'BoyaColors' • lib/widgets/boya_logo.dart:317:35 • undefined_getter`
+    - Solution: Fix these missing properties/parameters in the Flutter code (`lib/theme/boya_theme.dart` and `lib/widgets/boya_logo.dart` or related `BoyaColors` class in `lib/theme/boya_colors.dart`).

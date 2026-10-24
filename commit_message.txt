@@ -1,8 +1,4 @@
-refactor(backend): optimize multi-tenancy, connections, and security
+fix(ci): create uuid-ossp extension in DB before schedule blocks migration
 
-- Configure connection pool strictly to 50 max connections (matched for VPS limit).
-- Enforce SET LOCAL context (`app.current_tenant_id`) safely to prevent connection pool leakage.
-- Create explicit B-Tree indices (`tenant_id` as leading column) and enforce RLS strictly across `tenants`, `specialists`, `services`, `bookings`, and `transactions` tables to prevent Sequential Scans and secure isolation.
-- Configure rate limiting securely with Redis and `nestjs-sliding-window-throttler`.
-- Enable N+1 strict query logging mechanism (throws warning at >5 queries) for request tracking.
-- Test double booking prevention with Exclusion Constraints natively built (`EXCLUDE USING gist`).
+- Explicitly added `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"` in the `CreateScheduleBlocks1792406647600` migration so `uuid_generate_v4()` will be correctly defined across the database when tests spin up cleanly.
+- Fix Flutter analyze issues by correcting `radius` -> `borderRadius` parameter in `BoyaTheme` and standardizing `sage` -> `success` color in `BoyaLogo`.

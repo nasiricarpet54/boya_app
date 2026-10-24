@@ -4,6 +4,9 @@ export class CreateScheduleBlocks1792406647600 implements MigrationInterface {
   name = 'CreateScheduleBlocks1792406647600';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Add extension if not exists so uuid_generate_v4() works
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+
     // The table is created with IF NOT EXISTS so a re-run against a database
     // that already has it (created outside the migration ledger) is a no-op
     // instead of a hard failure. The tenant FK points at `tenants`: there is

@@ -68,7 +68,7 @@ abstract final class BoyaTheme {
           borderSide: const BorderSide(color: BoyaColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          radius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: BoyaColors.error),
         ),
       ),
