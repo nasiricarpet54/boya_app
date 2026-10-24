@@ -31,6 +31,14 @@ export class TenantRlsInterceptor implements NestInterceptor {
       await this.dataSource.query(`SELECT set_config('app.current_tenant_id', $1, false)`, [user.tenantId]);
     }
 
+    if (user?.id) {
+      await this.dataSource.query(`SELECT set_config('app.current_user_id', $1, false)`, [user.id]);
+    }
+
+    if (user?.role) {
+      await this.dataSource.query(`SELECT set_config('app.current_role', $1, false)`, [user.role]);
+    }
+
     return next.handle();
   }
 }

@@ -137,3 +137,22 @@ export async function queryAsAdmin<R extends Record<string, unknown>>(
     await client.end();
   }
 }
+
+/**
+ * Runs `work` in one transaction that sets the tenant, user and role GUC exactly like
+ * `setTenantContext`, `setUserContext`, `setRoleContext` does in the application (`set_config(..., true)`).
+ */
+export async function withTenantAndUserAndRole<T>(
+  tenantId: string,
+  userId: string,
+  role: string,
+  work: (query: <R>(sql: string, params?: unknown[]) => Promise<R>) => Promise<T>,
+): Promise<T> {
+  const dataSource = getDataSource();
+  return dataSource.transaction(async (manager) => {
+    await manager.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [tenantId]);
+    await manager.query(`SELECT set_config('app.current_user_id', $1, true)`, [userId]);
+    await manager.query(`SELECT set_config('app.current_role', $1, true)`, [role]);
+    return work(<R>(sql: string, params?: unknown[]) => manager.query<R>(sql, params));
+  });
+}
