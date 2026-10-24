@@ -61,7 +61,7 @@ const TAG_LIMIT = 3;
 const MAX_LIMIT = 50;
 
 /** Reply of both approval-gated salon writes. */
-const PENDING_APPROVAL_MESSAGE = 'ط¯ط± ط§ظ†طھط¸ط§ط± طھط§غŒغŒط¯ ط§ط¯ظ…غŒظ†';
+const PENDING_APPROVAL_MESSAGE = 'در انتظار تایید ادمین';
 
 /**
  * Rows an `UPDATE`/`DELETE` touched, as [PostgresQueryRunner] returns them.
@@ -114,7 +114,7 @@ const PUBLIC_TENANT_SQL = "approved_at IS NOT NULL AND status <> 'suspended'";
 export interface SalonListItem {
   id: string;
   name: string;
-  /** Category name, e.g. ط±ظ†ع¯ ظˆ ظ‡ط§غŒظ„ط§غŒطھ â€” the card's second line. */
+  /** Category name, e.g. رنگ و هایلایت â€” the card's second line. */
   specialty: string;
   coverImage: string | null;
   address: string | null;
@@ -203,7 +203,7 @@ export interface SalonDetail extends SalonListItem {
   settings: Record<string, unknown>;
   services: SalonCatalogServiceItem[];
   specialists: SalonSpecialist[];
-  /** Portfolio photos of the salon's active specialists â€” the آ«ظ†ظ…ظˆظ†ظ‡â€Œع©ط§ط±ظ‡ط§آ» tab. */
+  /** Portfolio photos of the salon's active specialists â€” the «نمونه‌کارها» tab. */
   portfolio: SalonPortfolioItem[];
 }
 
@@ -795,7 +795,7 @@ export class SalonService {
        WHERE t.id = $1 AND t.is_active = true AND ${PUBLIC_SALON_SQL}`,
       params,
     );
-    if (!row) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    if (!row) throw new NotFoundException('سالن مورد نظر یافت نشد');
 
     const serviceRows = await this.dataSource.query<
       Array<{ id: string; name: string; description: string | null; price: string; is_mobile_available: boolean }>
@@ -838,11 +838,14 @@ export class SalonService {
    * With `mobile`, only the ones who travel to the customer (ADR-011).
    */
   async specialists(id: string, mobile?: boolean): Promise<SalonSpecialists> {
-    const [tenant] = await this.dataSource.query<Array<{ id: string }>>(
-      `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
-      [id],
-    );
-    if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    const [tenant] = await this.dataSource.transaction(async (manager) => {
+      await manager.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [id]);
+      return manager.query<Array<{ id: string }>>(
+        `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
+        [id],
+      );
+    });
+    if (!tenant) throw new NotFoundException('سالن مورد نظر یافت نشد');
 
     const specialists = await this.loadSpecialists(id);
 
@@ -861,7 +864,7 @@ export class SalonService {
       `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
       [id],
     );
-    if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    if (!tenant) throw new NotFoundException('سالن مورد نظر یافت نشد');
 
     const serviceRows = await this.dataSource.query<
       Array<{
@@ -893,7 +896,7 @@ export class SalonService {
 
   /**
    * Every portfolio photo of every active specialist of one salon â€” the
-   * آ«ظ†ظ…ظˆظ†ظ‡â€Œع©ط§ط±ظ‡ط§آ» tab of the salon detail page.
+   * «نمونه‌کارها» tab of the salon detail page.
    *
    * Read through get_public_salon_portfolio(), which does the jsonb expansion
    * and the join to `users` inside a SECURITY DEFINER function: `users` is
@@ -916,7 +919,7 @@ export class SalonService {
       `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
       [id],
     );
-    if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    if (!tenant) throw new NotFoundException('سالن مورد نظر یافت نشد');
 
     return { data: await this.loadPortfolio(id) };
   }
@@ -998,7 +1001,7 @@ export class SalonService {
     const [tenant] = await this.dataSource.query<
       Array<{ working_hours: Record<string, unknown> | null }>
     >(`SELECT working_hours FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`, [id]);
-    if (!tenant) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    if (!tenant) throw new NotFoundException('سالن مورد نظر یافت نشد');
 
     const [service] = await this.dataSource.query<Array<{ duration_minutes: number }>>(
       `SELECT duration_minutes
@@ -1006,14 +1009,14 @@ export class SalonService {
        WHERE id = $1 AND tenant_id = $2 AND is_active = true`,
       [query.serviceId, id],
     );
-    if (!service) throw new NotFoundException('ط®ط¯ظ…طھ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+    if (!service) throw new NotFoundException('خدمت مورد نظر یافت نشد');
 
     if (query.specialistId) {
       const [specialist] = await this.dataSource.query<Array<{ id: string }>>(
         `SELECT id FROM specialists WHERE id = $1 AND tenant_id = $2 AND is_active = true`,
         [query.specialistId, id],
       );
-      if (!specialist) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (!specialist) throw new NotFoundException('متخصص مورد نظر یافت نشد');
     }
 
     const window = dayWindow(tenant.working_hours, dayKeyForCivilDate(date));
@@ -1152,7 +1155,7 @@ export class SalonService {
     });
 
     const row = rows[0];
-    if (!row) throw new NotFoundException('ط¨ظ‡ ط³ط§ظ„ظ†غŒ ظ…طھطµظ„ ظ†غŒط³طھغŒط¯');
+    if (!row) throw new NotFoundException('به سالنی متصل نیستید');
 
     return {
       id: row.id,
@@ -1198,7 +1201,7 @@ export class SalonService {
     );
 
     const row = rows[0];
-    if (!row) throw new NotFoundException('ط¨ظ‡ ط³ط§ظ„ظ†غŒ ظ…طھطµظ„ ظ†غŒط³طھغŒط¯');
+    if (!row) throw new NotFoundException('به سالنی متصل نیستید');
 
     return {
       status: row.status,
@@ -1247,7 +1250,7 @@ export class SalonService {
     if (dto.workingHours) changes.workingHours = dto.workingHours;
 
     if (Object.keys(changes).length === 0) {
-      throw new BadRequestException('ظپغŒظ„ط¯ ظ‚ط§ط¨ظ„ ظˆغŒط±ط§غŒط´غŒ ط§ط±ط³ط§ظ„ ظ†ط´ط¯ظ‡ ط§ط³طھ');
+      throw new BadRequestException('فیلد قابل ویرایشی ارسال نشده است');
     }
 
     return this.stagePendingChanges(tenantId, changes);
@@ -1418,7 +1421,7 @@ export class SalonService {
         ? await this.activeSpecialistId(manager, user.userId)
         : null;
       if (user.role === 'specialist' && !specialistId) {
-        throw new NotFoundException('ط§ط·ظ„ط§ط¹ط§طھ ظ…طھط®طµطµ ط´ظ…ط§ ط¯ط± ط³ط§ظ„ظ† غŒط§ظپطھ ظ†ط´ط¯');
+        throw new NotFoundException('اطلاعات متخصص شما در سالن یافت نشد');
       }
 
       const [today, week, pendingRow] = await Promise.all([
@@ -1577,7 +1580,7 @@ export class SalonService {
         [tenantId, dto.name],
       );
       if (duplicate.length > 0) {
-        throw new BadRequestException('ط®ط·غŒ ط¨ط§ ط§غŒظ† ظ†ط§ظ… ظ‚ط¨ظ„ط§ظ‹ ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
+        throw new BadRequestException('خطی با این نام قبلاً ثبت شده است');
       }
       await manager.query(
         `INSERT INTO service_lines (tenant_id, name, description, status, is_active)
@@ -1608,7 +1611,7 @@ export class SalonService {
         [tenantId, id],
       );
       const line = rows[0];
-      if (!line) throw new NotFoundException('ط®ط· ط®ط¯ظ…ط§طھغŒ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (!line) throw new NotFoundException('خط خدماتی مورد نظر یافت نشد');
 
       const nameChanges = dto.name !== undefined && dto.name !== line.name;
 
@@ -1618,7 +1621,7 @@ export class SalonService {
           [tenantId, dto.name, id],
         );
         if (duplicate.length > 0) {
-          throw new BadRequestException('ط®ط·غŒ ط¨ط§ ط§غŒظ† ظ†ط§ظ… ظ‚ط¨ظ„ط§ظ‹ ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
+          throw new BadRequestException('خطی با این نام قبلاً ثبت شده است');
         }
       }
 
@@ -1643,7 +1646,7 @@ export class SalonService {
 
       return nameChanges
         ? { status: 'pending_approval', message: PENDING_APPROVAL_MESSAGE }
-        : { status: line.status, message: 'ط«ط¨طھ ط´ط¯' };
+        : { status: line.status, message: 'ثبت شد' };
     });
   }
 
@@ -1659,7 +1662,7 @@ export class SalonService {
         `SELECT id FROM service_lines WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      if (rows.length === 0) throw new NotFoundException('ط®ط· ط®ط¯ظ…ط§طھغŒ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (rows.length === 0) throw new NotFoundException('خط خدماتی مورد نظر یافت نشد');
 
       const bookings = await manager.query<Array<{ count: number }>>(
         `SELECT COUNT(*)::int AS count
@@ -1669,14 +1672,14 @@ export class SalonService {
         [id],
       );
       if ((bookings[0]?.count ?? 0) > 0) {
-        throw new BadRequestException('ط§غŒظ† ط®ط· ط¯ط§ط±ط§غŒ ط±ط²ط±ظˆ ظپط¹ط§ظ„ ط§ط³طھ ظˆ ظپط¹ظ„ط§ظ‹ ظ‚ط§ط¨ظ„ ط­ط°ظپ ظ†غŒط³طھ');
+        throw new BadRequestException('این خط دارای رزرو فعال است و فعلاً قابل حذف نیست');
       }
 
       await manager.query(
         `UPDATE service_lines SET is_active = false WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -1729,7 +1732,7 @@ export class SalonService {
         `SELECT id FROM service_lines WHERE tenant_id = $1 AND id = $2`,
         [tenantId, lineId],
       );
-      if (lines.length === 0) throw new NotFoundException('ط®ط· ط®ط¯ظ…ط§طھغŒ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (lines.length === 0) throw new NotFoundException('خط خدماتی مورد نظر یافت نشد');
 
       await manager.query(
         `INSERT INTO services
@@ -1747,7 +1750,7 @@ export class SalonService {
           dto.depositRequired ? dto.depositAmount ?? null : null,
         ],
       );
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -1763,7 +1766,7 @@ export class SalonService {
         `SELECT id FROM services WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      if (rows.length === 0) throw new NotFoundException('ط®ط¯ظ…طھ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (rows.length === 0) throw new NotFoundException('خدمت مورد نظر یافت نشد');
 
       const sets: string[] = [];
       const params: unknown[] = [tenantId, id];
@@ -1793,7 +1796,7 @@ export class SalonService {
           params,
         );
       }
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -1805,12 +1808,12 @@ export class SalonService {
         `SELECT id FROM services WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      if (rows.length === 0) throw new NotFoundException('ط®ط¯ظ…طھ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (rows.length === 0) throw new NotFoundException('خدمت مورد نظر یافت نشد');
       await manager.query(
         `UPDATE services SET is_active = false WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -2532,14 +2535,14 @@ export class SalonService {
       const existing = users[0];
       if (existing) {
         if (existing.role !== 'specialist') {
-          throw new BadRequestException('ط§غŒظ† ط´ظ…ط§ط±ظ‡ ط¨ط§ ظ†ظ‚ط´ ط¯غŒع¯ط±غŒ ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
+          throw new BadRequestException('این شماره با نقش دیگری ثبت شده است');
         }
         const owned = await manager.query<Array<{ id: string }>>(
           `SELECT id FROM specialists WHERE tenant_id = $1 AND user_id = $2`,
           [tenantId, existing.id],
         );
         if (owned.length > 0) {
-          throw new BadRequestException('ط§غŒظ† ع©ط§ط±ط¨ط± ظ‚ط¨ظ„ط§ظ‹ ط¨ظ‡ ط¹ظ†ظˆط§ظ† ظ…طھط®طµطµ ط¯ط± ط§غŒظ† ط³ط§ظ„ظ† ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
+          throw new BadRequestException('این کاربر قبلاً به عنوان متخصص در این سالن ثبت شده است');
         }
         userId = existing.id;
         // The form is the owner's source of truth for the display name and the
@@ -2570,7 +2573,7 @@ export class SalonService {
           // 1730000000002); under RLS another tenant's row is invisible to
           // the lookup above, so a cross-tenant collision surfaces here.
           if ((error as { code?: string }).code === '23505') {
-            throw new BadRequestException('ط§غŒظ† ط´ظ…ط§ط±ظ‡ ظ‚ط¨ظ„ط§ظ‹ ط¨ط§ ظ†ظ‚ط´ ط¯غŒع¯ط±غŒ ط«ط¨طھ ط´ط¯ظ‡ ط§ط³طھ');
+            throw new BadRequestException('این شماره قبلاً با نقش دیگری ثبت شده است');
           }
           throw error;
         }
@@ -2636,7 +2639,7 @@ export class SalonService {
           : `SELECT id, user_id FROM specialists WHERE tenant_id = $1 AND id = $2`,
         ownRowOnly ? [tenantId, id, user.userId] : [tenantId, id],
       );
-      if (rows.length === 0) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (rows.length === 0) throw new NotFoundException('متخصص مورد نظر یافت نشد');
 
       const sets: string[] = [];
       const params: unknown[] = [tenantId, id];
@@ -2680,7 +2683,7 @@ export class SalonService {
         ]);
       }
 
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -2697,7 +2700,7 @@ export class SalonService {
         `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      if (rows.length === 0) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (rows.length === 0) throw new NotFoundException('متخصص مورد نظر یافت نشد');
 
       const bookings = await manager.query<Array<{ count: number }>>(
         `SELECT COUNT(*)::int AS count
@@ -2706,14 +2709,14 @@ export class SalonService {
         [id],
       );
       if ((bookings[0]?.count ?? 0) > 0) {
-        throw new BadRequestException('ط§غŒظ† ظ…طھط®طµطµ ط±ط²ط±ظˆ ظپط¹ط§ظ„ ط¯ط§ط±ط¯');
+        throw new BadRequestException('این متخصص رزرو فعال دارد');
       }
 
       await manager.query(
         `UPDATE specialists SET is_active = false WHERE tenant_id = $1 AND id = $2`,
         [tenantId, id],
       );
-      return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+      return { status: 'approved', message: 'ثبت شد' };
     });
   }
 
@@ -2810,7 +2813,7 @@ export class SalonService {
         `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
         [tenantId, dto.specialistId],
       );
-      if (specs.length === 0) throw new NotFoundException('ظ…طھط®طµطµ ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (specs.length === 0) throw new NotFoundException('متخصص مورد نظر یافت نشد');
 
       const element = JSON.stringify({
         id: randomUUID(),
@@ -2861,7 +2864,7 @@ export class SalonService {
         removed = true;
         break;
       }
-      if (!removed) throw new NotFoundException('ظ†ظ…ظˆظ†ظ‡â€Œع©ط§ط± ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
+      if (!removed) throw new NotFoundException('نمونه‌کار مورد نظر یافت نشد');
 
       return this.stagePortfolioReview(manager, tenantId);
     });
@@ -2891,9 +2894,9 @@ export class SalonService {
   /** Tenant of a staff request, or the charter's 404 when the token has none. */
   private requireStaffTenant(user: AuthenticatedUser): string {
     if (!user || !STAFF_ROLES.has(user.role)) {
-      throw new ForbiddenException('ط§غŒظ† ط¨ط®ط´ ظپظ‚ط· ط¨ط±ط§غŒ ظ¾ط±ط³ظ†ظ„ ط³ط§ظ„ظ† ط§ط³طھ');
+      throw new ForbiddenException('این بخش فقط برای پرسنل سالن است');
     }
-    if (!user.tenantId) throw new NotFoundException('ط¨ظ‡ ط³ط§ظ„ظ†غŒ ظ…طھطµظ„ ظ†غŒط³طھغŒط¯');
+    if (!user.tenantId) throw new NotFoundException('به سالنی متصل نیستید');
     return user.tenantId;
   }
 
@@ -3173,7 +3176,7 @@ function parseCivilDate(value: string): { year: number; month: number; day: numb
     parsed.getUTCMonth() !== month - 1 ||
     parsed.getUTCDate() !== day
   ) {
-    throw new BadRequestException('طھط§ط±غŒط® ظˆط§ط±ط¯â€Œط´ط¯ظ‡ ظ…ط¹طھط¨ط± ظ†غŒط³طھ');
+    throw new BadRequestException('تاریخ وارد‌شده معتبر نیست');
   }
   return { year, month, day };
 }

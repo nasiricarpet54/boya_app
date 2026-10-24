@@ -96,9 +96,17 @@ export class BookingService {
     // specialist has nothing to do with. `specialists` carries no RLS policy, so
     // this single read needs no tenant GUC (which a customer's token would not
     // set anyway) and doubles as the row the checks below read from.
-    const specialist = await this.dataSource.getRepository(Specialist).findOne({
-      where: { id: input.specialistId },
-    });
+    let specialist;
+    if (input.tenantId) {
+      specialist = await this.dataSource.transaction(async (manager) => {
+        await manager.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [input.tenantId]);
+        return manager.getRepository(Specialist).findOne({ where: { id: input.specialistId } });
+      });
+    } else {
+      specialist = await this.dataSource.getRepository(Specialist).findOne({
+        where: { id: input.specialistId },
+      });
+    }
     if (!specialist) throw new NotFoundException('متخصص یافت نشد');
     if (input.tenantId && specialist.tenantId !== input.tenantId) {
       throw new BadRequestException('tenantId با متخصص مطابقت ندارد');
