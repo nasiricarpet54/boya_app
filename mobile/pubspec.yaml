@@ -1,0 +1,11 @@
+name: boya_mobile
+environment:
+  sdk: ^3.7.0
+workspace:
+  - shared
+  - customer_app
+  - salon_app
+  - specialist_app
+
+dependency_overrides:
+  intl: ^0.20.2

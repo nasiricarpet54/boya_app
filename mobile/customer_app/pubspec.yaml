@@ -1,3 +1,4 @@
+resolution: workspace
 name: customer_app
 description: Beauty Platform customer app.
 publish_to: none
@@ -18,7 +19,7 @@ dependencies:
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
   geolocator: ^14.0.3
-  flutter_secure_storage: ^9.2.4
+
   neshan_maps_flutter: ^1.1.0
 
 dev_dependencies:
@@ -32,5 +33,3 @@ flutter:
     - assets/faq.json
 
 # ✅ این بخش باید دقیقاً بدون فاصله در انتهای فایل باشد
-dependency_overrides:
-  intl: 0.20.2

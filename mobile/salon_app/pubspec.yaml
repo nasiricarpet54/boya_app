@@ -1,3 +1,4 @@
+resolution: workspace
 name: salon_app
 description: Beauty Platform salon panel.
 publish_to: none
@@ -17,7 +18,7 @@ dependencies:
     sdk: flutter
   dio: ^5.4.0
   shared_preferences: 2.5.3
-  flutter_secure_storage: ^9.2.4
+
   url_launcher: ^6.3.1
   fl_chart: 0.68.0
   image_picker: 1.1.2
@@ -27,8 +28,3 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-dependency_overrides:
-  intl: 0.20.2
-
-flutter:
-  uses-material-design: true
