@@ -15,5 +15,8 @@ export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
     migrations: ['dist/database/migrations/*.js'],
     ssl: config.get<string>('DATABASE_SSL') === 'true',
     logger: process.env.NODE_ENV !== 'production' ? new AdvancedQueryLogger() : undefined,
+    extra: {
+      max: 50, // Connection pool matched to the VPS limit
+    },
   };
 }
