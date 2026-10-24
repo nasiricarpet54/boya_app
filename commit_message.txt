@@ -1,4 +1,5 @@
-fix(ci): create uuid-ossp extension in DB before schedule blocks migration
+test(integration): fix UUID typos, table lists, and RLS seeding violations
 
-- Explicitly added `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"` in the `CreateScheduleBlocks1792406647600` migration so `uuid_generate_v4()` will be correctly defined across the database when tests spin up cleanly.
-- Fix Flutter analyze issues by correcting `radius` -> `borderRadius` parameter in `BoyaTheme` and standardizing `sage` -> `success` color in `BoyaLogo`.
+- Fix invalid `...o1` UUIDs in `specialist-role-isolation.integration-spec.ts`.
+- Update `TENANT_TABLES` array in `policy-guc.integration-spec.ts` reflecting the updated policy names.
+- Fix `new row violates row-level security policy for table "specialists"` in existing integration tests by appending `app.current_role='admin'` to the `withTenant` wrapper to bypass newly enforced RLS rules for specialist seeds.

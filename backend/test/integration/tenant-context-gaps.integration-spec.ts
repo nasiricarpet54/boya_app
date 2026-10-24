@@ -75,12 +75,12 @@ describeIntegration('BUG-4/5: booking reads must set the tenant GUC', () => {
         TENANT,
         '09120009922',
       ]);
-      await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
+      await query(`SELECT set_config('app.current_role', 'admin', true)`); await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
         SPECIALIST,
         TENANT,
         SPECIALIST_USER,
       ]);
-      await query(`INSERT INTO services (id, tenant_id, name, price, duration_minutes) VALUES ($1, $2, $3, $4, $5)`, [
+      await query(`SELECT set_config('app.current_role', 'admin', true)`); await query(`INSERT INTO services (id, tenant_id, name, price, duration_minutes) VALUES ($1, $2, $3, $4, $5)`, [
         SERVICE,
         TENANT,
         'IT Context Service',

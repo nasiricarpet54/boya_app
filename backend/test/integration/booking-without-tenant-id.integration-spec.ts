@@ -94,7 +94,7 @@ describeIntegration('booking tenantId derived from the specialist', () => {
         '09120009882',
         'IT Derived Specialist',
       ]);
-      await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
+      await query(`SELECT set_config('app.current_role', 'admin', true)`); await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
         SPECIALIST,
         TENANT,
         SPECIALIST_USER,

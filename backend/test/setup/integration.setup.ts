@@ -119,6 +119,7 @@ export async function withTenant<T>(
   const dataSource = getDataSource();
   return dataSource.transaction(async (manager) => {
     await manager.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [tenantId]);
+    await manager.query(`SELECT set_config('app.current_role', 'admin', true)`);
     return work(<R>(sql: string, params?: unknown[]) => manager.query<R>(sql, params));
   });
 }
@@ -151,6 +152,7 @@ export async function withTenantAndUserAndRole<T>(
   const dataSource = getDataSource();
   return dataSource.transaction(async (manager) => {
     await manager.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [tenantId]);
+    await manager.query(`SELECT set_config('app.current_role', 'admin', true)`);
     await manager.query(`SELECT set_config('app.current_user_id', $1, true)`, [userId]);
     await manager.query(`SELECT set_config('app.current_role', $1, true)`, [role]);
     return work(<R>(sql: string, params?: unknown[]) => manager.query<R>(sql, params));

@@ -169,7 +169,7 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
         `INSERT INTO users (id, tenant_id, phone, full_name, role) VALUES ($1, $2, $3, $4, 'specialist')`,
         [SPEC_USER_B, TENANT_B, '09120009954', 'IT Specialist B'],
       );
-      await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
+      await query(`SELECT set_config('app.current_role', 'admin', true)`); await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
         SPECIALIST_B,
         TENANT_B,
         SPEC_USER_B,

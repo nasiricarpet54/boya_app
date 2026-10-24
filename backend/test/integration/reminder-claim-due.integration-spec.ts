@@ -101,7 +101,7 @@ describeIntegration('cron sweeps must claim rows with no tenant GUC (like the @C
           TENANT,
           s.phone,
         ]);
-        await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
+        await query(`SELECT set_config('app.current_role', 'admin', true)`); await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [
           s.specialist,
           TENANT,
           s.user,
