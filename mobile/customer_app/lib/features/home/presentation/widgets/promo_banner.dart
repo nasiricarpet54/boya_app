@@ -13,10 +13,10 @@ class PromoBanner extends StatelessWidget {
         height: 160,
         child: Ink(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [BoyaColors.primaryHover, BoyaColors.primary, BoyaColors.sage],
+              colors: [BoyaColors.primaryHover, BoyaColors.primary, BoyaColors.success],
               stops: [0, 0.55, 1],
             ),
             borderRadius: BorderRadius.circular(20),

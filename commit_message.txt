@@ -1,5 +1,7 @@
-test(integration): fix UUID typos, table lists, and RLS seeding violations
+fix(mobile): resolve flutter analyzer errors across mobile packages
 
-- Fix invalid `...o1` UUIDs in `specialist-role-isolation.integration-spec.ts`.
-- Update `TENANT_TABLES` array in `policy-guc.integration-spec.ts` reflecting the updated policy names.
-- Fix `new row violates row-level security policy for table "specialists"` in existing integration tests by appending `app.current_role='admin'` to the `withTenant` wrapper to bypass newly enforced RLS rules for specialist seeds.
+- Added `flutter_secure_storage: ^11.2.0` to `customer_app` and `salon_app` resolving dependency constraint incompatibilities.
+- Corrected incorrect color variables referenced as `BoyaColors.sage` to `BoyaColors.success` in shared and customer app widgets.
+- Removed invalid `const` keyword assignments for `LinearGradient` relying on static but runtime evaluated parameters.
+- Standardized missing properties on `BoyaTheme` and fixed bad imports for `boya_location_picker`.
+- Cleaned unused properties and internal warnings across `salon_app`.

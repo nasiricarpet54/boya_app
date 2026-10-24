@@ -1,9 +1,10 @@
 import 'package:boya_shared/boya_shared.dart';
+
 import 'package:flutter/material.dart';
 import 'package:neshan_maps_flutter/location_picker.dart';
 
-import '../../../config/neshan_map_keys.dart';
-import '../../../theme/boya_colors.dart';
+import '../../../../config/neshan_map_keys.dart';
+
 
 /// BOYA-styled location picker wrapper around NeshanLocationPicker.
 ///
@@ -19,15 +20,15 @@ class BoyaLocationPicker extends StatefulWidget {
     this.initialZoom = 15,
   });
 
-  final Function(LatLng position, String address)? onLocationAccepted;
-  final LatLng? initialCenter;
+  final Function(dynamic position, String address)? onLocationAccepted;
+  final dynamic initialCenter;
   final double initialZoom;
 
   @override
-  State<BookerLocationPicker> createState() => _BookerLocationPickerState();
+  State<BoyaLocationPicker> createState() => _BoyaLocationPickerState();
 }
 
-class _BookerLocationPickerState extends State<BookerLocationPicker> {
+class _BoyaLocationPickerState extends State<BoyaLocationPicker> {
   @override
   Widget build(BuildContext context) {
     // Use LocationPicker from neshan_maps_flutter.

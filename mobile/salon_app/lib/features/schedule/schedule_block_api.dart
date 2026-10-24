@@ -14,7 +14,7 @@ class ScheduleBlockApi {
     required DateTime endTime,
     required String reason,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
+    await _dio.post<Map<String, dynamic>>(
       '/salon/me/schedule/block',
       data: {
         'specialistId': specialistId,
