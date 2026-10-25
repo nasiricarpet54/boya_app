@@ -132,7 +132,7 @@ export class BookingService {
     }
 
     if (input.startsAt.getTime() <= Date.now()) throw new BadRequestException('زمان رزرو باید در آینده باشد');
-    await this.assertWithinWorkingHours(tenantId, input.startsAt, service.durationMinutes);
+    await this.assertWithinWorkingHours(tenantId ?? null, input.startsAt, service.durationMinutes);
 
     const end = new Date(input.startsAt.getTime() + service.durationMinutes * 60_000);
     let saved: Booking;
@@ -247,10 +247,16 @@ export class BookingService {
    * is the only gate.
    */
   private async assertWithinWorkingHours(
-    tenantId: string,
+    tenantId: string | null,
     startsAt: Date,
     durationMinutes: number,
   ): Promise<void> {
+    if (!tenantId) {
+      // For mobile specialists who don't belong to a tenant, they don't have tenant working hours.
+      // Or if the booking is without tenant. We skip the salon hours check.
+      return;
+    }
+
     const [tenant] = await this.dataSource.query<
       Array<{ working_hours: Record<string, unknown> | null }>
     >(`SELECT working_hours FROM tenants WHERE id = $1 AND is_active = true`, [tenantId]);
