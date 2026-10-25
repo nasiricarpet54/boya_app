@@ -1,3 +1,5 @@
+import 'package:specialist_app/screens/schedule_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +17,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const PlaceholderPage(title: 'My Schedule'),
+            builder: (context, state) => const ScheduleScreen(),
           ),
           GoRoute(
             path: '/clients',
