@@ -13,9 +13,7 @@ import { formatJalaliLatin } from "../../utils/jalali-date.util";
 import { isOpenFor } from "../../utils/working-hours.util";
 import { setTenantContext } from "../../database/tenant-context";
 import { ServiceCatalogService } from "../service/service.service";
-import { Service } from "../service/entities/service.entity";
 import { SpecialistService } from "../specialist/specialist.service";
-import { Specialist } from "../specialist/entities/specialist.entity";
 import {
   AvailabilityService,
   TimeSlot,
@@ -109,36 +107,47 @@ export class BookingService {
     let saved: Booking;
     try {
       saved = await this.dataSource.transaction(async (manager) => {
-        let specialist;
-
-        if (input.tenantId) {
-          await setTenantContext(manager, input.tenantId);
-          specialist = await manager
-            .getRepository(Specialist)
-            .findOne({ where: { id: input.specialistId } });
-        } else {
-          specialist = await manager.getRepository(Specialist).findOne({
-            where: { id: input.specialistId },
-          });
+        let tenantId = input.tenantId;
+        if (tenantId) {
+          await setTenantContext(manager, tenantId!);
         }
 
-        if (!specialist) throw new NotFoundException("متخصص یافت نشد");
+        // Query Specialist, Service, and Tenant working hours in one go
+        const result = await manager.query(
+          `SELECT
+             sp.id as "specialistId",
+             sp.tenant_id as "tenantId",
+             sp.is_active as "specialistIsActive",
+             sp.offers_mobile_service as "offersMobileService",
+             se.is_active as "serviceIsActive",
+             se.is_mobile_available as "isMobileAvailable",
+             se.duration_minutes as "durationMinutes",
+             se.price as "servicePrice",
+             t.working_hours as "workingHours"
+           FROM specialists sp
+           LEFT JOIN services se ON se.id = $2
+           LEFT JOIN tenants t ON t.id = sp.tenant_id AND t.is_active = true
+           WHERE sp.id = $1`,
+          [input.specialistId, input.serviceId],
+        );
 
-        if (input.tenantId && specialist.tenantId !== input.tenantId) {
+        if (!result || result.length === 0)
+          throw new NotFoundException("متخصص یافت نشد");
+        const data = result[0];
+
+        if (tenantId && data.tenantId !== tenantId) {
           throw new BadRequestException("tenantId با متخصص مطابقت ندارد");
         }
 
-        const tenantId = specialist.tenantId;
+        tenantId = data.tenantId;
 
         if (!input.tenantId) {
-          await setTenantContext(manager, tenantId);
+          await setTenantContext(manager, tenantId!);
         }
 
-        const service = await manager
-          .getRepository(Service)
-          .findOne({ where: { tenantId, id: input.serviceId } });
-        if (!service) throw new NotFoundException("خدمت یافت نشد");
-        if (!service.isActive || !specialist.isActive)
+        if (data.servicePrice == null)
+          throw new NotFoundException("خدمت یافت نشد");
+        if (!data.serviceIsActive || !data.specialistIsActive)
           throw new BadRequestException("خدمت یا متخصص انتخاب‌شده غیرفعال است");
 
         if (input.isMobile) {
@@ -148,25 +157,27 @@ export class BookingService {
           ) {
             throw new BadRequestException("آدرس مشتری الزامی است");
           }
-          if (!specialist.offersMobileService) {
+          if (!data.offersMobileService) {
             throw new BadRequestException("این متخصص خدمات سیار ارائه نمی‌دهد");
           }
-          if (!service.isMobileAvailable) {
+          if (!data.isMobileAvailable) {
             throw new BadRequestException(
               "این خدمت به‌صورت سیار ارائه نمی‌شود",
             );
           }
         }
 
-        await this.assertWithinWorkingHours(
-          manager,
-          tenantId,
-          input.startsAt,
-          service.durationMinutes,
-        );
+        const hours = data.workingHours;
+        if (hours && Object.keys(hours).length > 0) {
+          if (!isOpenFor(hours, input.startsAt, data.durationMinutes)) {
+            throw new BadRequestException(
+              "این ساعت خارج از ساعات کاری سالن است. لطفاً زمان دیگری را انتخاب کنید.",
+            );
+          }
+        }
 
         const end = new Date(
-          input.startsAt.getTime() + service.durationMinutes * 60_000,
+          input.startsAt.getTime() + data.durationMinutes * 60_000,
         );
 
         await manager.query(
@@ -182,7 +193,7 @@ export class BookingService {
             serviceId: input.serviceId,
             timeSlot: `[${input.startsAt.toISOString()},${end.toISOString()})`,
             status: BookingStatus.Pending,
-            totalPrice: service.price,
+            totalPrice: data.servicePrice,
             notes: input.notes ?? null,
             isMobile: input.isMobile ?? false,
             customerAddress: input.isMobile
@@ -408,7 +419,7 @@ export class BookingService {
     work: (bookings: Repository<Booking>) => Promise<T>,
   ): Promise<T> {
     return this.dataSource.transaction(async (manager) => {
-      await setTenantContext(manager, tenantId);
+      await setTenantContext(manager, tenantId!);
       return work(manager.getRepository(Booking));
     });
   }
