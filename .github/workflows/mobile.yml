@@ -24,8 +24,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.8'
-          cache: false
+          cache: true
           channel: stable
+      - name: Show Flutter and Dart versions
+        run: flutter --version
       - name: Resolve dependencies
         working-directory: ${{ matrix.package }}
         run: flutter pub get

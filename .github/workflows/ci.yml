@@ -66,7 +66,9 @@ jobs:
         with:
           flutter-version: '3.47.8'
           channel: 'stable'
-          cache: false
+          cache: true
+      - name: Show Flutter and Dart versions
+        run: flutter --version
       - run: flutter pub get
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
@@ -99,7 +101,9 @@ jobs:
         with:
           flutter-version: '3.47.8'
           channel: 'stable'
-          cache: false
+          cache: true
+      - name: Show Flutter and Dart versions
+        run: flutter --version
       - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
@@ -123,7 +127,9 @@ jobs:
         with:
           flutter-version: '3.47.8'
           channel: 'stable'
-          cache: false
+          cache: true
+      - name: Show Flutter and Dart versions
+        run: flutter --version
       - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
