@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:parsi_datetime_picker/parsi_datetime_picker.dart';
 
 import '../theme/boya_colors.dart';
 import '../theme/boya_typography.dart';
@@ -36,17 +35,16 @@ class BoyaDatePicker extends StatelessWidget {
     final start = firstDate ?? DateTime(1921, 3, 21);
     final end = lastDate ?? DateTime(2091, 3, 20);
     final initial = _clamp(initialDate ?? DateTime.now(), start, end);
-    final picked = await showParsiDatePicker(
+    final picked = await showDatePicker(
       context: context,
-      initialDate: ParsiDate.fromDateTime(initial),
-      firstDate: ParsiDate.fromDateTime(start),
-      lastDate: ParsiDate.fromDateTime(end),
+      initialDate: initial,
+      firstDate: start,
+      lastDate: end,
       helpText: 'انتخاب تاریخ',
       cancelText: 'انصراف',
       confirmText: 'تأیید',
-      holidayDates: _fridays(start, end),
     );
-    if (picked != null) onDateSelected(picked.toDateTime());
+    if (picked != null) onDateSelected(picked);
   }
 }
 
@@ -54,18 +52,4 @@ DateTime _clamp(DateTime value, DateTime start, DateTime end) {
   if (value.isBefore(start)) return start;
   if (value.isAfter(end)) return end;
   return value;
-}
-
-List<ParsiDate> _fridays(DateTime start, DateTime end) {
-  final dates = <ParsiDate>[];
-  var cursor = DateTime(start.year, start.month, start.day);
-  final limit = DateTime(end.year, end.month, end.day);
-  while (cursor.weekday != DateTime.friday) {
-    cursor = cursor.add(const Duration(days: 1));
-  }
-  while (!cursor.isAfter(limit) && dates.length < 3660) {
-    dates.add(ParsiDate.fromDateTime(cursor));
-    cursor = cursor.add(const Duration(days: 7));
-  }
-  return dates;
 }

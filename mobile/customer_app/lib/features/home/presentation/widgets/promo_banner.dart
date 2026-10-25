@@ -16,7 +16,7 @@ class PromoBanner extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [BoyaColors.primaryHover, BoyaColors.primary, BoyaColors.sage],
+              colors: [BoyaColors.primaryHover, BoyaColors.primary, BoyaColors.success],
               stops: [0, 0.55, 1],
             ),
             borderRadius: BorderRadius.circular(20),

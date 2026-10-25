@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:parsi_datetime_picker/parsi_datetime_picker.dart';
 
 import '../theme/boya_theme.dart';
 import '../utils/text_direction_utils.dart';

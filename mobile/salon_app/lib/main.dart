@@ -17,7 +17,7 @@ class BoyaSalonApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Boya Salon',
-      theme: BoyaTheme.lightTheme,
+      theme: BoyaTheme.light(),
       home: const SalonHome(),
       debugShowCheckedModeBanner: false,
     );

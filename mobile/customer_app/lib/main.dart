@@ -20,7 +20,7 @@ class BoyaCustomerApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Boya',
-      theme: BoyaTheme.lightTheme,
+      theme: BoyaTheme.light(),
       routerConfig: goRouter,
       debugShowCheckedModeBanner: false,
     );
