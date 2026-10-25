@@ -1,7 +1,4 @@
-fix(mobile): resolve flutter analyzer errors across mobile packages
+ci: fix mobile test and code generation issues
 
-- Added `flutter_secure_storage: ^11.2.0` to `customer_app` and `salon_app` resolving dependency constraint incompatibilities.
-- Corrected incorrect color variables referenced as `BoyaColors.sage` to `BoyaColors.success` in shared and customer app widgets.
-- Removed invalid `const` keyword assignments for `LinearGradient` relying on static but runtime evaluated parameters.
-- Standardized missing properties on `BoyaTheme` and fixed bad imports for `boya_location_picker`.
-- Cleaned unused properties and internal warnings across `salon_app`.
+- Upgraded the generator toolchain (`retrofit_generator`, `retrofit`, `build_runner`) to versions compatible with Dart 3.13 dot-shorthand property access syntax in `mobile/shared/pubspec.yaml`
+- Regenerated generated files smoothly via `dart run build_runner build`
