@@ -1,12 +1,12 @@
-﻿import 'package:boya_shared/boya_shared.dart';
+import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 
-class _SalonTab {
-  const _SalonTab(this.title, this.icon, this.selectedIcon, this.branch);
+class SalonTab {
+  const SalonTab(this.title, this.icon, this.selectedIcon, this.branch);
   final String title;
   final IconData icon;
   final IconData selectedIcon;
@@ -26,30 +26,30 @@ List<int> branchesForRole(String? role) {
   }
 }
 
-final Map<String, List<_SalonTab>> roleTabs = {
+final Map<String, List<SalonTab>> roleTabs = {
   'salon_owner': [
-    const _SalonTab('خانه', Icons.home_outlined, Icons.home, 0),
-    const _SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
-    const _SalonTab('متخصصان', Icons.people_outlined, Icons.people, 2),
-    const _SalonTab('مالی', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
-    const _SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
+    const SalonTab('خانه', Icons.home_outlined, Icons.home, 0),
+    const SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
+    const SalonTab('متخصصان', Icons.people_outlined, Icons.people, 2),
+    const SalonTab('مالی', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
+    const SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
   ],
   'admin': [
-    const _SalonTab('خانه', Icons.home_outlined, Icons.home, 0),
-    const _SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
-    const _SalonTab('متخصصان', Icons.people_outlined, Icons.people, 2),
-    const _SalonTab('مالی', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
-    const _SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
+    const SalonTab('خانه', Icons.home_outlined, Icons.home, 0),
+    const SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
+    const SalonTab('متخصصان', Icons.people_outlined, Icons.people, 2),
+    const SalonTab('مالی', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
+    const SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
   ],
   'specialist': [
-    const _SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
-    const _SalonTab('کیف پول', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
-    const _SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
+    const SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
+    const SalonTab('کیف پول', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
+    const SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
   ],
   'default': [
-    const _SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
-    const _SalonTab('کیف پول', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
-    const _SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
+    const SalonTab('رزروها', Icons.calendar_today_outlined, Icons.calendar_today, 1),
+    const SalonTab('کیف پول', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 3),
+    const SalonTab('پروفایل', Icons.person_outlined, Icons.person, 4),
   ],
 };
 

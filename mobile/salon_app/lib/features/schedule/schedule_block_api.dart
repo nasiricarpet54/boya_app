@@ -14,7 +14,7 @@ class ScheduleBlockApi {
     required DateTime endTime,
     required String reason,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
+    await _dio.post<Map<String, dynamic>>(
       '/salon/me/schedule/block',
       data: {
         'specialistId': specialistId,
@@ -70,3 +70,9 @@ class ScheduleBlockItem {
 }
 
 final scheduleBlockApiProvider = Provider<ScheduleBlockApi>((ref) => ScheduleBlockApi(ref.watch(dioProvider)));
+
+/// All blocks of the signed-in provider: the salon's for staff, the caller's
+/// own for a mobile specialist. Invalidated after every write on this screen.
+final scheduleBlocksProvider = FutureProvider<List<ScheduleBlockItem>>(
+  (ref) => ref.watch(scheduleBlockApiProvider).fetchScheduleBlocks(),
+);

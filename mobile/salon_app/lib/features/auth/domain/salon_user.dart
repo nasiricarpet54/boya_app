@@ -1,9 +1,11 @@
 /// Roles the salon panel admits.
 ///
 /// Mirrors `STAFF_ROLES` in `backend/src/modules/salon/salon.service.ts`
-/// (`salon_owner`, `line_manager`, `specialist`, `admin`) — the same set the
-/// API uses to decide whether a caller may read the panel. `customer` is the
-/// only role the backend ever hands out that is absent here.
+/// (`salon_owner`, `line_manager`, `specialist`, `employed`, `booth_renter`,
+/// `admin`) plus `freelance_mobile` (ADR-011), whose schedule-block routes
+/// resolve the caller through their own `specialists` row instead of a
+/// tenant. `customer` is the only role the backend ever hands out that is
+/// absent here.
 ///
 /// This is an allow-list on purpose. The panel exposes finance, staff and
 /// service-line management, so a role this app has never heard of must be
@@ -12,6 +14,9 @@ const Set<String> salonPanelRoles = {
   'salon_owner',
   'line_manager',
   'specialist',
+  'employed',
+  'booth_renter',
+  'freelance_mobile',
   'admin',
 };
 

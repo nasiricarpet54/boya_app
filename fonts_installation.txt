@@ -1,0 +1,4 @@
+E:\\boya\\boya\\mobile\\shared\\assets\\fonts\\Vazirmatn-Regular.ttf
+e:\\boya\\boya\\mobile\\shared\\assets\\fonts\\Vazirmatn-Medium.ttf
+e:\\boya\\boya\\mobile\\shared\\assets\\fonts\\Vazirmatn-SemiBold.ttf
+e:\\boya\\boya\\mobile\\shared\\assets\\fonts\\Vazirmatn-Bold.ttf

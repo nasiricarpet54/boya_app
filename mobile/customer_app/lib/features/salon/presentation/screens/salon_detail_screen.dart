@@ -291,7 +291,6 @@ class _SalonHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final address = salon.address;
-    final phone = salon.phone;
     final specialty = salon.specialty;
     final distance = salon.distanceKm;
     final discount = salon.discountPercent;
@@ -332,10 +331,6 @@ class _SalonHeader extends StatelessWidget {
           if (address != null && address.isNotEmpty) ...[
             const SizedBox(height: 8),
             _HeaderLine(icon: Icons.place_outlined, text: address),
-          ],
-          if (phone != null && phone.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            _HeaderLine(icon: Icons.phone_outlined, text: phone),
           ],
         ],
       ),

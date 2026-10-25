@@ -314,7 +314,7 @@ class _BoyaLogoPainter extends CustomPainter {
         ..cubicTo(377.00, 204.67, 373.00, 198.17, 368.50, 192.00)
         ..cubicTo(365.83, 192.00, 363.17, 192.00, 360.50, 192.00)
         ..close(),
-      Paint()..color = BoyaColors.sage,
+      Paint()..color = BoyaColors.success,
     );
     canvas.drawPath(
       Path()

@@ -236,7 +236,7 @@ export class SalonPanelController {
   }
 
   /** The weekly schedule, approval-gated exactly like the profile fields. */
-  @Roles('salon_owner')
+  @Roles('salon_owner', 'line_manager', 'admin')
   @Patch('me/schedule')
   @ApiOperation({
     summary: 'ویرایش ساعات کاری سالن (نیازمند تایید ادمین)',
@@ -255,8 +255,11 @@ export class SalonPanelController {
    * Block a time range in the schedule (for walk-in customers, breaks, or
    * personal time off). Blocking a time excludes it from the public
    * availability list, exactly as if a booking already existed.
+   *
+   * `blockScope` in the service is the real gate: a salon staff token writes
+   * into its own tenant, a `freelance_mobile` token onto its own calendar.
    */
-  @Roles('salon_owner')
+  @Roles('salon_owner', 'line_manager', 'specialist', 'admin', 'booth_renter', 'freelance_mobile')
   @Post('me/schedule/block')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -274,8 +277,9 @@ export class SalonPanelController {
 
   /**
    * Remove a schedule block. The freed time immediately becomes bookable again.
+   * A mobile caller may only remove a block from their own calendar.
    */
-  @Roles('salon_owner')
+  @Roles('salon_owner', 'line_manager', 'specialist', 'admin', 'booth_renter', 'freelance_mobile')
   @Delete('me/schedule/block/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'حذف مسدودی زمان از تقویم' })
@@ -292,7 +296,7 @@ export class SalonPanelController {
    * blocked range; use `specialistId`/`salonId` to tell a whole-salon block
    * (or a mobile block) from a single specialist's.
    */
-  @Roles('salon_owner')
+  @Roles('salon_owner', 'line_manager', 'specialist', 'admin', 'booth_renter', 'freelance_mobile')
   @Get('me/schedule/blocks')
   @ApiOperation({ summary: 'فهرست مسدودی‌های زمان تقویم' })
   listScheduleBlocks(

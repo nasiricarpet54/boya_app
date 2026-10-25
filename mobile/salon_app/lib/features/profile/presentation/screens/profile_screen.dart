@@ -74,6 +74,11 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () => context.push(salonWorkingHoursPath),
             ),
             _MenuItem(
+              icon: Icons.block_outlined,
+              title: 'زمان‌های مسدود',
+              onTap: () => context.push(salonBlocksPath),
+            ),
+            _MenuItem(
               icon: Icons.photo_library_outlined,
               title: 'نمونه‌کارها',
               onTap: () => context.push(portfolioPath),

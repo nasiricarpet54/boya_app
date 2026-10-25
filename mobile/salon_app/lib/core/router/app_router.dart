@@ -17,6 +17,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salon/presentation/screens/salon_edit_screen.dart';
 import '../../features/salon/presentation/screens/salon_setup_screen.dart';
 import '../../features/salon/presentation/screens/working_hours_screen.dart';
+import '../../features/schedule/presentation/screens/schedule_blocks_screen.dart';
 import '../../features/services/presentation/screens/line_form_screen.dart';
 import '../../features/services/presentation/screens/lines_list_screen.dart';
 import '../../features/services/presentation/screens/service_form_screen.dart';
@@ -35,6 +36,11 @@ const String salonEditPath = '/salon/edit';
 /// The weekly schedule form. A sibling of the edit form: also a full page
 /// pushed onto the root navigator, saving to `PATCH /salon/me/schedule`.
 const String salonWorkingHoursPath = '/salon/hours';
+
+/// The schedule-blocks screen: blocked time ranges for off-platform clients,
+/// walk-ins, and personal time off. Same shape as the weekly form (full page,
+/// root navigator), reached from the profile menu and the working-hours form.
+const String salonBlocksPath = '/salon/blocks';
 
 /// First-run onboarding. The router parks a signed-in account here while
 /// `profileCompleted` is false (migration 1730000000033 + `GET /auth/me`): an
@@ -139,6 +145,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: salonWorkingHoursPath,
         builder: (_, _) => const WorkingHoursScreen(),
+      ),
+      GoRoute(
+        path: salonBlocksPath,
+        builder: (_, _) => const ScheduleBlocksScreen(),
       ),
       // Service-line management. Also outside the shell: every one of these is
       // a pushed full-page screen reached from the profile tab, and the auth
