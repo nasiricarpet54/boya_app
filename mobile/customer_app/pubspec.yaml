@@ -33,4 +33,9 @@ flutter:
   assets:
     - assets/faq.json
 
+
 # ✅ این بخش باید دقیقاً بدون فاصله در انتهای فایل باشد
+  fonts:
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
