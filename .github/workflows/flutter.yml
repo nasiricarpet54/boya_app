@@ -17,7 +17,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.7.0'  # ← نسخه واقعی که Dart 3.7.0 را دارد
+          flutter-version: '3.29.0'  # ← نسخه واقعی که Dart 3.7.0 را دارد
           cache: true
 
       - run: cd mobile/${{ matrix.app }} && flutter pub get
