@@ -4,7 +4,7 @@ import { Keyv } from 'keyv';
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
-  private cache: Keyv;
+  private cache!: Keyv;
   private readonly REDIS_KEY_PREFIX = 'boya:';
 
   constructor(private configService: ConfigService) {}
@@ -18,7 +18,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.cache.cleanup();
+    await this.cache.clear();
   }
 
   async get(key: string): Promise<unknown> {

@@ -2739,7 +2739,7 @@ export class SalonService {
     // "not in your salon".
     const ownRowOnly = user.role === 'specialist';
 
-    const result = await this.withPanelTenant(tenantId, async (manager) => {
+    const result = await this.withPanelTenant<SalonPanelWriteResult>(tenantId, async (manager) => {
       const rows = await manager.query<Array<{ id: string; user_id: string }>>(
         ownRowOnly
           ? `SELECT id, user_id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`
