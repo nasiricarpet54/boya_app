@@ -16,11 +16,11 @@ jobs:
       
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.8'  # نسخه‌ای که Dart 3.13.7 را همراه دارد
           channel: 'stable'
+          flutter-version: '3.47.8'
           cache: true
-          # این کلید کش پویا، با تغییر نسخه، کش قدیمی را نادیده می‌گیرد
-          cache-key: 'flutter-:version:' 
+          # کلید کش پویا: با تغییر نسخه، کش قدیمی نادیده گرفته می‌شود
+          cache-key: 'flutter-:version:'
 
       - run: cd mobile/${{ matrix.app }} && flutter pub get
       - run: cd mobile/${{ matrix.app }} && flutter analyze --fatal-infos --fatal-warnings
