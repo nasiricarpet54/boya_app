@@ -8,6 +8,8 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { CacheService } from '../cache/cache.service';
+
 
 import { formatJalaliLatin } from '../../utils/jalali-date.util';
 import { isOpenFor } from '../../utils/working-hours.util';
@@ -83,11 +85,17 @@ export class BookingService {
     private readonly catalog: ServiceCatalogService,
     private readonly specialists: SpecialistService,
     private readonly events: EventEmitter2,
+    private readonly cache: CacheService,
   ) {}
 
   displayDate(slotStart: Date): string {
     return formatJalaliLatin(slotStart);
   }
+
+  private async invalidateBookingCache(tenantId: string): Promise<void> {
+    await this.cache.invalidateTenantCache(tenantId);
+  }
+
 
   async create(input: CreateBookingInput): Promise<Booking> {
     // A booking belongs to the tenant its specialist belongs to. The caller may
@@ -383,6 +391,7 @@ export class BookingService {
       }
       booking.status = BookingStatus.Confirmed;
       return bookings.save(booking);
+    \n    await this.invalidateBookingCache(tenantId);\n
     });
     this.events.emit(BOOKING_CONFIRMED, {
       bookingId: saved.id,
@@ -412,6 +421,7 @@ export class BookingService {
       booking.status = BookingStatus.Cancelled;
       if (reason) booking.notes = booking.notes ? `${booking.notes}\n— ${reason}` : reason;
       return bookings.save(booking);
+    \n    await this.invalidateBookingCache(tenantId);\n
     });
     this.events.emit(BOOKING_CANCELLED, {
       bookingId: saved.id,

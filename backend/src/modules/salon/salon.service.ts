@@ -9,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { createHash, randomUUID } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
 
+import { CacheService } from '../cache/cache.service';
 import { setTenantContext, setUserContext } from '../../database/tenant-context';
 
 import {
@@ -575,7 +576,12 @@ export class SalonService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly events: EventEmitter2,
+    private readonly cache: CacheService,
   ) {}
+
+  private async invalidateSpecialistCache(tenantId: string): Promise<void> {
+    await this.cache.invalidateTenantCache(tenantId);
+  }
 
   async list(query: SalonQueryDto): Promise<SalonPage> {
     const page = Math.max(Math.trunc(query.page) || 1, 1);
@@ -2623,7 +2629,7 @@ export class SalonService {
     dto: CreateSpecialistPanelDto,
   ): Promise<SalonPanelSpecialistCreated> {
     const tenantId = this.requireStaffTenant(user);
-    return this.withPanelTenant(tenantId, async (manager) => {
+    const result = await this.withPanelTenant(tenantId, async (manager) => {
       const users = await manager.query<Array<{ id: string; role: string }>>(
         `SELECT id, role FROM users WHERE phone = $1`,
         [dto.phone],
@@ -2696,6 +2702,7 @@ export class SalonService {
         phone: dto.phone,
         status: 'approved' as const,
       };
+    \n    // Invalidate cache after successful write\n    await this.invalidateSpecialistCache(tenantId);\n    return result;\n
     });
   }
 
@@ -2730,7 +2737,7 @@ export class SalonService {
     // "not in your salon".
     const ownRowOnly = user.role === 'specialist';
 
-    return this.withPanelTenant(tenantId, async (manager) => {
+    const result = await this.withPanelTenant(tenantId, async (manager) => {
       const rows = await manager.query<Array<{ id: string; user_id: string }>>(
         ownRowOnly
           ? `SELECT id, user_id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`
@@ -2782,6 +2789,7 @@ export class SalonService {
       }
 
       return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
+    \n    // Invalidate cache after successful write\n    await this.invalidateSpecialistCache(tenantId);\n    return result;\n
     });
   }
 
