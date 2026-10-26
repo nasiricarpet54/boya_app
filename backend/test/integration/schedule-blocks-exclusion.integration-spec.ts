@@ -60,7 +60,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block 1')`, [TENANT_A, SPECIALIST, SLOT_START, SLOT_END]);
         const trySecond = async () => await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block 2')`, [TENANT_A, SPECIALIST, new Date(SLOT_START.getTime()+1800000), new Date(SLOT_START.getTime()+5400000)]);
         await expect(trySecond()).rejects.toThrow();
-        const cnt = await query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id=$2`, [TENANT_A, SPECIALIST]);
+        const cnt = await query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id=$2`, [TENANT_A, SPECIALIST]);
         expect(cnt[0].count).toBe(1);
       });
     });
@@ -70,7 +70,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, NULL, $2, $3, 'Closed')`, [TENANT_A, SLOT_START, SLOT_END]);
         const trySecond = async () => await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, NULL, $2, $3, '再审')`, [TENANT_A, new Date(SLOT_START.getTime()+1800000), new Date(SLOT_START.getTime()+5400000)]);
         await expect(trySecond()).rejects.toThrow();
-        const cnt = await query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id IS NULL`, [TENANT_A]);
+        const cnt = await query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id IS NULL`, [TENANT_A]);
         expect(cnt[0].count).toBe(1);
       });
     });
@@ -80,7 +80,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES (NULL, $1, $2, $3, 'Mobile')`, [MOBILE_SPECIALIST, SLOT_START, SLOT_END]);
         const trySecond = async () => await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES (NULL, $1, $2, $3, 'Mobile2')`, [MOBILE_SPECIALIST, new Date(SLOT_START.getTime()+1800000), new Date(SLOT_START.getTime()+5400000)]);
         await expect(trySecond()).rejects.toThrow();
-        const cnt = await query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE specialist_id=$1 AND tenant_id IS NULL`, [MOBILE_SPECIALIST]);
+        const cnt = await query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE specialist_id=$1 AND tenant_id IS NULL`, [MOBILE_SPECIALIST]);
         expect(cnt[0].count).toBe(1);
       });
     });
@@ -91,7 +91,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
         const nextStart = new Date(SLOT_END.getTime() + 3600000);
         const nextEnd = new Date(nextStart.getTime() + 3600000);
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block 2')`, [TENANT_A, SPECIALIST, nextStart, nextEnd]);
-        const cnt = await query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id=$2`, [TENANT_A, SPECIALIST]);
+        const cnt = await query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1 AND specialist_id=$2`, [TENANT_A, SPECIALIST]);
         expect(cnt[0].count).toBe(2);
       });
     });
@@ -104,7 +104,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
         await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1,$2,$3)`, [S2, TENANT_A, S2_USER]);
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block A')`, [TENANT_A, SPECIALIST, SLOT_START, SLOT_END]);
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block B')`, [TENANT_A, S2, SLOT_START, SLOT_END]);
-        const cnt = await query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_A]);
+        const cnt = await query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_A]);
         expect(cnt[0].count).toBe(2);
       });
     });
@@ -126,8 +126,8 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
       await q.connect();
       await q.manager.query(`SET SESSION role TO beauty_app`);
       await q.manager.query(`SET SESSION app.current_tenant_id TO '${TENANT_A}'`);
-      const resA = await q.manager.query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_A]);
-      const resB = await q.manager.query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_B]);
+      const resA = await q.manager.query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_A]);
+      const resB = await q.manager.query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE tenant_id=$1`, [TENANT_B]);
       await q.release();
       expect(resA[0].count).toBe(1);
       expect(resB[0].count).toBe(0);
@@ -143,9 +143,10 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
       await q.connect();
       await q.manager.query(`SET SESSION role TO beauty_app`);
       await q.manager.query(`SET SESSION app.current_user_id TO '${MOBILE_SPECIALIST_USER}'`);
-      const res = await q.manager.query(`SELECT COUNT(*)::int FROM schedule_blocks WHERE specialist_id IN (SELECT id FROM specialists WHERE user_id=$1 AND is_active=true)`, [MOBILE_SPECIALIST_USER]);
+      const res = await q.manager.query<{ count: number }[]>(`SELECT COUNT(*)::int FROM schedule_blocks WHERE specialist_id IN (SELECT id FROM specialists WHERE user_id=$1 AND is_active=true)`, [MOBILE_SPECIALIST_USER]);
       await q.release();
       expect(res[0].count).toBe(1);
     });
   });
 });
+
