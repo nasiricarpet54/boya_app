@@ -59,6 +59,7 @@ describeIntegration('booking tenantId derived from the specialist', () => {
       new ServiceCatalogService(dataSource.getRepository(Service), {} as never),
       new SpecialistService(dataSource.getRepository(Specialist)),
       new EventEmitter2(),
+      { invalidateTenantCache: async () => undefined } as never,
     );
 
     await seed();

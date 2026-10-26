@@ -71,13 +71,14 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
     });
     await dataSource.initialize();
 
-    salons = new SalonService(dataSource, new EventEmitter2());
+    salons = new SalonService(dataSource, new EventEmitter2(), { invalidateTenantCache: async () => undefined } as never);
     bookings = new BookingService(
       dataSource.getRepository(Booking),
       dataSource,
       new ServiceCatalogService(dataSource.getRepository(Service), {} as never),
       new SpecialistService(dataSource.getRepository(Specialist)),
       new EventEmitter2(),
+      { invalidateTenantCache: async () => undefined } as never,
     );
 
     await seed();

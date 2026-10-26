@@ -54,6 +54,7 @@ describeIntegration('BUG-4/5: booking reads must set the tenant GUC', () => {
       { findById: async () => ({ isActive: true, durationMinutes: 60 }) } as never,
       { findById: async () => ({ isActive: true }) } as never,
       { emit: () => undefined } as never,
+      { invalidateTenantCache: async () => undefined } as never,
     );
 
     await withTenant(TENANT, async (query) => {
