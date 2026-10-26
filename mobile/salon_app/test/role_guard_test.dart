@@ -38,7 +38,7 @@ Future<String> _settleLocation(
             .overrideWith(() => _FakeAuthController(session)),
       ],
       child: Consumer(
-        builder: (_, ref, _) {
+        builder: (context, ref, child) {
           router = ref.read(appRouterProvider);
           return MaterialApp.router(routerConfig: router);
         },

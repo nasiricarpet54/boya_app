@@ -2702,8 +2702,10 @@ export class SalonService {
         phone: dto.phone,
         status: 'approved' as const,
       };
-    \n    // Invalidate cache after successful write\n    await this.invalidateSpecialistCache(tenantId);\n    return result;\n
     });
+    // Invalidate cache after successful write
+    await this.invalidateSpecialistCache(tenantId);
+    return result;
   }
 
   /**
@@ -2789,8 +2791,10 @@ export class SalonService {
       }
 
       return { status: 'approved', message: 'ط«ط¨طھ ط´ط¯' };
-    \n    // Invalidate cache after successful write\n    await this.invalidateSpecialistCache(tenantId);\n    return result;\n
     });
+    // Invalidate cache after successful write
+    await this.invalidateSpecialistCache(tenantId);
+    return result;
   }
 
   /**

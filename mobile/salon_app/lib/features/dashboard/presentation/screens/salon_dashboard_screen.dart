@@ -102,7 +102,7 @@ class SalonDashboardScreen extends ConsumerWidget {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => _DashboardError(onRetry: () => ref.invalidate(salonDashboardStatsProvider)),
+        error: (_, errorInfo) => _DashboardError(onRetry: () => ref.invalidate(salonDashboardStatsProvider)),
       ),
     );
   }

@@ -120,52 +120,52 @@ class _AuthRouterRefresh extends ChangeNotifier {
 /// tab's own navigation stack alive.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRouterRefresh();
-  ref.listen(authControllerProvider, (_, _) => refresh.refresh());
+  ref.listen(authControllerProvider, (context, state) => refresh.refresh());
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
     refreshListenable: refresh,
     initialLocation: '/auth/login',
     routes: [
-      GoRoute(path: '/auth/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/auth/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/auth/otp',
         builder: (_, state) => OtpScreen(phone: state.extra as String? ?? ''),
       ),
-      GoRoute(path: forbiddenPath, builder: (_, _) => const ForbiddenScreen()),
+      GoRoute(path: forbiddenPath, builder: (context, state) => const ForbiddenScreen()),
       // First-run onboarding gates. Siblings of the shell for the same reason
       // the edit form is: they take the whole screen and must not be tabbed
       // away from. The redirect below is what sends an incomplete profile here
       // and keeps it here.
-      GoRoute(path: salonSetupPath, builder: (_, _) => const SalonSetupScreen()),
+      GoRoute(path: salonSetupPath, builder: (context, state) => const SalonSetupScreen()),
       GoRoute(
         path: specialistSetupPath,
-        builder: (_, _) => const SpecialistSetupScreen(),
+        builder: (context, state) => const SpecialistSetupScreen(),
       ),
       // Sibling of the shell rather than a branch of it: the form takes over
       // the whole screen, bottom navigation bar included. The auth redirect
       // below still applies — only the path prefix is checked.
-      GoRoute(path: salonEditPath, builder: (_, _) => const SalonEditScreen()),
+      GoRoute(path: salonEditPath, builder: (context, state) => const SalonEditScreen()),
       GoRoute(
         path: salonWorkingHoursPath,
-        builder: (_, _) => const WorkingHoursScreen(),
+        builder: (context, state) => const WorkingHoursScreen(),
       ),
       GoRoute(
         path: salonBlocksPath,
-        builder: (_, _) => const ScheduleBlocksScreen(),
+        builder: (context, state) => const ScheduleBlocksScreen(),
       ),
       // Service-line management. Also outside the shell: every one of these is
       // a pushed full-page screen reached from the profile tab, and the auth
       // redirect below matches on the `/services` prefix already.
       GoRoute(
         path: serviceLinesPath,
-        builder: (_, _) => const LinesListScreen(),
+        builder: (context, state) => const LinesListScreen(),
       ),
       // Declared before `/services/lines/:id/edit` so the literal `new` segment
       // is not swallowed by the `:id` parameter.
       GoRoute(
         path: serviceLineCreatePath,
-        builder: (_, _) => const LineFormScreen(),
+        builder: (context, state) => const LineFormScreen(),
       ),
       GoRoute(
         path: '/services/lines/:id/edit',
@@ -190,17 +190,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // parameter, matching how the service-line forms are ordered.
       GoRoute(
         path: portfolioPath,
-        builder: (_, _) => const PortfolioManageScreen(),
+        builder: (context, state) => const PortfolioManageScreen(),
       ),
       GoRoute(
         path: specialistCreatePath,
-        builder: (_, _) => const SpecialistFormScreen(),
+        builder: (context, state) => const SpecialistFormScreen(),
       ),
       // Declared before `/specialists/:id/edit` so the literal `invite`
       // segment is not swallowed by the `:id` parameter.
       GoRoute(
         path: specialistInvitePath,
-        builder: (_, _) => const InviteSpecialistScreen(),
+        builder: (context, state) => const InviteSpecialistScreen(),
       ),
       GoRoute(
         path: '/specialists/:id/edit',
@@ -222,35 +222,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => BookingDetailScreen(id: state.pathParameters['id']!),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (_, _, navigationShell) => SalonShellScreen(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) => SalonShellScreen(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/dashboard', builder: (_, _) => const SalonDashboardScreen()),
-            ],
-          ),
-          StatefulShellBranch(
-            // The list is the tab's root; the calendar is a sibling view of
-            // the same bookings, so both live in this one branch and share the
-            // tab's navigation stack.
-            routes: [
-              GoRoute(path: '/bookings', builder: (_, _) => const BookingsListScreen()),
-              GoRoute(path: bookingsCalendarPath, builder: (_, _) => const SalonCalendarView()),
+              GoRoute(path: '/dashboard', builder: (context, state) => const SalonDashboardScreen()),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: specialistsPath, builder: (_, _) => const SpecialistListScreen()),
+              GoRoute(path: '/bookings', builder: (context, state) => const BookingsListScreen()),
+              GoRoute(path: bookingsCalendarPath, builder: (context, state) => const SalonCalendarView()),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/finance', builder: (_, _) => const SalonFinancialScreen()),
+              GoRoute(path: specialistsPath, builder: (context, state) => const SpecialistListScreen()),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+              GoRoute(path: '/finance', builder: (context, state) => const SalonFinancialScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
             ],
           ),
         ],

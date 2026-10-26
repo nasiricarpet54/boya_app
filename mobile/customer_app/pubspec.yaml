@@ -18,7 +18,7 @@ dependencies:
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
   geolocator: ^14.0.3
-  flutter_secure_storage: ^11.2.0
+  flutter_secure_storage: ^9.2.2
   neshan_maps_flutter: ^1.0.2
   latlong2: ^0.10.1
 

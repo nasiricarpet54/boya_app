@@ -92,7 +92,7 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => Center(
+        error: (_, err) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

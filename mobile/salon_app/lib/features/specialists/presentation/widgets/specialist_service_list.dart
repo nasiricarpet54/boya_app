@@ -98,7 +98,7 @@ class SpecialistServiceList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: services.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final service = services[index];
         return _ServiceRow(

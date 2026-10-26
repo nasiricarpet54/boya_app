@@ -390,8 +390,9 @@ export class BookingService {
         throw new ConflictException('این رزرو قبلاً بررسی شده است');
       }
       booking.status = BookingStatus.Confirmed;
-      return bookings.save(booking);
-    \n    await this.invalidateBookingCache(tenantId);\n
+      const saved = await bookings.save(booking);
+      await this.invalidateBookingCache(tenantId);
+      return saved;
     });
     this.events.emit(BOOKING_CONFIRMED, {
       bookingId: saved.id,
@@ -420,8 +421,9 @@ export class BookingService {
       }
       booking.status = BookingStatus.Cancelled;
       if (reason) booking.notes = booking.notes ? `${booking.notes}\n— ${reason}` : reason;
-      return bookings.save(booking);
-    \n    await this.invalidateBookingCache(tenantId);\n
+      const saved = await bookings.save(booking);
+      await this.invalidateBookingCache(tenantId);
+      return saved;
     });
     this.events.emit(BOOKING_CANCELLED, {
       bookingId: saved.id,
