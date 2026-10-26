@@ -6,9 +6,54 @@ on:
   workflow_dispatch:
 
 jobs:
+  build_web:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [customer_app, salon_app]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # نسخه معتبر جایگزین کنید
+          channel: stable
+      - name: Build Flutter Web
+        run: |
+          cd mobile/${{ matrix.app }}
+          flutter pub get
+          flutter build web --release --no-web-resources-cdn --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-${{ matrix.app }}
+          path: mobile/${{ matrix.app }}/build/web
+
   deploy:
+    needs: build_web
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Download customer_app build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-customer_app
+          path: mobile/customer_app/build/web
+      - name: Download salon_app build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-salon_app
+          path: mobile/salon_app/build/web
+          
+      - name: Copy build files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 9011
+          source: "mobile/customer_app/build/web, mobile/salon_app/build/web"
+          target: "/opt/boya/"
+          
       - name: SSH to VPS and Execute Update SOP
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -20,4 +65,3 @@ jobs:
           script: |
             cd /opt/boya
             bash update_sop.sh
-            
