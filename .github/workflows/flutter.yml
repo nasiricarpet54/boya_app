@@ -13,10 +13,13 @@ jobs:
         app: [customer_app, salon_app]
     steps:
       - uses: actions/checkout@v4
+      
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.8'   # ← این خط را تغییر دهید
-          channel: stable
+          flutter-version: '3.47.8'
+          channel: 'stable'
+          cache: true  # فعال‌سازی کش برای جلوگیری از دانلود مجدد
+
       - run: cd mobile/${{ matrix.app }} && flutter pub get
       - run: cd mobile/${{ matrix.app }} && flutter analyze --fatal-infos --fatal-warnings
       - run: cd mobile/${{ matrix.app }} && flutter test --reporter expanded
