@@ -2,28 +2,29 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class EnableRLSWithBeautyAppRole1792850000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create beauty_app role if it doesn't exist (with NOBYPASSRLS)
+        // PostgreSQL has no `CREATE ROLE IF NOT EXISTS`: on any stack that ran
+        // the docker init script (docker/postgres/init/01-roles.sql) or migration
+        // 1729999999999, the role already exists and a bare CREATE ROLE fails with
+        // SQLSTATE 42710, rolling the whole migration back on every re-deploy.
+        // The DO block mirrors 1729999999999 so re-runs are a no-op.
         await queryRunner.query(`
-            CREATE ROLE beauty_app NOLOGIN;
-        `).catch(async (error) => {
-            if (error.code === '42P10') {
-                // Role already exists, ignore
-                await queryRunner.query(`
-                    GRANT CREATE ON DATABASE "beauty_platform" TO htmlnui;
-                `);
-            } else {
-                throw error;
-            }
-        });
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'beauty_app') THEN
+                    CREATE ROLE beauty_app NOLOGIN;
+                END IF;
+            END
+            $$;
+        `);
 
-        // Ensure the app role has necessary permissions on all tables
+        // Ensure the app role has necessary permissions on all tables.
+        // All of these are idempotent, so a re-run against an already-provisioned
+        // database is safe too.
         await queryRunner.query(`
             GRANT CONNECT ON DATABASE "beauty_platform" TO beauty_app;
             GRANT USAGE ON SCHEMA public TO beauty_app;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO beauty_app;
             GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO beauty_app;
-            GRANT INSERT ON ALL TABLES IN SCHEMA public (schedule_blocks) TO beauty_app;
-            GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public (schedule_blocks) TO beauty_app;
         `);
 
         // Enable RLS on schedule_blocks and enforce it for beauty_app

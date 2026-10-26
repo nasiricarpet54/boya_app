@@ -15,7 +15,9 @@ import {
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { BookingService } from './booking.service';
+import { APPROVER_ROLES } from './booking.entity';
 
 class RejectBookingDto {
   @IsOptional()
@@ -83,12 +85,14 @@ export class BookingController {
    * The current customer's bookings. Protected: the JWT decides whose rows
    * these are, never the query string.
    */
+  @Roles('customer')
   @Get()
   @ApiOperation({ summary: 'رزروهای مشتری جاری (نوترین اول)' })
   listMine(@CurrentUser() user: AuthenticatedUser) {
     return this.bookings.listForCustomer(user.userId);
   }
 
+  @Roles('customer')
   @Post()
   @ApiOperation({ summary: 'ثبت درخواست رزرو توسط مشتری (pending)' })
   create(@Body() dto: CreateBookingDto, @CurrentUser() user: AuthenticatedUser) {
@@ -107,6 +111,7 @@ export class BookingController {
     });
   }
 
+  @Roles(...APPROVER_ROLES)
   @Post(':id/approve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'تأیید رزرو توسط سالن (pending → confirmed)' })
@@ -114,6 +119,7 @@ export class BookingController {
     return this.bookings.approve(user, id);
   }
 
+  @Roles(...APPROVER_ROLES)
   @Post(':id/reject')
   @ApiOperation({ summary: 'رد رزرو توسط سالن (pending → cancelled)' })
   reject(
@@ -124,12 +130,14 @@ export class BookingController {
     return this.bookings.reject(user, id, dto.reason ?? null);
   }
 
+  @Roles(...APPROVER_ROLES)
   @Post(':id/mark-visited')
   @ApiOperation({ summary: 'ثبت حضور مشتری (confirmed → completed)' })
   markVisited(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.bookings.markVisited(user, id);
   }
 
+  @Roles('customer')
   @Post(':id/confirm-visit')
   @ApiOperation({ summary: 'تأیید حضور از سمت مشتری' })
   confirmVisit(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {

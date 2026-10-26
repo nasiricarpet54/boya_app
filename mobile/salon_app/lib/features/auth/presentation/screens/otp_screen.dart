@@ -47,11 +47,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (!_formKey.currentState!.validate()) return;
     final code = toLatinDigits(_codeController.text.trim());
     try {
-      await ref.read(authControllerProvider.notifier).verifyOtp(
+      final session = await ref.read(authControllerProvider.notifier).verifyOtp(
         phoneNumber: widget.phone,
         code: code,
       );
-      if (mounted) context.go('/dashboard');
+      // The server names the destination for the active role; the router's own
+      // gates (setup screen, role guard) still apply on top of it.
+      if (mounted) context.go(session.effectiveRedirectRoute);
     } on SalonAccessDeniedException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

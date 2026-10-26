@@ -5,6 +5,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
 import { PaymentFeatureFlag } from './payment-flag.guard';
 import { PaymentService } from './payment.service';
@@ -26,6 +28,7 @@ class InitiatePaymentDto {
 export class PaymentController {
   constructor(private readonly payments: PaymentService) {}
 
+  @Roles('salon_owner', 'line_manager', 'admin')
   @Post('initiate')
   @ApiOperation({ summary: 'شروع پرداخت آنلاین برای یک رزرو (tenant از توکن)' })
   initiate(@Body() body: InitiatePaymentDto, @CurrentUser() user: AuthenticatedUser) {
@@ -37,6 +40,14 @@ export class PaymentController {
     return this.payments.initiate(user.tenantId, body.bookingId);
   }
 
+  /**
+   * The Zarinpal return URL. The gateway calls this with `Authority`/`Status`
+   * in the query string and no JWT of any kind, so it is the one payment route
+   * that is `@Public`: the authority value is the credential here, and
+   * `completeZarinpalReturn` verifies it against the provider before anything
+   * is written.
+   */
+  @Public()
   @Get('zarinpal/callback')
   callback(@Query('Authority') authority = '', @Query('Status') status = '') {
     return this.payments.completeZarinpalReturn(authority, status);

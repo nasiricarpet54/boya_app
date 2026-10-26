@@ -1,5 +1,6 @@
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
+import { QueryLimitInterceptor } from './common/interceptors/query-limit.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
 import { RedisFailureStrategy } from 'nestjs-sliding-window-throttler';
@@ -17,6 +18,7 @@ import { SmsModule } from '@mirad-work/sms-nestjs';
 import { validateEnv } from './config/env.validation';
 import { typeOrmConfig } from './config/typeorm.config';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingModule } from './modules/booking/booking.module';
@@ -137,13 +139,19 @@ import { UserModule } from './modules/user/user.module';
     AccountingModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
-  // still rate limited before token verification, and `RolesGuard` last so
-  // `@Roles()` is only read from a request whose token has already verified.
+  // still rate limited before token verification, `JwtAuthGuard` next, and
+  // `RolesGuard` last so `@Roles()` is only read from a request whose token has
+  // already verified. RolesGuard is the one that denies by default, so this
+  // ordering is what makes an unannotated route unreachable rather than open.
   providers: [
     { provide: APP_INTERCEPTOR, useClass: TenantRlsInterceptor },
+    // Innermost interceptor: it only counts what the handler itself issues, so
+    // the RLS `set_config` round trip of authenticated requests is not part of
+    // the budget.
+    { provide: APP_INTERCEPTOR, useClass: QueryLimitInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

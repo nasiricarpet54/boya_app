@@ -115,7 +115,14 @@ class BoyaAppBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final barColor = backgroundColor ?? theme.appBarTheme.backgroundColor ?? BoyaColors.cream;
     final foreground = foregroundColor ?? theme.colorScheme.onSurface;
-    final title = Text(this.title, style: BoyaTypography.title.copyWith(color: foreground));
+    // One line, clipped: salon names run up to 200 characters (the API accepts
+    // that much), so an unconstrained title wraps and eats the bar.
+    final title = Text(
+      this.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: BoyaTypography.title.copyWith(color: foreground),
+    );
     final actions = <Widget>[
       ...?this.actions,
       BoyaHomeButton(color: foreground, tooltip: homeTooltip),
@@ -127,7 +134,19 @@ class BoyaAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: 0,
         pinned: pinned,
         expandedHeight: expandedHeight,
-        flexibleSpace: FlexibleSpaceBar(title: title, background: flexibleSpaceBackground),
+        flexibleSpace: FlexibleSpaceBar(
+          title: title,
+          // The flexible space reaches behind the bar's ends, so the default
+          // title placement runs a long title under the leading/action buttons
+          // and lands inside the pinned [bottom] tabs. Inset by one button slot
+          // on each side and by the full tab height below.
+          titlePadding: EdgeInsetsDirectional.only(
+            start: kToolbarHeight,
+            end: kToolbarHeight,
+            bottom: (bottom?.preferredSize.height ?? 0) + 16,
+          ),
+          background: flexibleSpaceBackground,
+        ),
         leading: _leading(context, foreground),
         actions: actions,
         bottom: bottom,

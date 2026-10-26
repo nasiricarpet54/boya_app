@@ -137,6 +137,21 @@ export class BookingService {
       // (set_config(..., true) is transaction-local), matching body.tenantId.
       saved = await this.dataSource.transaction(async (manager) => {
         await setTenantContext(manager, tenantId);
+        // A booking is only valid for a service the salon actually assigned to
+        // this specialist (`specialist_services`, migration 1792900000000) —
+        // the same rule the customer app's service picker enforces, so a
+        // hand-built request cannot book a pair the salon never defined. Read
+        // inside this transaction on purpose: the table is FORCE RLS on
+        // app.current_tenant_id, so outside it the read sees nothing.
+        const assigned = await manager.query<Array<{ ok: number }>>(
+          `SELECT 1 AS ok FROM specialist_services
+            WHERE tenant_id = $1 AND specialist_id = $2 AND service_id = $3 AND is_active = true
+            LIMIT 1`,
+          [tenantId, input.specialistId, input.serviceId],
+        );
+        if (assigned.length === 0) {
+          throw new BadRequestException('این خدمت برای این متخصص تعریف نشده است');
+        }
         // A blocked range (POST /salon/me/schedule/block) occupies the same
         // tstzrange a booking would, so it must reject the booking the same
         // way an existing booking would. The check runs under the same

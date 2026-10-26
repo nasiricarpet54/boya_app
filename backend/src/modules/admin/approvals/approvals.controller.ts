@@ -1,4 +1,6 @@
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../user/entities/user.entity';
 import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
 import { UseGuards,
   Body,
@@ -35,6 +37,7 @@ import {
  * future caller of the service cannot skip the check.
  */
 @ApiTags('admin/approvals')
+@Roles(...ADMIN_ROLES)
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/approvals')
 export class ApprovalsController {

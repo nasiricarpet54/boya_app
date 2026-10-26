@@ -6,7 +6,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../../specialists/data/specialist_api.dart';
 import '../../../specialists/domain/salon_specialist.dart';
-import '../../data/schedule_block_api.dart';
+import '../../schedule_block_api.dart';
 
 /// Blocked time ranges of the signed-in provider.
 ///
@@ -122,8 +122,8 @@ class _BlockCard extends StatelessWidget {
   /// `HH:mm` in the Tehran timezone the backend stores everything in.
   static String formatTime(DateTime date) {
     final tehran = date.toUtc().add(const Duration(hours: 3, minutes: 30));
-    return '${tehran.hour.toString().padLeft(2, '0')}:'
-        '${tehran.minute.toString().padLeft(2, '0')}';
+    return '${tehran.hour.toString().padLeft(2, "0")}:'
+        '${tehran.minute.toString().padLeft(2, "0")}';
   }
 }
 
@@ -156,8 +156,8 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     final end = _end;
     if (date == null || start == null || end == null) return;
 
-    final startMinutes = start!.hour * 60 + start!.minute;
-    final endMinutes = end!.hour * 60 + end!.minute;
+    final startMinutes = start.hour * 60 + start.minute;
+    final endMinutes = end.hour * 60 + end.minute;
     if (endMinutes <= startMinutes) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -170,18 +170,18 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     // Tehran wall-clock to a UTC instant, matching the timestamptz column.
     final startUtc = DateTime(
-      date!.year,
-      date!.month,
-      date!.day,
-      start!.hour,
-      start!.minute,
+      date.year,
+      date.month,
+      date.day,
+      start.hour,
+      start.minute,
     ).subtract(const Duration(hours: 3, minutes: 30));
     final endUtc = DateTime(
-      date!.year,
-      date!.month,
-      date!.day,
-      end!.hour,
-      end!.minute,
+      date.year,
+      date.month,
+      date.day,
+      end.hour,
+      end.minute,
     ).subtract(const Duration(hours: 3, minutes: 30));
 
     setState(() => _saving = true);
@@ -231,8 +231,8 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                     _start == null
                         ? 'از'
                         : toPersianDigits(
-                            '${_start!.hour.toString().padLeft(2, '0')}:'
-                            '${_start!.minute.toString().padLeft(2, '0')}',
+                            '${_start!.hour.toString().padLeft(2, "0")}:'
+                            '${_start!.minute.toString().padLeft(2, "0")}',
                           ),
                     textDirection: TextDirection.ltr,
                   ),
@@ -251,13 +251,13 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                       helpText: 'ساعت پایان',
                     );
                     if (picked != null) setState(() => _end = picked);
-                  ),
+                  },
                   child: Text(
                     _end == null
                         ? 'تا'
                         : toPersianDigits(
-                            '${_end!.hour.toString().padLeft(2, '0')}:'
-                            '${_end!.minute.toString().padLeft(2, '0')}',
+                            '${_end!.hour.toString().padLeft(2, "0")}:'
+                            '${_end!.minute.toString().padLeft(2, "0")}',
                           ),
                     textDirection: TextDirection.ltr,
                   ),
@@ -270,7 +270,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           // one entry and a picker would be a no-op.
           if (widget.specialists.length > 1)
             DropdownButtonFormField<String>(
-              value: _specialistId,
+              initialValue: _specialistId,
               decoration: const InputDecoration(labelText: 'متخصص'),
               items: [
                 for (final specialist in widget.specialists)

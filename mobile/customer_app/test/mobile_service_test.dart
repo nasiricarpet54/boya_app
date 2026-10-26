@@ -413,6 +413,11 @@ void main() {
             home: Scaffold(
               body: BookingForm(
                 salon: salon,
+                // The form's service list is owned by the screen now; these
+                // tests model the "no specialist chosen yet" state, so the
+                // full catalogue is what the picker shows.
+                services: salon.services,
+                servicesLoading: false,
                 specialistId: specialistId,
                 serviceId: serviceId,
                 date: DateTime(2026, 1, 1),

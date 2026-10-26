@@ -1,5 +1,7 @@
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../user/entities/user.entity';
 import { UseGuards,  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
@@ -12,6 +14,7 @@ import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 
 /** Admin tenants management. Global JwtAuthGuard rejects anonymous; service enforces role=admin. */
 @ApiTags('admin/tenants')
+@Roles(...ADMIN_ROLES)
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/tenants')
 export class AdminTenantsController {

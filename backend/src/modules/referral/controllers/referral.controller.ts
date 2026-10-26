@@ -4,11 +4,13 @@ import { UseGuards,  Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
 import { ApplyReferralDto } from '../dto/apply-referral.dto';
 import { ReferralService } from '../services/referral.service';
 
 /** The acting user is always the verified token, never a query parameter. */
+@Roles('customer')
 @ApiTags('referrals')
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('referrals')

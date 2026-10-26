@@ -1,6 +1,8 @@
 import { Controller, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../user/entities/user.entity';
 import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/guards/jwt-auth.guard';
@@ -10,6 +12,7 @@ import { AdminUserListPage } from '../users/admin-users.service';
 
 /** Admin specialists management. Global JwtAuthGuard rejects anonymous; service enforces role=admin. */
 @ApiTags('admin/specialists')
+@Roles(...ADMIN_ROLES)
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/specialists')
 export class AdminSpecialistsController {

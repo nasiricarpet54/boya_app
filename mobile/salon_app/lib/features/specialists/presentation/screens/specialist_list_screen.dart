@@ -179,6 +179,11 @@ class _SpecialistCard extends ConsumerWidget {
               switch (value) {
                 case 'edit':
                   context.push(specialistEditPath(specialist.id), extra: specialist);
+                case 'services':
+                  context.push(
+                    specialistServicesPath(specialist.id),
+                    extra: {'name': specialist.fullName},
+                  );
                 case 'toggle':
                   _toggleActive(context, ref);
                 case 'delete':
@@ -187,6 +192,7 @@ class _SpecialistCard extends ConsumerWidget {
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'edit', child: Text('ویرایش')),
+              const PopupMenuItem(value: 'services', child: Text('تعریف خدمات')),
               PopupMenuItem(
                 value: 'toggle',
                 child: Text(specialist.isActive ? 'غیرفعال کردن' : 'فعال کردن'),

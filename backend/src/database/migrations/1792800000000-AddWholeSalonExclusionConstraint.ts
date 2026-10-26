@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddWholeSalonExclusionConstraint1792800000000 implements MigrationInterface {
+    name = 'AddWholeSalonExclusionConstraint1792800000000';
+
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS btree_gist`);
         await queryRunner.query(`DROP INDEX IF EXISTS IX_schedule_blocks_whole_salon`);

@@ -5,7 +5,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
+import { USER_ROLES } from '../user/entities/user.entity';
 import { DevicePlatform } from './entities/device-token.entity';
 import { PushNotificationService } from './services/push-notification.service';
 
@@ -29,6 +31,7 @@ class RegisterDeviceDto {
  * so one account cannot claim another account's handset. Not marked `@Public`,
  * so the global JwtAuthGuard already rejects an anonymous call.
  */
+@Roles(...USER_ROLES)
 @ApiTags('devices')
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('devices')

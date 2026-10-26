@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/available_slot.dart';
 import '../domain/salon_detail.dart';
+import '../domain/specialist_service.dart';
 
 class SalonApi {
   SalonApi(this._dio);
@@ -55,6 +56,26 @@ class SalonApi {
         if (item is Map<String, dynamic>) PortfolioItem.fromJson(item),
     ];
   }
+
+  /// The services the salon assigned to one specialist.
+  ///
+  /// The booking form's service step shows exactly this list once a specialist
+  /// is picked — never the salon's whole catalogue — so a specialist appears
+  /// next to only the services the owner defined for them. An empty list means
+  /// the owner has not assigned anything yet; the UI's empty state says so.
+  Future<List<SpecialistService>> getSpecialistServices({
+    required String salonId,
+    required String specialistId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/salons/$salonId/specialists/$specialistId/services',
+    );
+    final rows = response.data?['data'];
+    return [
+      for (final item in (rows as List? ?? const <dynamic>[]))
+        if (item is Map<String, dynamic>) SpecialistService.fromJson(item),
+    ];
+  }
 }
 
 final salonApiProvider = Provider<SalonApi>((ref) => SalonApi(ref.watch(dioProvider)));
@@ -93,6 +114,21 @@ final availableSlotsProvider =
         salonId: query.salonId,
         date: query.date,
         serviceId: query.serviceId,
+        specialistId: query.specialistId,
+      );
+});
+
+/// The services one specialist offers (specialist_services, not the salon
+/// catalogue). Re-fetched whenever the customer picks another specialist, and
+/// auto-disposed when nobody listens — the strip on the detail page and the
+/// booking form's service step are the two listeners.
+typedef SpecialistServicesQuery = ({String salonId, String specialistId});
+
+final specialistServicesProvider =
+    FutureProvider.autoDispose.family<List<SpecialistService>, SpecialistServicesQuery>(
+        (ref, query) {
+  return ref.watch(salonApiProvider).getSpecialistServices(
+        salonId: query.salonId,
         specialistId: query.specialistId,
       );
 });

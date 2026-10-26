@@ -13,6 +13,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -41,6 +42,7 @@ import {
   UpdateServiceDto,
   UpdateServiceLineDto,
 } from './dto/update-service-line.dto';
+import { SetSpecialistServicesDto } from './dto/specialist-services.dto';
 import {
   SalonApprovalStatus,
   SalonAvailability,
@@ -60,6 +62,8 @@ import {
   SalonService,
   SalonServiceItem,
   SalonServiceLineItem,
+  SalonSpecialistServiceItem,
+  SalonSpecialistServices,
   SalonSpecialists,
   SalonStaffProfile,
   SalonScheduleBlockList,
@@ -161,6 +165,28 @@ export class SalonController {
   }
 
   /**
+   * The services one specialist offers — the only list the booking form may
+   * show once the customer picked a specialist. Backed by `specialist_services`
+   * (migration 1792900000000), never the salon's whole catalogue, so a
+   * specialist appears next to exactly the services the salon assigned them.
+   * A specialist unknown to or inactive in this salon answers 404.
+   */
+  @Get(':id/specialists/:specialistId/services')
+  @Public()
+  @ApiOperation({
+    summary: 'خدمات تعریف‌شده برای یک متخصص',
+    description:
+      'فقط خدمات فعالِ اختصاص‌داده‌شده به این متخصص در این سالن. اگر متخصص در این سالن فعال نباشد، ۴۰۴.',
+  })
+  specialistServices(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('specialistId', ParseUUIDPipe) specialistId: string,
+  ): Promise<SalonSpecialistServices> {
+    return this.salons.specialistServices(id, specialistId);
+  }
+
+
+  /**
    * Portfolio photos of the salon's specialists, the detail page's
    * «نمونه‌کارها» tab. Public like the rest of this controller: the gallery is
    * part of the Phase 1 showcase and is shown before anyone signs in.
@@ -195,6 +221,7 @@ export class SalonPanelController {
    * Approval state of the caller's own salon, so the app can show the right
    * banner: "awaiting review", "rejected — reason", or nothing at all.
    */
+  @Roles('salon_owner', 'line_manager', 'specialist', 'employed', 'booth_renter', 'admin')
   @Get('me/status')
   @ApiOperation({
     summary: 'وضعیت تایید سالن کاربر واردشده',
@@ -207,6 +234,7 @@ export class SalonPanelController {
   }
 
   /** The signed-in staff user's own salon. */
+  @Roles('salon_owner', 'line_manager', 'specialist', 'employed', 'booth_renter', 'admin')
   @Get('me')
   @ApiOperation({ summary: 'اطلاعات سالن کاربر واردشده' })
   me(@CurrentUser() user: AuthenticatedUser): Promise<SalonStaffProfile> {
@@ -220,6 +248,7 @@ export class SalonPanelController {
    * on the live row yet, only the request has been staged for review, so the
    * caller cannot mistake a queued edit for an applied one.
    */
+  @Roles('salon_owner', 'line_manager', 'admin')
   @Patch('me')
   @ApiOperation({
     summary: 'ویرایش اطلاعات سالن (نیازمند تایید ادمین)',
@@ -437,6 +466,39 @@ export class SalonPanelController {
   ): Promise<SalonPanelWriteResult> {
     return this.salons.deletePanelSpecialist(user, id);
   }
+  /**
+   * The services the salon assigned to one specialist. A specialist token may
+   * only ask for its own row (the service answers 403 for any other id); the
+   * owner and line manager see every specialist of the salon.
+   */
+  @Roles('salon_owner', 'line_manager', 'specialist')
+  @Get('me/specialists/:id/services')
+  @ApiOperation({ summary: 'خدمات اختصاص‌داده‌شده به یک متخصص' })
+  listSpecialistServices(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<SalonSpecialistServiceItem[]> {
+    return this.salons.listPanelSpecialistServices(user, id);
+  }
+
+  /**
+   * Replaces the set of services a specialist offers. Only the salon owner (or
+   * a platform admin acting on the salon) may define it: the catalogue of a
+   * specialist is the salon's decision, not the provider's. Services that do
+   * not belong to the salon answer 400, so another salon's id is never
+   * silently accepted.
+   */
+  @Roles('salon_owner', 'admin')
+  @Put('me/specialists/:id/services')
+  @ApiOperation({ summary: 'تعریف خدمات یک متخصص (جایگزینی کل لیست)' })
+  setSpecialistServices(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetSpecialistServicesDto,
+  ): Promise<SalonSpecialistServiceItem[]> {
+    return this.salons.setPanelSpecialistServices(user, id, dto);
+  }
+
 
   /** Portfolio photos of the salon's specialists, inactive ones included. */
   @Roles('salon_owner')

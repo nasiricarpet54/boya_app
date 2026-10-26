@@ -1,4 +1,6 @@
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../user/entities/user.entity';
 import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
 import { UseGuards,  Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,6 +20,7 @@ import { AdminDashboard, DashboardService } from './dashboard.service';
  * service cannot skip the check.
  */
 @ApiTags('admin/dashboard')
+@Roles(...ADMIN_ROLES)
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/dashboard')
 export class DashboardController {

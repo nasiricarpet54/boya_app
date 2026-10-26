@@ -8,6 +8,7 @@ import '../../../../shared/widgets/boya_app_bar.dart';
 import '../../../salon/data/salon_api.dart';
 import '../../../salon/domain/available_slot.dart';
 import '../../../salon/domain/salon_detail.dart';
+import '../../../salon/domain/specialist_service.dart';
 import '../../application/booking_controller.dart';
 import '../../domain/booking_draft.dart';
 import '../widgets/booking_bar.dart';
@@ -15,9 +16,20 @@ import '../widgets/booking_confirm_dialog.dart';
 import '../widgets/booking_form.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
-  const BookingScreen({required this.salonId, super.key});
+  const BookingScreen({
+    required this.salonId,
+    this.initialSpecialistId,
+    this.initialServiceId,
+    super.key,
+  });
 
   final String salonId;
+
+  /// Pre-selection handed over from the salon page's «خدمات قابل ارائه»
+  /// cards, so tapping رزرو on a specialist's service lands here with both
+  /// picks already made instead of asking the customer to repeat them.
+  final String? initialSpecialistId;
+  final String? initialServiceId;
 
   @override
   ConsumerState<BookingScreen> createState() => _BookingScreenState();
@@ -28,6 +40,43 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   String? _serviceId;
   DateTime _date = DateTime.now();
   AvailableSlot? _selectedSlot;
+
+  @override
+  void initState() {
+    super.initState();
+    _specialistId = widget.initialSpecialistId;
+    _serviceId = widget.initialServiceId;
+  }
+
+  /// The services the booking form may offer. Before a specialist is picked
+  /// that is the salon catalogue; after, it narrows to the services the salon
+  /// *assigned to that specialist* (`specialist_services`) — picking another
+  /// specialist empties the earlier service choice, because that choice
+  /// belonged to someone else's list. `loading` separates "the list has not
+  /// arrived yet" from "the specialist has nothing assigned", because only the
+  /// second deserves the empty-state message.
+  ({List<SalonService> services, bool loading}) _bookableServices(SalonDetail salon) {
+    final specialistId = _specialistId;
+    if (specialistId == null) {
+      return (services: salon.services, loading: false);
+    }
+    final async = ref.watch(
+      specialistServicesProvider((salonId: widget.salonId, specialistId: specialistId)),
+    );
+    final assigned = async.valueOrNull ?? const <SpecialistService>[];
+    return (
+      services: [
+        for (final service in assigned)
+          SalonService(
+            id: service.serviceId,
+            name: service.name,
+            price: service.price,
+            isMobileAvailable: service.isMobileAvailable,
+          ),
+      ],
+      loading: async.isLoading,
+    );
+  }
 
   /// ADR-011: the customer wants the visit at their own place. Kept here rather
   /// than in the form so it survives rebuilds the form does not outlive.
@@ -44,27 +93,37 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return Scaffold(
       appBar: const BoyaAppBar(title: 'رزرو نوبت'),
       body: salonAsync.when(
-        data: (salon) => BookingForm(
-          salon: salon,
-          specialistId: _specialistId,
-          serviceId: _serviceId,
-          date: _date,
-          selectedSlot: _selectedSlot,
-          onSpecialist: (id) => setState(() {
-            _specialistId = id;
-            _selectedSlot = null;
-            // ADR-011: a specialist who does not travel invalidates the on-site
-            // request, so the toggle is reset rather than left half-on.
-            if (_isMobile && !salon.specialists.any((it) => it.id == id && it.offersMobileService)) {
-              _isMobile = false;
-            }
-          }),
+        data: (salon) {
+          final (:services, :loading) = _bookableServices(salon);
+          return BookingForm(
+            salon: salon,
+            services: services,
+            servicesLoading: loading,
+            specialistId: _specialistId,
+            serviceId: _serviceId,
+            date: _date,
+            selectedSlot: _selectedSlot,
+            onSpecialist: (id) => setState(() {
+              _specialistId = id;
+              // The service pick belonged to the previous specialist's list, so
+              // it cannot follow the customer into a new one — re-choosing is
+              // the only honest option (specialist_services differ per person).
+              _serviceId = null;
+              _selectedSlot = null;
+              // ADR-011: a specialist who does not travel invalidates the on-site
+              // request, so the toggle is reset rather than left half-on.
+              if (_isMobile && !salon.specialists.any((it) => it.id == id && it.offersMobileService)) {
+                _isMobile = false;
+              }
+            }),
           onService: (id) => setState(() {
             _serviceId = id;
             _selectedSlot = null;
             // ADR-011: same reasoning as the specialist pick — a service that
             // stays in the salon cannot be delivered at the customer's place.
-            if (_isMobile && !salon.services.any((it) => it.id == id && it.isMobileAvailable)) {
+            // The lookup uses the (possibly specialist-filtered) list, not the
+            // salon catalogue, so the flag tracks what the form is showing.
+            if (_isMobile && !services.any((it) => it.id == id && it.isMobileAvailable)) {
               _isMobile = false;
             }
           }),
@@ -77,7 +136,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           address: _address,
           onMobile: (value) => setState(() => _isMobile = value),
           onAddress: (value) => setState(() => _address = value),
-        ),
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
         error: (_, _) => const Center(child: Text('خطا در دریافت اطلاعات', style: BoyaTypography.body)),
       ),
@@ -108,7 +168,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   String? _price(SalonDetail salon) {
-    for (final service in salon.services) {
+    final (:services, loading: _) = _bookableServices(salon);
+    for (final service in services) {
       if (service.id == _serviceId) return formatPrice(service.price);
     }
     return null;
@@ -177,7 +238,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   String _serviceName(SalonDetail salon) {
-    for (final service in salon.services) {
+    final (:services, loading: _) = _bookableServices(salon);
+    for (final service in services) {
       if (service.id == _serviceId) return service.name;
     }
     return 'انتخاب نشده';

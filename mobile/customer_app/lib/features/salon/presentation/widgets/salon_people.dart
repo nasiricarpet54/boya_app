@@ -1,8 +1,12 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../shared/widgets/mobile_badge.dart';
+import '../../data/salon_api.dart';
 import '../../domain/salon_detail.dart';
+import '../../domain/specialist_service.dart';
 
 class SalonServiceTile extends StatelessWidget {
   const SalonServiceTile({required this.service, super.key});
@@ -55,6 +59,7 @@ class SalonSpecialistStrip extends StatelessWidget {
     this.onSelected,
     super.key,
   });
+
 
   final List<SalonSpecialist> specialists;
 
@@ -133,3 +138,139 @@ class SalonSpecialistStrip extends StatelessWidget {
     );
   }
 }
+
+/// «خدمات قابل ارائه»: the services the salon assigned to the selected
+/// specialist — the only services this specialist may be booked for.
+///
+/// The list comes from `specialist_services`, not from the salon's catalogue,
+/// so a specialist's card never shows a service the owner did not define for
+/// them. The endpoint only returns active assignments, which is why no
+/// active/inactive pill is drawn here — that badge is the salon panel's
+/// concern. The empty state names the situation plainly instead of leaving a
+/// blank gap the customer might read as "nothing to book at all".
+class SpecialistServicesSection extends ConsumerWidget {
+  const SpecialistServicesSection({
+    required this.salonId,
+    required this.specialistId,
+    super.key,
+  });
+
+  final String salonId;
+  final String specialistId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final servicesAsync = ref.watch(
+      specialistServicesProvider((salonId: salonId, specialistId: specialistId)),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Text('خدمات قابل ارائه', style: BoyaTypography.title),
+          const SizedBox(height: 8),
+          servicesAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
+            ),
+            error: (_, _) => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text('خطا در دریافت خدمات', style: BoyaTypography.body),
+            ),
+            data: (services) {
+              if (services.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text('برای این متخصص هنوز خدمتی تعریف نشده است.', style: BoyaTypography.body),
+                );
+              }
+              return Column(
+                children: [
+                  for (final service in services)
+                    _SpecialistServiceCard(
+                      salonId: salonId,
+                      specialistId: specialistId,
+                      service: service,
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpecialistServiceCard extends StatelessWidget {
+  const _SpecialistServiceCard({
+    required this.salonId,
+    required this.specialistId,
+    required this.service,
+  });
+
+  final String salonId;
+  final String specialistId;
+  final SpecialistService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: BoyaTypography.body.copyWith(color: BoyaColors.ink),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '${toPersianDigits(service.durationMinutes)} دقیقه',
+                        style: BoyaTypography.overline,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatPrice(service.price),
+                        style: BoyaTypography.caption.copyWith(
+                          color: BoyaColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (service.isMobileAvailable) ...[
+                        const SizedBox(width: 8),
+                        const MobileBadge(dense: true),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () => context.push(
+                '/salon/$salonId/booking',
+                extra: {'specialistId': specialistId, 'serviceId': service.serviceId},
+              ),
+              child: const Text('رزرو'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

@@ -6,7 +6,9 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
+import { USER_ROLES } from '../user/entities/user.entity';
 import { InAppNotificationService } from './services/in-app-notification.service';
 
 class NotificationQuery {
@@ -29,6 +31,7 @@ class NotificationQuery {
  * tenant they have been booked into. Clients send no userId: the acting user
  * always comes from the token.
  */
+@Roles(...USER_ROLES)
 @ApiTags('notifications')
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('notifications')

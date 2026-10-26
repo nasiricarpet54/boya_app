@@ -67,7 +67,16 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/salon/:salonId/booking',
-      builder: (_, state) => BookingScreen(salonId: state.pathParameters['salonId']!),
+      // `extra` carries the optional (specialistId, serviceId) preselection a
+      // «خدمات قابل ارائه» card hands over; without it the picks start empty.
+      builder: (_, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return BookingScreen(
+          salonId: state.pathParameters['salonId']!,
+          initialSpecialistId: extra?['specialistId'] as String?,
+          initialServiceId: extra?['serviceId'] as String?,
+        );
+      },
     ),
     // Phase 1 bookings end here: no gateway, the salon approves and the bill
     // is settled on site.

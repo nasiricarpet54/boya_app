@@ -23,6 +23,10 @@ services:
     restart: unless-stopped
     # 4GB single-host budget: shared_buffers + effective_cache_size reserve ~1.5GB
     # of the actual data; the container itself is capped at 1GB.
+    # Same tuning as dev/production: without these flags Postgres falls back to
+    # the 128MB shared_buffers default, which is too small for the RLS index
+    # plans the panel relies on.
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "effective_cache_size=2GB", "-c", "work_mem=16MB", "-c", "maintenance_work_mem=128MB", "-c", "max_connections=50", "-c", "random_page_cost=1.1"]
     mem_limit: 1024m
     cpus: 1.5
     environment:

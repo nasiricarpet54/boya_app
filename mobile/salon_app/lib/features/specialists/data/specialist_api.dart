@@ -24,6 +24,58 @@ class CreatedSpecialist {
   final String status;
 }
 
+/// One service the salon assigned to a specialist, as returned by
+/// `GET /salon/me/specialists/:id/services`.
+///
+/// `id` is the `specialist_services` row id, `serviceId` the catalogue service.
+/// The active flag is the owner's per-specialist on/off switch: an inactive
+/// assignment is kept (so it can be switched back on) but hidden from the
+/// customer's booking form.
+class SpecialistServiceItem {
+  const SpecialistServiceItem({
+    required this.id,
+    required this.serviceId,
+    required this.name,
+    required this.price,
+    this.description,
+    this.durationMinutes = 0,
+    this.isActive = true,
+    this.isMobileAvailable = false,
+  });
+
+  factory SpecialistServiceItem.fromJson(Map<String, dynamic> json) {
+    return SpecialistServiceItem(
+      id: json['id'] as String? ?? '',
+      serviceId: json['serviceId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String?,
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
+      isActive: json['isActive'] as bool? ?? true,
+      isMobileAvailable: json['isMobileAvailable'] as bool? ?? false,
+    );
+  }
+
+  final String id;
+  final String serviceId;
+  final String name;
+  final String? description;
+  final double price;
+  final int durationMinutes;
+  final bool isActive;
+  final bool isMobileAvailable;
+}
+
+/// Assignment the owner sends to `PUT /salon/me/specialists/:id/services`.
+class SpecialistServiceAssignment {
+  const SpecialistServiceAssignment({required this.serviceId, this.isActive = true});
+
+  final String serviceId;
+  final bool isActive;
+
+  Map<String, dynamic> toJson() => {'serviceId': serviceId, 'isActive': isActive};
+}
+
 /// CRUD for the salon panel's specialists. Token-protected, so the
 /// interceptor attaches the bearer header; the tenant always comes from the
 /// JWT on the backend, never from these payloads.
@@ -114,6 +166,36 @@ class SpecialistApi {
     final response = await _dio.delete<Map<String, dynamic>>('/salon/me/specialists/$id');
     return PanelWriteResult.fromJson(response.data ?? const {});
   }
+
+  /// The services the salon assigned to one specialist, inactive assignments
+  /// included (the owner can switch those back on). A specialist token may
+  /// only ask for its own row; the backend answers 403 for anyone else's.
+  Future<List<SpecialistServiceItem>> listSpecialistServices(String id) async {
+    final response = await _dio.get<List<dynamic>>('/salon/me/specialists/$id/services');
+    return [
+      for (final item in response.data ?? const [])
+        if (item is Map<String, dynamic>) SpecialistServiceItem.fromJson(item),
+    ];
+  }
+
+  /// Replaces the specialist's whole assignment list. Anything missing from
+  /// [assignments] is un-assigned by the backend; a service id from another
+  /// salon answers 400.
+  Future<List<SpecialistServiceItem>> setSpecialistServices(
+    String id,
+    List<SpecialistServiceAssignment> assignments,
+  ) async {
+    final response = await _dio.put<List<dynamic>>(
+      '/salon/me/specialists/$id/services',
+      data: <String, dynamic>{
+        'services': [for (final item in assignments) item.toJson()],
+      },
+    );
+    return [
+      for (final item in response.data ?? const [])
+        if (item is Map<String, dynamic>) SpecialistServiceItem.fromJson(item),
+    ];
+  }
 }
 
 final specialistApiProvider = Provider<SpecialistApi>(
@@ -124,5 +206,13 @@ final specialistApiProvider = Provider<SpecialistApi>(
 /// both read this, and every write invalidates it.
 final specialistListProvider = FutureProvider<List<SalonSpecialist>>(
   (ref) => ref.watch(specialistApiProvider).listSpecialists(),
+);
+
+/// The services assigned to one specialist. `family` keyed on the specialist
+/// id: the list screen opens one screen per specialist and its own writes
+/// invalidate only that entry.
+final specialistServicesProvider =
+    FutureProvider.family<List<SpecialistServiceItem>, String>(
+  (ref, specialistId) => ref.watch(specialistApiProvider).listSpecialistServices(specialistId),
 );
 

@@ -12,6 +12,8 @@ import 'slot_grid.dart';
 class BookingForm extends ConsumerStatefulWidget {
   const BookingForm({
     required this.salon,
+    required this.services,
+    required this.servicesLoading,
     required this.specialistId,
     required this.serviceId,
     required this.date,
@@ -28,6 +30,17 @@ class BookingForm extends ConsumerStatefulWidget {
   });
 
   final SalonDetail salon;
+
+  /// The service picker's list. It is the salon catalogue until a specialist is
+  /// chosen, then narrows to that specialist's assigned services
+  /// (`specialist_services`) — a specialist may only be booked for what the
+  /// salon assigned them.
+  final List<SalonService> services;
+
+  /// True while a specialist's services are being fetched, so the empty state
+  /// can be withheld until the list has actually arrived.
+  final bool servicesLoading;
+
   final String? specialistId;
   final String? serviceId;
   final DateTime date;
@@ -84,7 +97,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
 
   /// `(service travels, specialist travels)`, or `null` until both are picked.
   (bool, bool)? get _mobilePair {
-    final service = widget.salon.services.cast<SalonService?>().firstWhere(
+    final service = widget.services.cast<SalonService?>().firstWhere(
           (it) => it?.id == widget.serviceId,
           orElse: () => null,
         );
@@ -131,13 +144,32 @@ class _BookingFormState extends ConsumerState<BookingForm> {
         const SizedBox(height: 24),
         Text('۲. انتخاب خدمت', style: BoyaTypography.title),
         const SizedBox(height: 8),
-        for (final service in widget.salon.services)
-          BookingChoice(
-            title: service.name,
-            trailing: formatPrice(service.price),
-            selected: widget.serviceId == service.id,
-            onTap: () => widget.onService(service.id),
-          ),
+        // The list is the specialist's assigned services once one is picked —
+        // never the whole salon catalogue — so the customer cannot choose a
+        // pair the salon never defined and the backend would refuse.
+        if (widget.servicesLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
+          )
+        else if (widget.services.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              widget.specialistId == null
+                  ? 'خدمتی ثبت نشده است'
+                  : 'برای این متخصص هنوز خدمتی تعریف نشده است.',
+              style: BoyaTypography.body,
+            ),
+          )
+        else
+          for (final service in widget.services)
+            BookingChoice(
+              title: service.name,
+              trailing: formatPrice(service.price),
+              selected: widget.serviceId == service.id,
+              onTap: () => widget.onService(service.id),
+            ),
         if (showCalendar) ...[
           const SizedBox(height: 24),
           Text('۳. انتخاب تاریخ', style: BoyaTypography.title),

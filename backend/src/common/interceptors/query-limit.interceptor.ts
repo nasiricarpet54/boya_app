@@ -1,60 +1,88 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  Logger,
+  NestInterceptor,
+  OnModuleInit,
+} from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { DataSource } from 'typeorm';
+
+const QUERY_COUNT_KEY = 'boya:queryCount';
 
 /**
- * Interceptor to track database queries and enforce max limit of 5 queries per request.
- * Prevents N+1 query problems and excessive database calls.
+ * Per-request database round-trip budget, the N+1 guard for the public salon
+ * catalogue (`GET /salons`, `GET /salons/:id`, `match`, ...): a request may
+ * issue at most [MAX_QUERIES] `DataSource.query()` calls.
+ *
+ * Counting rides on the request-scoped context `ClsModule` already mounts and
+ * on the one funnel every raw read already goes through — no per-call-site
+ * instrumentation. The interceptor resets the counter as the request enters and
+ * logs the final count, warning when the budget is blown.
  */
 @Injectable()
-export class QueryLimitInterceptor implements NestInterceptor {
-    private static readonly MAX_QUERIES = 5;
-    private static queryCounter = new Map<string, number>();
-    private static logger = new Logger('QueryLimitInterceptor');
+export class QueryLimitInterceptor implements NestInterceptor, OnModuleInit {
+  static readonly MAX_QUERIES = 5;
 
-    intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-        const request = context.switchToHttp().getRequest();
-        const requestId = request.id || request.ip || request.socket.remoteAddress;
-        
-        // Reset counter for this request
-        QueryLimitInterceptor.queryCounter.set(requestId, 0);
+  private static readonly logger = new Logger('QueryLimitInterceptor');
 
-        return next.handle().pipe(
-            tap({
-                next: () => {
-                    const queryCount = QueryLimitInterceptor.queryCounter.get(requestId) || 0;
-                    if (queryCount > QueryLimitInterceptor.MAX_QUERIES) {
-                        QueryLimitInterceptor.logger.warn(
-                            `High query count: ${queryCount} queries (max: ${QueryLimitInterceptor.MAX_QUERIES}) for ${request.originalUrl}`
-                        );
-                    } else {
-                        QueryLimitInterceptor.logger.debug(
-                            `Query count: ${queryCount} (max: ${QueryLimitInterceptor.MAX_QUERIES}) for ${request.originalUrl}`
-                        );
-                    }
-                    QueryLimitInterceptor.queryCounter.delete(requestId);
-                }
-            })
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly cls: ClsService,
+  ) {}
+
+  /**
+   * shortcut: only `DataSource.query` is counted — TypeORM query-builder and
+   * `manager.query` calls bypass it; instrument `QueryRunner.query` too if the
+   * catalogue ever moves off raw SQL.
+   */
+  onModuleInit(): void {
+    const original = this.dataSource.query.bind(this.dataSource) as (
+      ...args: unknown[]
+    ) => Promise<unknown>;
+    const counted = this.dataSource as unknown as {
+      query: (...args: unknown[]) => Promise<unknown>;
+    };
+    counted.query = (...args: unknown[]) => {
+      if (this.cls.isActive()) {
+        this.cls.set(
+          QUERY_COUNT_KEY,
+          (this.cls.get<number>(QUERY_COUNT_KEY) ?? 0) + 1,
         );
-    }
+      }
+      return original(...args);
+    };
+  }
 
-    static recordQuery(): void {
-        const request = this.getRequest();
-        if (request) {
-            const requestId = request.id || request.ip || request.socket?.remoteAddress;
-            if (requestId) {
-                const current = this.queryCounter.get(requestId) || 0;
-                this.queryCounter.set(requestId, current + 1);
-            }
-        }
-    }
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    // The CLS middleware runs before interceptors, so a context is always live
+    // here; the RLS interceptor's own `set_config` stays outside this counter.
+    this.cls.set(QUERY_COUNT_KEY, 0);
+    const url = context.switchToHttp().getRequest().originalUrl as string;
 
-    private static getRequest(): any {
-        try {
-            const { getRequestContext } = require('@nestjs/core');
-            return getRequestContext();
-        } catch {
-            return undefined;
-        }
+    return next.handle().pipe(
+      tap({
+        next: () => this.report(url),
+        // Counted even on failure, otherwise a blown budget could hide behind
+        // a 500.
+        error: () => this.report(url),
+      }),
+    );
+  }
+
+  private report(url: string): void {
+    const count = this.cls.get<number>(QUERY_COUNT_KEY) ?? 0;
+    if (count > QueryLimitInterceptor.MAX_QUERIES) {
+      QueryLimitInterceptor.logger.warn(
+        `High query count: ${count} queries (max: ${QueryLimitInterceptor.MAX_QUERIES}) for ${url}`,
+      );
+    } else {
+      QueryLimitInterceptor.logger.debug(
+        `Query count: ${count} (max: ${QueryLimitInterceptor.MAX_QUERIES}) for ${url}`,
+      );
     }
+  }
 }

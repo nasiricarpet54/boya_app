@@ -71,6 +71,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
   Widget _currentTab(SalonDetail salon) => switch (_tabIndex) {
     0 => _ServicesTab(services: salon.services),
     1 => _SpecialistsTab(
+      salonId: widget.salonId,
       specialists: salon.specialists,
       specialistId: _specialistId,
       onShowPortfolio: _showSpecialistPortfolio,
@@ -191,12 +192,18 @@ class _ServicesTab extends StatelessWidget {
 ///
 /// Tapping a specialist selects them and opens the portfolio tab, and a banner
 /// makes it obvious that the grid below is now filtered and how to undo it.
-class _SpecialistsTab extends StatelessWidget {
+/// Below the strip, the selected specialist's assigned services are listed —
+/// the only services they may be booked for (`specialist_services`), never the
+/// salon's whole catalogue.
+class _SpecialistsTab extends ConsumerWidget {
   const _SpecialistsTab({
+    required this.salonId,
     required this.specialists,
     required this.specialistId,
     required this.onShowPortfolio,
   });
+
+  final String salonId;
 
   final List<SalonSpecialist> specialists;
 
@@ -206,7 +213,7 @@ class _SpecialistsTab extends StatelessWidget {
   final ValueChanged<String> onShowPortfolio;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedId = specialistId;
     final selected = selectedId == null
         ? null
@@ -242,6 +249,8 @@ class _SpecialistsTab extends StatelessWidget {
                 ],
               ),
             ),
+          if (selected != null)
+            SpecialistServicesSection(salonId: salonId, specialistId: selected.id),
         ],
       ],
     );

@@ -1,4 +1,6 @@
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../user/entities/user.entity';
 import { TenantHierarchyGuard } from '../../auth/guards/tenant-hierarchy.guard';
 import { UseGuards,
   Body,
@@ -33,6 +35,7 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 /** Admin users management. Global JwtAuthGuard rejects anonymous; service enforces role=admin. */
 @ApiTags('admin/users')
+@Roles(...ADMIN_ROLES)
 @UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('admin/users')
 export class AdminUsersController {

@@ -25,6 +25,7 @@ import '../../features/services/presentation/screens/services_list_screen.dart';
 import '../../features/specialists/presentation/screens/invite_specialist_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_form_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_list_screen.dart';
+import '../../features/specialists/presentation/screens/specialist_services_screen.dart';
 import '../../features/specialists/presentation/screens/specialist_setup_screen.dart';
 import '../navigation/salon_shell.dart';
 
@@ -74,6 +75,9 @@ const String specialistInvitePath = '/specialists/invite';
 const String portfolioPath = '/portfolio';
 
 String specialistEditPath(String id) => '/specialists/$id/edit';
+
+/// The owner's per-specialist service assignment page.
+String specialistServicesPath(String id) => '/specialists/$id/services';
 
 /// Where a signed-in account with no salon role is sent.
 ///
@@ -201,6 +205,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/specialists/:id/edit',
         builder: (_, state) => const SpecialistFormScreen(),
+      ),
+      // The owner's per-specialist service picker — full page, root navigator.
+      GoRoute(
+        path: '/specialists/:id/services',
+        builder: (_, state) => SpecialistServicesScreen(
+          specialistId: state.pathParameters['id']!,
+          specialistName: (state.extra as Map<String, dynamic>?)?['name'] as String? ?? 'متخصص',
+        ),
       ),
       // Booking detail: a full-page screen pushed onto the root navigator,
       // reached by tapping a row of the list or the calendar. Declared before

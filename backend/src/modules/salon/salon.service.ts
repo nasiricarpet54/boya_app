@@ -39,6 +39,7 @@ import {
   CreateSpecialistPanelDto,
   UpdateSpecialistPanelDto,
 } from './dto/specialist-panel.dto';
+import { SetSpecialistServicesDto } from './dto/specialist-services.dto';
 import {
   CreateServiceDto,
   CreateServiceLineDto,
@@ -349,6 +350,32 @@ export interface SalonPanelSpecialistCreated {
   phone: string;
   status: ApprovalStatus;
 }
+
+/**
+ * One service assigned to a specialist (`specialist_services`, migration
+ * 1792900000000). Returned by both the panel read and the public read; the
+ * fields the customer app's service card needs are exactly the ones the salon
+ * owner defined, never the full salon catalogue.
+ */
+export interface SalonSpecialistServiceItem {
+  id: string;
+  specialistId: string;
+  serviceId: string;
+  name: string;
+  description: string | null;
+  price: number;
+  durationMinutes: number;
+  /** Off switch the owner can flip without un-assigning the service. */
+  isActive: boolean;
+  /** ADR-011: can this service leave the salon? */
+  isMobileAvailable: boolean;
+}
+
+/** Response of `GET /salons/:id/specialists/:specialistId/services`. */
+export interface SalonSpecialistServices {
+  data: SalonSpecialistServiceItem[];
+}
+
 
 export interface SalonPanelBookingItem {
   id: string;
@@ -797,17 +824,28 @@ export class SalonService {
     );
     if (!row) throw new NotFoundException('ط³ط§ظ„ظ† ظ…ظˆط±ط¯ ظ†ط¸ط± غŒط§ظپطھ ظ†ط´ط¯');
 
-    const serviceRows = await this.dataSource.query<
-      Array<{ id: string; name: string; description: string | null; price: string; is_mobile_available: boolean }>
-    >(
-      `SELECT id, name, description, price, is_mobile_available
-       FROM services
-       WHERE tenant_id = $1
-       ORDER BY price ASC, name ASC`,
-      [id],
-    );
-
-    const tags = await this.loadTags([id]);
+    // Four independent reads, issued together: the detail page waits on the
+    // slowest round trip instead of the sum of four.
+    const [serviceRows, tags, specialists, portfolio] = await Promise.all([
+      this.dataSource.query<
+        Array<{
+          id: string;
+          name: string;
+          description: string | null;
+          price: string;
+          is_mobile_available: boolean;
+        }>
+      >(
+        `SELECT id, name, description, price, is_mobile_available
+         FROM services
+         WHERE tenant_id = $1
+         ORDER BY price ASC, name ASC`,
+        [id],
+      ),
+      this.loadTags([id]),
+      this.loadSpecialists(id),
+      this.loadPortfolio(id),
+    ]);
     const now = new Date();
 
     return {
@@ -828,8 +866,8 @@ export class SalonService {
         price: toNumber(service.price) ?? 0,
         isMobileAvailable: service.is_mobile_available === true,
       })),
-      specialists: await this.loadSpecialists(id),
-      portfolio: await this.loadPortfolio(id),
+      specialists,
+      portfolio,
     };
   }
 
@@ -887,6 +925,69 @@ export class SalonService {
         description: service.description,
         price: toNumber(service.price) ?? 0,
         isMobileAvailable: service.is_mobile_available === true,
+      })),
+    };
+  }
+
+  /**
+   * `GET /salons/:id/specialists/:specialistId/services` — the services the
+   * salon assigned to one specialist, the only list the booking form's service
+   * picker may show once a specialist is picked. The whole salon catalogue is
+   * NOT returned here.
+   *
+   * Read through `get_public_specialist_services()` because
+   * `specialist_services` is FORCE ROW LEVEL SECURITY on
+   * `app.current_tenant_id` and a public request sets no GUC — the same escape
+   * hatch the other public lookups (1730000000015/16) already use.
+   *
+   * An empty reply means "nothing assigned yet" only when the specialist is
+   * active in this salon; otherwise the request is a 404 so a stale id cannot
+   * be probed through this route.
+   */
+  async specialistServices(
+    salonId: string,
+    specialistId: string,
+  ): Promise<SalonSpecialistServices> {
+    const [tenant] = await this.dataSource.query<Array<{ id: string }>>(
+      `SELECT id FROM tenants WHERE id = $1 AND is_active = true AND ${PUBLIC_TENANT_SQL}`,
+      [salonId],
+    );
+    if (!tenant) throw new NotFoundException('سالن مورد نظر یافت نشد');
+
+    const rows = await this.dataSource.query<
+      Array<{
+        service_id: string;
+        name: string;
+        description: string | null;
+        price: string;
+        duration_minutes: number;
+        is_mobile_available: boolean;
+      }>
+    >(
+      `SELECT service_id, name, description, price, duration_minutes, is_mobile_available
+         FROM get_public_specialist_services($1::uuid, $2::uuid)`,
+      [salonId, specialistId],
+    );
+
+    if (rows.length === 0) {
+      const [specialist] = await this.dataSource.query<Array<{ id: string }>>(
+        `SELECT id FROM specialists WHERE id = $1 AND tenant_id = $2 AND is_active = true`,
+        [specialistId, salonId],
+      );
+      if (!specialist) throw new NotFoundException('متخصص مورد نظر یافت نشد');
+    }
+
+    return {
+      data: rows.map((row) => ({
+        id: `${row.service_id}:${specialistId}`,
+        specialistId,
+        serviceId: row.service_id,
+        name: row.name,
+        description: row.description,
+        price: toNumber(row.price) ?? 0,
+        durationMinutes: row.duration_minutes ?? 0,
+        isActive: true,
+        isMobileAvailable: row.is_mobile_available === true,
       })),
     };
   }
@@ -2718,6 +2819,135 @@ export class SalonService {
   }
 
   /**
+   * `GET /salon/me/specialists/:id/services` — the services the salon assigned
+   * to one specialist, inactive assignments included (the owner can switch
+   * those back on). A specialist sees only their own row: the panel lists every
+   * specialist id of the salon, so reading another specialist's id by hand is a
+   * real cross-account read and answers 403, per the charter.
+   */
+  async listPanelSpecialistServices(
+    user: AuthenticatedUser,
+    specialistId: string,
+  ): Promise<SalonSpecialistServiceItem[]> {
+    const tenantId = this.requireStaffTenant(user);
+    const ownRowOnly = user.role === 'specialist';
+
+    return this.withPanelTenant(tenantId, async (manager) => {
+      if (ownRowOnly) {
+        const owned = await manager.query<Array<{ id: string }>>(
+          `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2 AND user_id = $3`,
+          [tenantId, specialistId, user.userId],
+        );
+        if (owned.length === 0) {
+          throw new ForbiddenException('مشاهده خدمات متخصصان دیگر مجاز نیست');
+        }
+      } else {
+        const specs = await manager.query<Array<{ id: string }>>(
+          `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
+          [tenantId, specialistId],
+        );
+        if (specs.length === 0) throw new NotFoundException('متخصص مورد نظر یافت نشد');
+      }
+
+      return this.selectPanelSpecialistServices(manager, tenantId, specialistId);
+    });
+  }
+
+  /**
+   * `PUT /salon/me/specialists/:id/services` — the owner defines which services
+   * a specialist offers. Salon-owner only: a specialist editing their own
+   * assignments would be deciding their own catalogue, which is the salon's
+   * call, not the provider's.
+   *
+   * The list is replacing, not merging: services missing from it are
+   * un-assigned, the ones in it are upserted. Every service id must belong to
+   * the same tenant — an id from another salon is a 400 rather than a silently
+   * accepted assignment.
+   */
+  async setPanelSpecialistServices(
+    user: AuthenticatedUser,
+    specialistId: string,
+    dto: SetSpecialistServicesDto,
+  ): Promise<SalonSpecialistServiceItem[]> {
+    const tenantId = this.requireStaffTenant(user);
+    if (user.role !== 'salon_owner' && user.role !== 'admin') {
+      throw new ForbiddenException('تعریف خدمات متخصص تنها توسط سالن‌دار امکان‌پذیر است');
+    }
+
+    return this.withPanelTenant(tenantId, async (manager) => {
+      const specs = await manager.query<Array<{ id: string }>>(
+        `SELECT id FROM specialists WHERE tenant_id = $1 AND id = $2`,
+        [tenantId, specialistId],
+      );
+      if (specs.length === 0) throw new NotFoundException('متخصص مورد نظر یافت نشد');
+
+      const uniqueIds = [...new Set(dto.services.map((item) => item.serviceId))];
+      if (uniqueIds.length > 0) {
+        const valid = await manager.query<Array<{ id: string }>>(
+          `SELECT id FROM services WHERE tenant_id = $1 AND id = ANY($2::uuid[])`,
+          [tenantId, uniqueIds],
+        );
+        if (valid.length !== uniqueIds.length) {
+          throw new BadRequestException('یک یا چند خدمت متعلق به این سالن نیست');
+        }
+      }
+
+      await manager.query(
+        `DELETE FROM specialist_services
+          WHERE tenant_id = $1 AND specialist_id = $2
+            AND NOT (service_id = ANY($3::uuid[]))`,
+        [tenantId, specialistId, uniqueIds],
+      );
+      for (const item of dto.services) {
+        await manager.query(
+          `INSERT INTO specialist_services (tenant_id, specialist_id, service_id, is_active, created_by)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (tenant_id, specialist_id, service_id)
+           DO UPDATE SET is_active = EXCLUDED.is_active`,
+          [tenantId, specialistId, item.serviceId, item.isActive ?? true, user.userId],
+        );
+      }
+
+      return this.selectPanelSpecialistServices(manager, tenantId, specialistId);
+    });
+  }
+
+  /** The shared `specialist_services` join of the two panel endpoints above. */
+  private async selectPanelSpecialistServices(
+    manager: EntityManager,
+    tenantId: string,
+    specialistId: string,
+  ): Promise<SalonSpecialistServiceItem[]> {
+    const rows = await manager.query<PanelSpecialistServiceRow[]>(
+      `SELECT ss.id, ss.specialist_id, ss.service_id, sv.name, sv.description,
+              COALESCE(ss.price, sv.price) AS price,
+              COALESCE(ss.duration_minutes, sv.duration_minutes) AS duration_minutes,
+              ss.is_active, sv.is_mobile_available
+         FROM specialist_services ss
+         JOIN services sv ON sv.id = ss.service_id
+        WHERE ss.tenant_id = $1 AND ss.specialist_id = $2
+        ORDER BY sv.name ASC, ss.id ASC`,
+      [tenantId, specialistId],
+    );
+    return rows.map((row) => this.toSpecialistServiceItem(row));
+  }
+
+  private toSpecialistServiceItem(row: PanelSpecialistServiceRow): SalonSpecialistServiceItem {
+    return {
+      id: row.id,
+      specialistId: row.specialist_id,
+      serviceId: row.service_id,
+      name: row.name,
+      description: row.description,
+      price: toNumber(row.price) ?? 0,
+      durationMinutes: row.duration_minutes ?? 0,
+      isActive: row.is_active === true,
+      isMobileAvailable: row.is_mobile_available === true,
+    };
+  }
+
+
+  /**
    * GET /salon/me/portfolio â€” every portfolio photo of every specialist of
    * the signed-in salon, flattened exactly like the public lookup
    * (migration 1730000000016): bare-string and object elements both
@@ -2987,6 +3217,12 @@ export class SalonService {
    * 1730000000015).
    */
   private async loadSpecialists(salonId: string): Promise<SalonSpecialist[]> {
+    // ADR-011: `get_public_salon_specialists()` is deliberately NOT redefined
+    // to carry the mobile flag (migration 1730000000016 pins its RETURNS TABLE
+    // shape and every caller that depends on it), so the flag is joined in from
+    // `specialists`. That table carries no RLS policy, unlike `users`, so a
+    // public connection can read it directly — one round trip instead of two
+    // keeps the salon detail inside its five-query budget.
     const rows = await this.dataSource.query<
       Array<{
         id: string;
@@ -2995,28 +3231,15 @@ export class SalonService {
         bio: string | null;
         skills: string[];
         commission_rate: string | null;
+        offers_mobile_service: boolean | null;
       }>
     >(
-      `SELECT id, full_name, avatar_url, bio, skills, commission_rate
-       FROM get_public_salon_specialists($1::uuid)`,
+      `SELECT sp.id, sp.full_name, sp.avatar_url, sp.bio, sp.skills, sp.commission_rate,
+              s.offers_mobile_service
+       FROM get_public_salon_specialists($1::uuid) sp
+       LEFT JOIN specialists s ON s.id = sp.id`,
       [salonId],
     );
-
-    // ADR-011: `get_public_salon_specialists()` is deliberately NOT redefined
-    // to carry the mobile flag (migration 1730000000016 pins its RETURNS TABLE
-    // shape and every caller that depends on it), so the flag is read straight
-    // off `specialists`. That table carries no RLS policy, unlike `users`, so a
-    // public connection can read it directly and a second round trip is all it
-    // costs.
-    const flags = await this.dataSource.query<
-      Array<{ id: string; offers_mobile_service: boolean }>
-    >(
-      `SELECT id, offers_mobile_service
-       FROM specialists
-       WHERE tenant_id = $1 AND is_active = true`,
-      [salonId],
-    );
-    const flagById = new Map(flags.map((flag) => [flag.id, flag.offers_mobile_service]));
 
     return rows.map((row) => ({
       id: row.id,
@@ -3025,7 +3248,7 @@ export class SalonService {
       bio: row.bio,
       skills: row.skills ?? [],
       commissionRate: toNumber(row.commission_rate) ?? 0,
-      offersMobileService: flagById.get(row.id) === true,
+      offersMobileService: row.offers_mobile_service === true,
     }));
   }
 
@@ -3258,6 +3481,19 @@ interface PanelPortfolioRow {
   specialist_name: string | null;
   element_created_at: string | null;
   specialist_created_at: Date;
+}
+
+/** Raw row behind [SalonSpecialistServiceItem]; numerics arrive as strings. */
+interface PanelSpecialistServiceRow {
+  id: string;
+  specialist_id: string;
+  service_id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+  is_mobile_available: boolean;
 }
 
 /**
