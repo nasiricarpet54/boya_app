@@ -19,8 +19,8 @@ jobs:
           channel: 'stable'
           flutter-version: '3.47.8'
           cache: true
-          # کلید کش پویا: با تغییر نسخه، کش قدیمی نادیده گرفته می‌شود
-          cache-key: 'flutter-:version:'
+          # کلید کش پویا: شامل نسخه، کانال و معماری
+          cache-key: 'flutter-:version:-:channel:-:arch:'
 
       - run: cd mobile/${{ matrix.app }} && flutter pub get
       - run: cd mobile/${{ matrix.app }} && flutter analyze --fatal-infos --fatal-warnings
