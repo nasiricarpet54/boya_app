@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { City } from '../../src/modules/location/entities/city.entity';
 import { Province } from '../../src/modules/location/entities/province.entity';
 import { LocationModule } from '../../src/modules/location/location.module';
+import { CacheServiceModule } from '../../src/modules/cache/cache-service.module';
 import { SalonModule } from '../../src/modules/salon/salon.module';
 import { adminConfig, TEST_DB_NAME } from '../setup/test-db';
 import { describeIntegration, queryAsAdmin } from '../setup/integration.setup';
@@ -123,6 +124,7 @@ describeIntegration('locations: provinces, cities and the salon city filter', ()
           synchronize: false,
         }),
         EventEmitterModule.forRoot(),
+        CacheServiceModule,
         LocationModule,
         SalonModule,
       ],

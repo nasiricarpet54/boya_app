@@ -187,7 +187,7 @@ describeIntegration('admin users CRUD (POST + DELETE /admin/users)', () => {
 
     expect(response.status).toBe(403);
     const body = (await response.json()) as { message: string };
-    expect(body.message).toContain('مدیر سامانه');
+    expect(body.message).toContain('دسترسی لازم برای این عملیات را ندارید');
   });
 
   it('admin → DELETE /admin/users/:id → 200, and both user and specialist flip is_active=false', async () => {
@@ -258,7 +258,7 @@ describeIntegration('admin users CRUD (POST + DELETE /admin/users)', () => {
 
     expect(response.status).toBe(403);
     const body = (await response.json()) as { message: string };
-    expect(body.message).toContain('مدیر سامانه');
+    expect(body.message).toContain('دسترسی لازم برای این عملیات را ندارید');
   });
 
   it('admin → PATCH a non-existent user → 404', async () => {

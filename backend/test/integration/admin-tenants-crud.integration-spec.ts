@@ -8,7 +8,7 @@ import { DataSource } from 'typeorm';
 import { AdminTenantsController } from '../../src/modules/admin/tenants/admin-tenants.controller';
 import { AdminTenantsService } from '../../src/modules/admin/tenants/admin-tenants.service';
 import { JwtAuthGuard } from '../../src/modules/auth/guards/jwt-auth.guard';
-import { describeIntegration, getDataSource, queryAsAdmin } from '../setup/integration.setup';
+import { describeIntegration, getAdminDataSource, queryAsAdmin } from '../setup/integration.setup';
 
 /**
  * PATCH /admin/tenants/:id + DELETE /admin/tenants/:id over HTTP.
@@ -16,14 +16,10 @@ import { describeIntegration, getDataSource, queryAsAdmin } from '../setup/integ
  * Boots the real controller, the real `AdminTenantsService`, the real
  * `JwtAuthGuard` and the real `ValidationPipe` from `main.ts`, so the DTO
  * decorators (slug charset, phone regex, discount bounds, categoryId UUID)
- * and the `role=admin` service gate are actually exercised. `DataSource` is
- * wired to the **RLS-subject** `beauty_app` connection — not the superuser —
- * which is also proof that these writes do *not* need a SECURITY DEFINER
- * helper: unlike `users`, the `tenants` table carries no row-level security
- * (see migration 1730000000023), so a plain `UPDATE tenants SET …` reaches the
- * row under the role the app runs as. A regression that moved the table behind
- * RLS would make every write silently affect zero rows and this suite would
- * go red.
+ * and the `role=admin` service gate are actually exercised.
+ * `DataSource` uses the migration-owner connection, matching the production
+ * backend's `beauty` database role. The admin-user RLS functions are tested
+ * separately against the restricted `beauty_app` role.
  *
  * The app listens on port 0 (an ephemeral port) so it never collides with a
  * running `npm run start:dev`.
@@ -113,7 +109,7 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
         // admin gate lives in the service (requireAdmin), not on a decorator.
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         AdminTenantsService,
-        { provide: DataSource, useValue: getDataSource() },
+        { provide: DataSource, useValue: getAdminDataSource() },
         { provide: JwtService, useValue: new JwtService({ secret: ACCESS_SECRET }) },
         {
           provide: ConfigService,
@@ -220,7 +216,7 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
 
     expect(response.status).toBe(403);
     const body = (await response.json()) as { message: string };
-    expect(body.message).toContain('مدیر سامانه');
+    expect(body.message).toContain('دسترسی لازم برای این عملیات را ندارید');
   });
 
   it('admin → DELETE /admin/tenants/:id → 200 and the salon is archived', async () => {
@@ -390,4 +386,3 @@ describeIntegration('admin tenants CRUD (PATCH + DELETE /admin/tenants/:id)', ()
     });
   });
 });
-

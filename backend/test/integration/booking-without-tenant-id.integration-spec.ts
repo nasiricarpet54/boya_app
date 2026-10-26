@@ -7,7 +7,7 @@ import { Service } from '../../src/modules/service/entities/service.entity';
 import { ServiceCatalogService } from '../../src/modules/service/service.service';
 import { Specialist } from '../../src/modules/specialist/entities/specialist.entity';
 import { SpecialistService } from '../../src/modules/specialist/specialist.service';
-import { appConfig, TEST_DB_NAME } from '../setup/test-db';
+import { adminConfig, TEST_DB_NAME } from '../setup/test-db';
 import { describeIntegration, withTenant } from '../setup/integration.setup';
 
 // Jest runs the integration suites in parallel workers over one shared test
@@ -43,10 +43,10 @@ describeIntegration('booking tenantId derived from the specialist', () => {
     // performs.
     dataSource = new DataSource({
       type: 'postgres',
-      host: String(appConfig.host),
-      port: Number(appConfig.port),
-      username: String(appConfig.user),
-      password: String(appConfig.password),
+      host: String(adminConfig.host),
+      port: Number(adminConfig.port),
+      username: String(adminConfig.user),
+      password: String(adminConfig.password),
       database: TEST_DB_NAME,
       entities: [Booking, Service, Specialist],
       synchronize: false,
