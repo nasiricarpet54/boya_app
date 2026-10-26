@@ -6,9 +6,10 @@ import { SpecialistModule } from '../specialist/specialist.module';
 import { BookingController } from './booking.controller';
 import { Booking } from './booking.entity';
 import { BookingService } from './booking.service';
+import { CacheModule } from '../cache/cache.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Booking]), ServiceModule, SpecialistModule],
+  imports: [TypeOrmModule.forFeature([Booking]), ServiceModule, SpecialistModule, CacheModule],
   controllers: [BookingController],
   providers: [BookingService],
   exports: [BookingService],
