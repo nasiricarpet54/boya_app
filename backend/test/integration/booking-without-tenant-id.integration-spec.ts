@@ -104,6 +104,11 @@ describeIntegration('booking tenantId derived from the specialist', () => {
         `INSERT INTO services (id, tenant_id, name, price, duration_minutes) VALUES ($1, $2, $3, 1000000, 60)`,
         [SERVICE, TENANT, 'IT Derived Service'],
       );
+      await query(
+        `INSERT INTO specialist_services (tenant_id, specialist_id, service_id, is_active)
+         VALUES ($1, $2, $3, true)`,
+        [TENANT, SPECIALIST, SERVICE],
+      );
     });
   };
 

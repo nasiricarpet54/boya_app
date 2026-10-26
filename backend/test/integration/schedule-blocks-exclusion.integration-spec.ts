@@ -1,13 +1,15 @@
 import { describeIntegration, getDataSource, queryAsAdmin, withTenant } from '../setup/integration.setup';
 
-const TENANT_A = '11111111-1111-4111-8111-111111111111';
-const TENANT_B = '22222222-2222-4222-8222-222222222222';
-const CUSTOMER = '33333333-3333-4333-8333-3333333333c1';
-const SPECIALIST_USER = '33333333-3333-4333-8333-3333333333c2';
-const SPECIALIST = '33333333-3333-4333-8333-3333333333c3';
-const SERVICE = '33333333-3333-4333-8333-3333333333c4';
-const MOBILE_SPECIALIST_USER = '44444444-4444-4444-8444-4444444444c2';
-const MOBILE_SPECIALIST = '44444444-4444-4444-8444-4444444444c3';
+const TENANT_A = 'a1000000-0000-4000-8000-000000000001';
+const TENANT_B = 'a2000000-0000-4000-8000-000000000002';
+const CUSTOMER = 'a3000000-0000-4000-8000-000000000001';
+const SPECIALIST_USER = 'a3000000-0000-4000-8000-000000000002';
+const SPECIALIST = 'a3000000-0000-4000-8000-000000000003';
+const SERVICE = 'a3000000-0000-4000-8000-000000000004';
+const S2_USER = 'a3000000-0000-4000-8000-000000000005';
+const S2 = 'a3000000-0000-4000-8000-000000000006';
+const MOBILE_SPECIALIST_USER = 'a4000000-0000-4000-8000-000000000001';
+const MOBILE_SPECIALIST = 'a4000000-0000-4000-8000-000000000002';
 
 const SLOT_START = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const SLOT_END = new Date(SLOT_START.getTime() + 60 * 60 * 1000);
@@ -36,9 +38,9 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
       await query(`DELETE FROM bookings WHERE tenant_id = $1`, [TENANT_A]);
       await query(`DELETE FROM specialists WHERE tenant_id = $1`, [TENANT_A]);
       await query(`DELETE FROM services WHERE tenant_id = $1`, [TENANT_A]);
-      await query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [[CUSTOMER, SPECIALIST_USER]]);
-      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'customer')`, [CUSTOMER, TENANT_A, '09120009911']);
-      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'specialist')`, [SPECIALIST_USER, TENANT_A, '09120009912']);
+      await query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [[CUSTOMER, SPECIALIST_USER, S2_USER]]);
+      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'customer')`, [CUSTOMER, TENANT_A, '09129999801']);
+      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'specialist')`, [SPECIALIST_USER, TENANT_A, '09129999802']);
       await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [SPECIALIST, TENANT_A, SPECIALIST_USER]);
       await query(`INSERT INTO services (id, tenant_id, name, price, duration_minutes) VALUES ($1, $2, $3, $4, $5)`, [SERVICE, TENANT_A, 'Saloon Service', 1000000, 60]);
     });
@@ -47,7 +49,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
       await query(`INSERT INTO tenants (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`, [TENANT_B, 'Test Saloon B']);
       await query(`DELETE FROM specialists WHERE id = $1`, [MOBILE_SPECIALIST]);
       await query(`DELETE FROM users WHERE id = $1`, [MOBILE_SPECIALIST_USER]);
-      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'specialist')`, [MOBILE_SPECIALIST_USER, TENANT_B, '09120009922']);
+      await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1, $2, $3, 'specialist')`, [MOBILE_SPECIALIST_USER, TENANT_B, '09129999803']);
       await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1, $2, $3)`, [MOBILE_SPECIALIST, TENANT_B, MOBILE_SPECIALIST_USER]);
     });
   });
@@ -64,7 +66,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
       await query(`DELETE FROM bookings WHERE tenant_id = $1`, [TENANT_A]);
       await query(`DELETE FROM specialists WHERE tenant_id = $1`, [TENANT_A]);
       await query(`DELETE FROM services WHERE tenant_id = $1`, [TENANT_A]);
-      await query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [[CUSTOMER, SPECIALIST_USER]]);
+      await query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [[CUSTOMER, SPECIALIST_USER, S2_USER]]);
       await query(`DELETE FROM tenants WHERE id = $1`, [TENANT_A]);
     });
     await withTenant(TENANT_B, async (query) => {
@@ -133,9 +135,7 @@ describeIntegration('Schedule Blocks: exclusion and isolation', () => {
 
     it('allows blocks for different specialists in the same salon', async () => {
       await withTenant(TENANT_A, async (query) => {
-        const S2_USER = '55555555-5555-4555-8555-5555555555c2';
-        const S2 = '55555555-5555-4555-8555-5555555555c3';
-        await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1,$2,$3,'specialist')`, [S2_USER, TENANT_A, '09120009933']);
+        await query(`INSERT INTO users (id, tenant_id, phone, role) VALUES ($1,$2,$3,'specialist')`, [S2_USER, TENANT_A, '09129999804']);
         await query(`INSERT INTO specialists (id, tenant_id, user_id) VALUES ($1,$2,$3)`, [S2, TENANT_A, S2_USER]);
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block A')`, [TENANT_A, SPECIALIST, SLOT_START, SLOT_END]);
         await query(`INSERT INTO schedule_blocks (tenant_id, specialist_id, start_time, end_time, reason) VALUES ($1, $2, $3, $4, 'Block B')`, [TENANT_A, S2, SLOT_START, SLOT_END]);
