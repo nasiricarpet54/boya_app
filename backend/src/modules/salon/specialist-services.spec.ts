@@ -4,6 +4,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SalonService } from './salon.service';
 import { SetSpecialistServicesDto } from './dto/specialist-services.dto';
 import type { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
+import { CacheService } from '../cache/cache.service';
 
 const TENANT = '22222222-2222-2222-2222-222222222222';
 const SPECIALIST = '33333333-3333-3333-3333-333333333333';
@@ -64,7 +65,7 @@ describe('SalonService specialist services', () => {
     dataSource = new FakeDataSource();
     jest.clearAllMocks();
     dataSource.query.mockImplementation(async () => dataSource.replies.shift() ?? []);
-    service = new SalonService(dataSource as never, {} as EventEmitter2);
+    service = new SalonService(dataSource as never, {} as EventEmitter2, {} as CacheService);
   });
 
   describe('panel read (GET /salon/me/specialists/:id/services)', () => {
