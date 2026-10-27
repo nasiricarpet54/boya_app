@@ -63,26 +63,20 @@ jobs:
             echo "BOYA_SSH_KEY=$RUNNER_TEMP/boya-ssh/id_ed25519"
             echo "BOYA_SSH_KNOWN_HOSTS=$RUNNER_TEMP/boya-ssh/known_hosts"
           } >> "$GITHUB_ENV"
-      - name: Inspect VPS transfer health
+      - name: Verify SSH authentication to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
-          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set +e
-            echo '--- VPS time, disk and memory ---'
-            date -u
-            df -h / /opt/boya
-            free -h
-            echo '--- staged build remnants ---'
-            du -sh /opt/boya/.deploy-staging/* 2>/dev/null | tail -10
-            find /opt/boya/.deploy-staging -maxdepth 5 -name index.html -type f -ls 2>/dev/null | tail -10
-            echo '--- recent SSH messages (addresses redacted) ---'
-            journalctl -u ssh -n 30 --no-pager -o short-iso 2>/dev/null | sed -E 's/from [^ ]+/from [redacted]/g'
-            echo '--- recent kernel resource/storage errors ---'
-            journalctl -k -n 100 --no-pager -o short-iso 2>/dev/null | grep -Ei 'oom|killed process|I/O error|read-only|filesystem' | tail -20
-          "
+          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
+          if timeout 30s ssh "${ssh_args[@]}" "$remote" 'printf "SSH authenticated as "; id -un'; then
+            exit 0
+          fi
+          echo 'SSH smoke test failed; retrying once with verbose handshake diagnostics.'
+          timeout 30s ssh -vvv "${ssh_args[@]}" "$remote" true || true
+          exit 1
       - name: Stream and validate web builds on VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -91,7 +85,7 @@ jobs:
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
           stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
+          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
           ssh "${ssh_args[@]}" "$remote" "mkdir -p '$stage/customer_app' '$stage/salon_app'"
           for app in customer_app salon_app; do
             test -s "mobile/$app/build/web/index.html"
@@ -106,7 +100,7 @@ jobs:
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
           stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set -eu
+          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set -eu
             cd /opt/boya
             for app in customer_app salon_app; do
               mkdir -p \"mobile/\$app/build\"
