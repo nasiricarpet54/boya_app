@@ -89,7 +89,7 @@ jobs:
           ssh "${ssh_args[@]}" "$remote" "mkdir -p '$stage/customer_app' '$stage/salon_app'"
           for app in customer_app salon_app; do
             test -s "mobile/$app/build/web/index.html"
-            tar -C "mobile/$app/build" -czf - web | ssh "${ssh_args[@]}" "$remote" "tar -xzf - -C '$stage/$app'"
+            scp -r -C -i "$BOYA_SSH_KEY" -P 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "mobile/$app/build/web" "$remote:$stage/$app/"
           done
           ssh "${ssh_args[@]}" "$remote" "test -s '$stage/customer_app/web/index.html' && test -s '$stage/salon_app/web/index.html'"
       - name: Install validated builds and run production update
