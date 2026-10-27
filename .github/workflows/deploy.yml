@@ -10,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [customer_app, salon_app]
+        include:
+          - app: customer_app
+            base_href: /app/
+          - app: salon_app
+            base_href: /salon/
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -21,7 +25,7 @@ jobs:
         run: |
           cd mobile/${{ matrix.app }}
           flutter pub get
-          flutter build web --release --no-web-resources-cdn --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/
+          flutter build web --release --base-href '${{ matrix.base_href }}' --no-web-resources-cdn --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -31,6 +35,7 @@ jobs:
   deploy:
     needs: build_web
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Download customer_app build
@@ -43,25 +48,55 @@ jobs:
         with:
           name: web-build-salon_app
           path: mobile/salon_app/build/web
-          
-      - name: Copy build files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 9011
-          source: "mobile/customer_app/build/web, mobile/salon_app/build/web"
-          target: "/opt/boya/"
-          
-      - name: SSH to VPS and Execute Update SOP
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 45m
-          port: 9011
-          script: |
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$RUNNER_TEMP/boya-ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$RUNNER_TEMP/boya-ssh/id_ed25519"
+          chmod 600 "$RUNNER_TEMP/boya-ssh/id_ed25519"
+          ssh-keyscan -p 9011 -H "$VPS_HOST" > "$RUNNER_TEMP/boya-ssh/known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/boya-ssh/known_hosts"
+          {
+            echo "BOYA_SSH_KEY=$RUNNER_TEMP/boya-ssh/id_ed25519"
+            echo "BOYA_SSH_KNOWN_HOSTS=$RUNNER_TEMP/boya-ssh/known_hosts"
+          } >> "$GITHUB_ENV"
+      - name: Stream and validate web builds on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          remote="$VPS_USER@$VPS_HOST"
+          stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
+          ssh "${ssh_args[@]}" "$remote" "mkdir -p '$stage/customer_app' '$stage/salon_app'"
+          for app in customer_app salon_app; do
+            test -s "mobile/$app/build/web/index.html"
+            tar -C "mobile/$app/build" -czf - web | ssh "${ssh_args[@]}" "$remote" "tar -xzf - -C '$stage/$app'"
+          done
+          ssh "${ssh_args[@]}" "$remote" "test -s '$stage/customer_app/web/index.html' && test -s '$stage/salon_app/web/index.html'"
+      - name: Install validated builds and run production update
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          remote="$VPS_USER@$VPS_HOST"
+          stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set -eu
             cd /opt/boya
+            for app in customer_app salon_app; do
+              mkdir -p \"mobile/\$app/build\"
+              backup=\"mobile/\$app/build/web.previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\"
+              rm -rf \"\$backup\"
+              if [ -d \"mobile/\$app/build/web\" ]; then mv \"mobile/\$app/build/web\" \"\$backup\"; fi
+              mv "$stage/\$app/web" "mobile/\$app/build/web"
+            done
+            rm -rf '$stage'
             bash update_sop.sh
+            for app in customer_app salon_app; do
+              rm -rf "mobile/\$app/build/web.previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            done"
