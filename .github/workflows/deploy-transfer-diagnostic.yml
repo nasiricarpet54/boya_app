@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   transfer-test:
-    name: Verify temporary SFTP transfers
+    name: Verify temporary SSH file transfers
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -41,7 +41,7 @@ jobs:
             dd if=/dev/urandom of="$test_file" bs=1M count="$size_mb" status=none
             local_sum="$(sha256sum "$test_file" | cut -d' ' -f1)"
             started=$SECONDS
-            timeout 90s scp -C -i "$key_file" -P 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts" "$test_file" "$remote:$remote_file"
+            timeout 90s scp -O -C -i "$key_file" -P 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts" "$test_file" "$remote:$remote_file"
             remote_sum="$(ssh "${ssh_args[@]}" "$remote" "sha256sum '$remote_file' | cut -d' ' -f1")"
             elapsed=$((SECONDS - started))
             if [[ "$local_sum" != "$remote_sum" ]]; then
