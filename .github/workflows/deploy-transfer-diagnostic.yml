@@ -1,0 +1,53 @@
+name: VPS Transfer Diagnostic (No Deploy)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transfer-test:
+    name: Verify temporary SFTP transfers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Test 1MB and 20MB files without deploying
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          remote="$VPS_USER@$VPS_HOST"
+          remote_dir="/tmp/boya-transfer-diagnostic-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          key_file="$tmp_dir/id_ed25519"
+          known_hosts="$tmp_dir/known_hosts"
+          install -m 600 /dev/null "$key_file"
+          printf '%s\n' "$VPS_SSH_KEY" > "$key_file"
+          ssh-keyscan -p 9011 -H "$VPS_HOST" > "$known_hosts" 2>/dev/null
+          test -s "$known_hosts"
+          ssh_args=(-i "$key_file" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
+          cleanup() {
+            ssh "${ssh_args[@]}" "$remote" "rm -rf '$remote_dir'" >/dev/null 2>&1 || true
+            rm -rf "$tmp_dir"
+          }
+          trap cleanup EXIT
+          ssh "${ssh_args[@]}" "$remote" "umask 077; mkdir -p '$remote_dir'"
+          for size_mb in 1 20; do
+            test_file="$tmp_dir/probe-${size_mb}mb.bin"
+            remote_file="$remote_dir/probe-${size_mb}mb.bin"
+            dd if=/dev/urandom of="$test_file" bs=1M count="$size_mb" status=none
+            local_sum="$(sha256sum "$test_file" | cut -d' ' -f1)"
+            started=$SECONDS
+            timeout 90s scp -C -i "$key_file" -P 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts" "$test_file" "$remote:$remote_file"
+            remote_sum="$(ssh "${ssh_args[@]}" "$remote" "sha256sum '$remote_file' | cut -d' ' -f1")"
+            elapsed=$((SECONDS - started))
+            if [[ "$local_sum" != "$remote_sum" ]]; then
+              echo "${size_mb}MB transfer checksum mismatch"
+              exit 1
+            fi
+            echo "${size_mb}MB transfer and SHA-256 verification succeeded in ${elapsed}s"
+          done
+          echo 'Diagnostic completed; no production files or services were changed.'
