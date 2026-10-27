@@ -11,7 +11,7 @@ import { usePathname, useRouter } from '@/lib/navigation';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { cn } from '@/lib/utils/cn';
 import { faNumber } from '@/lib/utils/persian';
-import { formatDateWithWeekday } from '@/lib/utils/format-date';
+import { formatDateWithWeekdayAndMonth } from '@/lib/utils/format-date';
 import { locales, type Locale } from '@/routing';
 
 const LOCALE_LABEL: Record<Locale, string> = { fa: 'فارسی', en: 'English' };
@@ -36,7 +36,7 @@ export function Topbar() {
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
-    setToday(formatDateWithWeekday(new Date(), locale));
+    setToday(formatDateWithWeekdayAndMonth(new Date(), locale));
   }, [locale]);
 
   return (

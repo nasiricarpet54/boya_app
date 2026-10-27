@@ -2,6 +2,7 @@ import {
   jalaliDate,
   jalaliDateTime,
   jalaliDateWithWeekday,
+  jalaliDateWithWeekdayAndMonth,
   jalaliWeekday,
 } from './jalali';
 
@@ -72,4 +73,12 @@ export function formatDateWithWeekday(value: DateInput, locale: string): string 
   const date = toValidDate(value);
   if (!date) return '';
   return `${formatWeekday(date, locale)}, ${formatDate(date, locale)}`;
+}
+
+/** `سه‌شنبه ۵ آبان ۱۴۰۵` in `fa`, `Tuesday Oct 18, 2026` in `en`. */
+export function formatDateWithWeekdayAndMonth(value: DateInput, locale: string): string {
+  if (locale === 'fa') return jalaliDateWithWeekdayAndMonth(value ?? undefined);
+  const date = toValidDate(value);
+  if (!date) return '';
+  return `${formatWeekday(date, locale)} ${formatDate(date, locale).replace(/\//g, '-')}`;
 }

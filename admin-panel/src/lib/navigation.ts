@@ -9,6 +9,9 @@ import { routing } from '../routing';
  * is `router.replace(pathname, { locale: 'en' })` instead of hand-rolled string
  * concatenation. Using the plain Next.js versions anywhere would silently drop
  * the locale prefix and bounce through the middleware.
+ *
+ * `useSearchParams` is not locale-aware (query strings carry no locale), so it
+ * is re-exported as-is for the pages that filter on them.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname } =
+export const { Link, redirect, usePathname, useRouter, getPathname, useSearchParams } =
   createNavigation(routing);

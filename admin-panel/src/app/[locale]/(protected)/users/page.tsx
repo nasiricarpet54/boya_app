@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { Ban, CheckCircle2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -12,7 +11,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { useToast } from '@/components/providers/ToastProvider';
-import { Link } from '@/lib/navigation';
+import { Link, useSearchParams } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { usersApi, type UserListItem, type UserStatusFilter } from '@/lib/api/users';
 import { tenantsApi } from '@/lib/api/tenants';
@@ -47,8 +46,14 @@ export default function UsersPage() {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const searchParams = useSearchParams();
 
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  // `?role=freelance_mobile` lands here from the nested "Mobile Specialists" nav
+  // item; `?role=all` (or none) shows the whole list. Anything else is ignored.
+  const urlRole = searchParams.get('role');
+  const initialRole = urlRole && ROLE_FILTERS.includes(urlRole) ? (urlRole as UserRole | 'all') : 'all';
+
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>(initialRole);
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>('active');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');

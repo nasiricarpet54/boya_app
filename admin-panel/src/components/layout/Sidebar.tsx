@@ -41,10 +41,10 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface">
-      <div className="flex h-16 items-center gap-2 border-b border-line px-6">
-        <BoyaLogo className="flex-shrink-0 h-10 w-auto max-h-[40px]" title={tCommon('appName')} />
+      <div className="flex h-16 items-center gap-3 border-b border-line px-4 pe-6">
+        <BoyaLogo className="h-8 w-auto" title={tCommon('appName')} />
         <div className="min-w-0">
-          <p className="text-title font-bold text-ink">{tCommon('appName')}</p>
+          <p className="truncate text-title font-bold text-ink">{tCommon('appName')}</p>
           <p className="truncate text-overline text-ink-muted">{tCommon('tagline')}</p>
         </div>
       </div>
@@ -58,7 +58,8 @@ export function Sidebar() {
 
             <ul className="space-y-1">
               {section.items.map((item) => {
-                const isActive = pathname === item.href;
+                const child = item.children?.find((c) => pathname === c.href);
+                const isActive = pathname === item.href || Boolean(child);
                 const Icon = item.icon;
 
                 return (
@@ -85,6 +86,35 @@ export function Sidebar() {
                         </span>
                       ) : null}
                     </Link>
+
+                    {item.children ? (
+                      <ul className="mt-1 space-y-1 pe-4 ps-8">
+                        {item.children.map((childItem) => {
+                          const childIsActive = pathname === childItem.href;
+                          const ChildIcon = childItem.icon;
+
+                          return (
+                            <li key={childItem.href}>
+                              <Link
+                                href={childItem.href}
+                                aria-current={childIsActive ? 'page' : undefined}
+                                className={cn(
+                                  'flex h-10 items-center gap-3 rounded-md px-3 text-caption transition-colors',
+                                  childIsActive
+                                    ? 'bg-brand-subtle font-semibold text-brand-primary'
+                                    : 'text-ink-muted hover:bg-brand-subtle/60 hover:text-ink',
+                                )}
+                              >
+                                <ChildIcon className="h-4 w-4 shrink-0" aria-hidden />
+                                <span className="flex-1 truncate">
+                                  {tNav(childItem.labelKey)}
+                                </span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
                   </li>
                 );
               })}

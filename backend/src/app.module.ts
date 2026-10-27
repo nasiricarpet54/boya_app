@@ -32,6 +32,7 @@ import { ReviewModule } from './modules/review/review.module';
 import { SalonModule } from './modules/salon/salon.module';
 import { ServiceLineModule } from './modules/service-line/service-line.module';
 import { ServiceModule } from './modules/service/service.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { SpecialistModule } from './modules/specialist/specialist.module';
 import { SupportModule } from './modules/support/support.module';
 import { TenantModule } from './modules/tenant/tenant.module';

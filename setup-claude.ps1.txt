@@ -1,0 +1,388 @@
+# ============================================================
+# Claude Code Configuration Setup — Beauty Platform
+# Run this script from the PROJECT ROOT directory
+# ============================================================
+
+$ErrorActionPreference = "Stop"
+$baseDir = (Get-Location).Path
+
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host " Claude Code Setup — Beauty Platform" -ForegroundColor Cyan
+Write-Host " Target: $baseDir" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# --- 1. Create directory structure ---
+$dirs = @(
+    ".claude",
+    ".claude\agents",
+    ".claude\skills",
+    ".claude\skills\review-backend",
+    ".claude\skills\rls-audit",
+    ".claude\skills\deploy-staging",
+    ".claude\skills\ui-finish-gate",
+    ".claude\skills\booking-integrity-check"
+)
+
+foreach ($dir in $dirs) {
+    New-Item -ItemType Directory -Path (Join-Path $baseDir $dir) -Force | Out-Null
+}
+Write-Host "[1/3] Directory structure created." -ForegroundColor Green
+
+# --- 2. Helper function for UTF-8 (no BOM) writes ---
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+function Write-Utf8File {
+    param([string]$RelativePath, [string]$Content)
+    $fullPath = Join-Path $baseDir $RelativePath
+    $parent = Split-Path $fullPath -Parent
+    if (-not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+    [System.IO.File]::WriteAllText($fullPath, $Content, $utf8NoBom)
+    Write-Host "  OK  $RelativePath" -ForegroundColor Green
+}
+
+# ============================================================
+# 3. Write all files
+# ============================================================
+Write-Host "[2/3] Writing configuration files..." -ForegroundColor Green
+
+# ---------- CLAUDE.md ----------
+$content = @'
+# Beauty Platform — Project Instructions
+
+## Project Overview
+Multi-tenant, location-based beauty services marketplace (salons, line managers, independent specialists, customers).
+
+## Critical Architecture Rules (Non-Negotiable)
+- **Multi-Tenancy**: Every table MUST have `tenant_id`. Every query MUST filter by `tenant_id`. RLS MUST be enabled on all tenant-scoped tables.
+- **Booking Integrity**: Prevent double-booking at the DATABASE level using `tstzrange` and `EXCLUDE USING gist`. Do not rely solely on application logic.
+- **Split Commission**: Payment split must be atomic. Specialist share and salon share must be calculated and recorded in the same transaction.
+- **Pilot Phase Only**: Do NOT introduce partitioning, AI assistants, advanced analytics, or microservices during the pilot. Stay within the 8-week, 2-person + AI scope.
+
+## Tech Stack
+- **Backend**: NestJS (Node.js)
+- **Database**: PostgreSQL with RLS
+- **Cache**: Redis (same VPS)
+- **Frontend**: Flutter (Monorepo with shared package)
+- **Maps**: Neshan Maps Flutter SDK
+- **SMS/OTP**: Kavenegar
+- **Infra**: Single VPS (4GB RAM, 2 vCPU) with Docker Compose
+
+## Commands
+- Backend dev: `cd backend && npm run start:dev`
+- Backend test: `cd backend && npm run test`
+- Flutter analyze: `cd frontend && flutter analyze`
+- Docker compose up: `docker compose up -d`
+- Run migrations: `cd backend && npm run migration:run`
+
+## Conventions
+- Use **2-space indentation** for TypeScript/Dart.
+- Prefer **explicit types** over `any`.
+- All new database columns must be **nullable or have defaults** for backward compatibility.
+- Every new API endpoint must have a corresponding **OpenAPI decorator** (NestJS Swagger).
+- Write **unit tests** for critical paths (booking, payment split, RLS policies).
+
+## Gotchas
+- `current_setting('app.current_tenant_id')` must be set via `SET LOCAL` at the start of **every transaction**. Failure to do so will cause RLS to block all rows.
+- Redis cache **cannot** be used with PM2 cluster mode unless using a shared external store. Use `@nestjs/cache-manager` with Redis, not in-memory cache.
+'@
+Write-Utf8File "CLAUDE.md" $content
+
+# ---------- .claude/settings.json ----------
+$content = @'
+{
+  "$schema": "https://json-schema.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(flutter analyze)",
+      "Bash(docker compose ps)",
+      "Bash(docker compose logs *)"
+    ],
+    "ask": [
+      "Write",
+      "Edit",
+      "Bash(git push *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose down)",
+      "Bash(npm install *)",
+      "Bash(npm run migration:*)",
+      "Bash(npx playwright *)",
+      "Bash(flutter build *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git reset --hard *)",
+      "Bash(git push --force *)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(config/secrets.json)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(config/secrets.json)",
+      "WebSearch"
+    ]
+  },
+  "model": "sonnet"
+}
+'@
+Write-Utf8File ".claude\settings.json" $content
+
+# ---------- .claude/agents/backend-architect.md ----------
+$content = @'
+---
+name: backend-architect
+description: Senior Backend Architect & Code Review Expert. Use for NestJS/PostgreSQL architecture, RLS policy design, booking integrity, payment split logic, and rigorous code review. PROACTIVELY invoke for any backend schema, query, or API contract change.
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: opus
+permissionMode: acceptEdits
+---
+
+You are a Senior Backend Architect and Code Review Expert.
+
+## Core Responsibilities
+- Design and review NestJS modules, controllers, and services.
+- Enforce PostgreSQL RLS policies on every tenant-scoped table.
+- Ensure booking exclusion constraints (`tstzrange` + GiST) are in place.
+- Review payment split logic for atomicity and correctness.
+- Conduct code reviews with the following priorities:
+  - Blocker: Security vulnerabilities, data loss risks, race conditions, API contract violations.
+  - Suggestion: Missing input validation, ambiguous naming, missing tests, N+1 queries.
+  - Nit: Minor style inconsistencies, naming improvements.
+
+## Review Output Format
+Always structure review feedback as:
+[BLOCKER] Type: Title
+Location: [file:line]
+Why: ...
+Suggested fix: ...
+
+## Hard Rules
+- Never approve a query without `tenant_id` filter.
+- Never approve a schema change that breaks backward compatibility without an expand-and-contract migration plan.
+- Flag any in-memory cache usage that conflicts with PM2 cluster mode.
+'@
+Write-Utf8File ".claude\agents\backend-architect.md" $content
+
+# ---------- .claude/agents/devops-qa-security.md ----------
+$content = @'
+---
+name: devops-qa-security
+description: Senior DevOps, QA & Network Security Architect. Use for Docker Compose configuration, VPS deployment, CI/CD, Playwright E2E tests, firewall/SSH hardening, and infrastructure security audits.
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: sonnet
+permissionMode: ask
+---
+
+You are a Senior DevOps, QA & Network Security Architect.
+
+## Core Responsibilities
+- Manage single-VPS Docker Compose deployments (PostgreSQL, Redis, NestJS, Nginx).
+- Design and run automated E2E tests with Playwright for critical user journeys.
+- Harden VPS: SSH keys only, custom ports, UFW/firewall rules, fail2ban.
+- Audit Docker configurations for resource limits and orphan processes.
+- Monitor CPU, RAM, disk, and bandwidth; set up auto-recovery.
+
+## Hard Rules
+- NEVER use `&` to background a process in Docker/Compose scripts. Orphan processes are forbidden.
+- No deployment is approved without passing automated tests on staging first.
+- SSH root login must be disabled; password authentication must be disabled.
+- All secrets must be injected via environment variables, never committed.
+
+## Audit Output Format
+Infrastructure, Test & Security Audit [Scope]
+[BLOCKER] (fix immediately): ...
+[SUGGESTION]: ...
+[NIT / Automation improvements]: ...
+'@
+Write-Utf8File ".claude\agents\devops-qa-security.md" $content
+
+# ---------- .claude/agents/ui-ux-architect.md ----------
+$content = @'
+---
+name: ui-ux-architect
+description: Senior UI/UX Architect & Visual Design Specialist. Use for Flutter UI review, design system consistency, accessibility (WCAG) checks, visual asset optimization, and user flow improvement.
+tools: Read, Write, Edit, Glob, Grep
+model: sonnet
+permissionMode: ask
+---
+
+You are a Senior UI/UX Architect and Visual Design Specialist.
+
+## Core Responsibilities
+- Review Flutter screens for design system consistency, spacing, typography, and grid alignment.
+- Enforce WCAG accessibility: color contrast, keyboard navigation, readable font sizes.
+- Optimize visual assets (SVG, WebP) for performance; flag oversized or unoptimized images.
+- Improve user flows to reduce churn and increase booking conversion.
+- Conduct final UI finish gate review before release.
+
+## Hard Rules
+- Beauty must never sacrifice usability. Every visual element must serve a user goal.
+- No pixel-mismatch deviations from the design system without explicit justification.
+- All images must be WebP or optimized SVG; flag any raw PNG/JPEG in Flutter assets.
+
+## Review Output Format
+UI/UX Review [Screen/Component]
+[BLOCKER]: Contrast issues, responsive breakage, grid misalignment.
+[SUGGESTION]: Spacing, typography, user flow improvements.
+[NIT]: Micro-interaction polish.
+'@
+Write-Utf8File ".claude\agents\ui-ux-architect.md" $content
+
+# ---------- .claude/skills/review-backend/SKILL.md ----------
+$content = @'
+---
+name: review-backend
+description: Run a rigorous backend code review focused on RLS, booking integrity, payment split atomicity, and N+1 queries.
+---
+
+You are reviewing backend code for the beauty platform.
+
+## Checklist
+1. **RLS Enforcement**: Every query on tenant-scoped tables includes `tenant_id` filter. RLS policies are enabled and tested.
+2. **Booking Integrity**: Exclusion constraint (`EXCLUDE USING gist`) exists on `bookings` for `specialist_id` + `tstzrange`. No application-level double-booking logic is the sole safeguard.
+3. **Payment Split**: Split commission logic is inside a single database transaction. No partial commits.
+4. **N+1 Queries**: No N+1 patterns. Use joins or `include`/`relations` appropriately.
+5. **API Contracts**: DTOs are validated with `class-validator`. Swagger decorators are present.
+
+## Output
+For each violation, output:
+[BLOCKER]/[SUGGESTION] File:line — Issue
+Why: ...
+Fix: ...
+
+If no violations, state "Backend review passed" and list any NIT items.
+'@
+Write-Utf8File ".claude\skills\review-backend\SKILL.md" $content
+
+# ---------- .claude/skills/rls-audit/SKILL.md ----------
+$content = @'
+---
+name: rls-audit
+description: Audit PostgreSQL RLS policies, tenant_id indexing, and session variable usage across all tenant-scoped tables.
+---
+
+## Audit Steps
+1. List all tables in the `public` schema.
+2. For each table with a `tenant_id` column, verify:
+   - RLS is enabled (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`).
+   - A policy exists using `current_setting('app.current_tenant_id')`.
+   - An index exists with `tenant_id` as the **leading column** (B-tree).
+3. Check application code for `SET LOCAL app.current_tenant_id` at transaction start.
+4. Flag tables missing RLS or missing tenant_id index as BLOCKERS.
+
+## Output
+Table of findings:
+
+| Table | RLS Enabled | Policy Exists | Tenant Index | Status |
+|-------|-------------|---------------|--------------|--------|
+
+Then detail each issue with file references and suggested DDL fixes.
+'@
+Write-Utf8File ".claude\skills\rls-audit\SKILL.md" $content
+
+# ---------- .claude/skills/deploy-staging/SKILL.md ----------
+$content = @'
+---
+name: deploy-staging
+description: Deploy the current branch to the staging VPS via Docker Compose, run Playwright E2E tests, and report results.
+---
+
+## Deployment Steps (execute in order)
+1. `git pull origin staging`
+2. `docker compose -f docker-compose.staging.yml build`
+3. `docker compose -f docker-compose.staging.yml up -d`
+4. Wait 15 seconds for services to become healthy.
+5. Run `npx playwright test` against staging URL.
+6. If tests fail, immediately rollback: `docker compose down && docker compose up -d --build` with previous tag.
+7. Report: deployment status, test pass/fail count, any BLOCKERS.
+
+## Hard Rules
+- Never deploy to production from this skill.
+- Never use `&` to background processes.
+- Always capture and report the Docker Compose logs for failed services.
+'@
+Write-Utf8File ".claude\skills\deploy-staging\SKILL.md" $content
+
+# ---------- .claude/skills/ui-finish-gate/SKILL.md ----------
+$content = @'
+---
+name: ui-finish-gate
+description: Final UI quality gate before release. Checks design system consistency, accessibility, and asset optimization in Flutter.
+---
+
+## Gate Checklist
+1. **Design Tokens**: Colors, spacing, and typography match the shared design system. No hardcoded values.
+2. **Accessibility**: All text has sufficient contrast (WCAG AA). Touch targets >= 48dp. Semantics labels present for icons.
+3. **Responsive**: Layout works on small (320dp) and large (tablet) screens.
+4. **Assets**: All images are WebP or optimized SVG. No raw PNG/JPEG in `assets/`.
+5. **Micro-interactions**: Animations are smooth (60fps) and non-blocking.
+
+## Output
+UI Finish Gate Report
+[BLOCKER]: ...
+[SUGGESTION]: ...
+[NIT]: ...
+
+Final verdict: PASS or FAIL (list blocking reasons).
+'@
+Write-Utf8File ".claude\skills\ui-finish-gate\SKILL.md" $content
+
+# ---------- .claude/skills/booking-integrity-check/SKILL.md ----------
+$content = @'
+---
+name: booking-integrity-check
+description: Verify that double-booking prevention is enforced at the database level with exclusion constraints and tested with concurrent requests.
+---
+
+## Verification Steps
+1. Inspect migration files for `EXCLUDE USING gist` on the `bookings` table.
+2. Confirm the constraint covers `specialist_id` and `tstzrange(start_time, end_time)`.
+3. Review booking service code: it must rely on the database constraint, not a pre-check `SELECT`.
+4. Run or write a concurrent test: two simultaneous inserts for the same specialist and overlapping time slot must result in exactly one success and one database error.
+
+## Output
+Report:
+- Constraint DDL found: [yes/no] — file:line
+- Application reliance on DB constraint: [yes/no]
+- Concurrent test result: [pass/fail]
+- BLOCKERS if any step fails.
+'@
+Write-Utf8File ".claude\skills\booking-integrity-check\SKILL.md" $content
+
+# ============================================================
+# 4. Verification
+# ============================================================
+Write-Host "[3/3] Verifying created files..." -ForegroundColor Green
+Write-Host ""
+
+Write-Host "--- Created files ---" -ForegroundColor Cyan
+Get-ChildItem -Path $baseDir -Recurse -File -Filter "*" |
+    Where-Object {
+        $_.FullName -like "*\.claude\*" -or $_.Name -eq "CLAUDE.md"
+    } |
+    ForEach-Object {
+        $rel = $_.FullName.Replace($baseDir, "").TrimStart("\")
+        $size = [math]::Round($_.Length / 1KB, 2)
+        Write-Host ("  {0,-55} {1,8} KB" -f $rel, $size) -ForegroundColor White
+    }
+
+Write-Host ""
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host " Setup complete." -ForegroundColor Green
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Yellow
+Write-Host "  1. Open Claude Code in this project."
+Write-Host "  2. Run  /agents  to verify agents are loaded."
+Write-Host "  3. Try  /rls-audit  and  /booking-integrity-check  to validate."
+Write-Host ""

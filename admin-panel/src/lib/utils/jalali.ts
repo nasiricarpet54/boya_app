@@ -91,6 +91,11 @@ export function jalaliDateWithWeekday(value?: Date | string | number | null): st
   return `${jalaliDate(value)} — ${jalaliWeekday(value)}`;
 }
 
+/** `سه‌شنبه ۵ آبان ۱۴۰۵` — weekday, bare day, Persian month name, year. */
+export function jalaliDateWithWeekdayAndMonth(value?: Date | string | number | null): string {
+  return format(value, 'dddd jD jMMMM jYYYY');
+}
+
 /** Weekday name only, e.g. `شنبه`. */
 export function jalaliWeekday(value?: Date | string | number | null): string {
   return format(value, 'dddd');
