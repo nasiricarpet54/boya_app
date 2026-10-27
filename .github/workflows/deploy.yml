@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
-          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
+          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
           if timeout 30s ssh "${ssh_args[@]}" "$remote" 'printf "SSH authenticated as "; id -un'; then
             exit 0
           fi
@@ -85,7 +85,7 @@ jobs:
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
           stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
+          ssh_args=(-i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS")
           ssh "${ssh_args[@]}" "$remote" "mkdir -p '$stage/customer_app' '$stage/salon_app'"
           for app in customer_app salon_app; do
             test -s "mobile/$app/build/web/index.html"
@@ -100,17 +100,17 @@ jobs:
           set -euo pipefail
           remote="$VPS_USER@$VPS_HOST"
           stage="/opt/boya/.deploy-staging/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set -eu
+          ssh -i "$BOYA_SSH_KEY" -p 9011 -o BatchMode=yes -o IdentitiesOnly=yes -o KexAlgorithms=curve25519-sha256 -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$BOYA_SSH_KNOWN_HOSTS" "$remote" "set -eu
             cd /opt/boya
             for app in customer_app salon_app; do
               mkdir -p \"mobile/\$app/build\"
               backup=\"mobile/\$app/build/web.previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\"
               rm -rf \"\$backup\"
               if [ -d \"mobile/\$app/build/web\" ]; then mv \"mobile/\$app/build/web\" \"\$backup\"; fi
-              mv "$stage/\$app/web" "mobile/\$app/build/web"
+              mv \"$stage/\$app/web\" \"mobile/\$app/build/web\"
             done
             rm -rf '$stage'
             bash update_sop.sh
             for app in customer_app salon_app; do
-              rm -rf "mobile/\$app/build/web.previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+              rm -rf \"mobile/\$app/build/web.previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\"
             done"
