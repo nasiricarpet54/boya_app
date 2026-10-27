@@ -464,11 +464,6 @@ export class AdminUsersService {
       if (!dto.tenantId) {
         throw new BadRequestException('برای این نقش انتخاب سالن الزامی است');
       }
-      const tenants = await this.dataSource.query<Array<{ id: string }>>(
-        `SELECT id FROM tenants WHERE id = $1::uuid`,
-        [dto.tenantId],
-      );
-      if (tenants.length === 0) throw new NotFoundException('سالن مورد نظر یافت نشد');
       tenantId = dto.tenantId;
     }
 
@@ -486,6 +481,9 @@ export class AdminUsersService {
     } catch (error) {
       if ((error as { code?: string }).code === '23505') {
         throw new ConflictException('این شماره قبلاً ثبت شده است');
+      }
+      if ((error as { code?: string }).code === '23503') {
+        throw new NotFoundException('سالن مورد نظر یافت نشد');
       }
       throw error;
     }
@@ -602,4 +600,3 @@ export class AdminUsersService {
     return this.findOne(user, id);
   }
 }
-

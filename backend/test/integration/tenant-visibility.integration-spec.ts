@@ -59,7 +59,7 @@ describeIntegration('public salon visibility (is_active x status/approved_at)', 
 
   beforeAll(async () => {
     dataSource = getAdminDataSource();
-    salonService = new SalonService(dataSource, new EventEmitter2());
+    salonService = new SalonService(dataSource, new EventEmitter2(), { invalidateTenantCache: async () => undefined } as never);
 
     // `users`/`bookings` reference `tenants` without a cascade, but this spec
     // seeds neither, so the tenant rows drop cleanly on their own.

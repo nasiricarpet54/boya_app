@@ -74,7 +74,7 @@ describeIntegration('specialist IDOR (PATCH /salon/me/specialists/:id)', () => {
     await dataSource.initialize();
 
     tenantService = new TenantService(dataSource.getRepository(Tenant));
-    salonService = new SalonService(dataSource, new EventEmitter2());
+    salonService = new SalonService(dataSource, new EventEmitter2(), { invalidateTenantCache: async () => undefined } as never);
 
     const refreshTokenService = new RefreshTokenService(
       dataSource,

@@ -19,6 +19,12 @@ const TENANT_TABLES = [
   'invite_tokens',
   'notifications',
   'service_lines',
+  'services',
+  'specialist_services',
+  'specialists',
+  'tenants',
+  'ticket_messages',
+  'tickets',
   'transactions',
   'users',
 ];

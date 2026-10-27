@@ -13,8 +13,8 @@ import { Service } from '../../src/modules/service/entities/service.entity';
 import { ServiceCatalogService } from '../../src/modules/service/service.service';
 import { Specialist } from '../../src/modules/specialist/entities/specialist.entity';
 import { SpecialistService } from '../../src/modules/specialist/specialist.service';
-import { appConfig, TEST_DB_NAME } from '../setup/test-db';
-import { describeIntegration, withTenant } from '../setup/integration.setup';
+import { adminConfig, TEST_DB_NAME } from '../setup/test-db';
+import { describeIntegration, queryAsAdmin, withTenant } from '../setup/integration.setup';
 
 // Two salons: A can deliver on-site, B cannot. A also carries one specialist and
 // one service that are *not* mobile-capable, so every filter has a same-salon
@@ -34,6 +34,15 @@ const SERVICE_A2 = '55555555-5555-4555-8555-5555555555e2';
 const SERVICE_B = '55555555-5555-4555-8555-5555555555e3';
 
 const BOTH_TENANTS = [TENANT_A, TENANT_B];
+const FIXTURE_USERS = [CUSTOMER, OWNER_A, SPEC_USER_A, SPEC_USER_A2, SPEC_USER_B];
+
+const cleanupFixtures = async (): Promise<void> => {
+  await queryAsAdmin(`DELETE FROM bookings WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
+  await queryAsAdmin(`DELETE FROM specialists WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
+  await queryAsAdmin(`DELETE FROM services WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
+  await queryAsAdmin(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [FIXTURE_USERS]);
+  await queryAsAdmin(`DELETE FROM tenants WHERE id = ANY($1::uuid[])`, [BOTH_TENANTS]);
+};
 
 interface MobileBookingRow {
   is_mobile: boolean;
@@ -61,57 +70,37 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
     // repositories for the catalog lookups `create()` performs.
     dataSource = new DataSource({
       type: 'postgres',
-      host: String(appConfig.host),
-      port: Number(appConfig.port),
-      username: String(appConfig.user),
-      password: String(appConfig.password),
+      host: String(adminConfig.host),
+      port: Number(adminConfig.port),
+      username: String(adminConfig.user),
+      password: String(adminConfig.password),
       database: TEST_DB_NAME,
       entities: [Booking, Service, Specialist],
       synchronize: false,
     });
     await dataSource.initialize();
 
-    salons = new SalonService(dataSource, new EventEmitter2());
+    salons = new SalonService(dataSource, new EventEmitter2(), { invalidateTenantCache: async () => undefined } as never);
     bookings = new BookingService(
       dataSource.getRepository(Booking),
       dataSource,
       new ServiceCatalogService(dataSource.getRepository(Service), {} as never),
       new SpecialistService(dataSource.getRepository(Specialist)),
       new EventEmitter2(),
+      { invalidateTenantCache: async () => undefined } as never,
     );
 
     await seed();
   });
 
   afterAll(async () => {
-    // `bookings` and `users` are FORCE RLS, so each tenant's rows are cleared
-    // under that tenant's own GUC; `specialists`/`services`/`tenants` carry no
-    // policy at all.
-    for (const tenant of BOTH_TENANTS) {
-      await withTenant(tenant, async (query) => {
-        await query(`DELETE FROM bookings WHERE tenant_id = $1`, [tenant]);
-        await query(`DELETE FROM specialists WHERE tenant_id = $1`, [tenant]);
-        await query(`DELETE FROM services WHERE tenant_id = $1`, [tenant]);
-        await query(`DELETE FROM users WHERE tenant_id = $1`, [tenant]);
-      });
-    }
-    await withTenant(TENANT_A, async (query) => {
-      await query(`DELETE FROM tenants WHERE id = ANY($1::uuid[])`, [BOTH_TENANTS]);
-    });
+    await cleanupFixtures();
     if (dataSource?.isInitialized) await dataSource.destroy();
   });
 
 
   const seed = async (): Promise<void> => {
-    await withTenant(TENANT_A, async (query) => {
-      await query(`DELETE FROM bookings WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
-      await query(`DELETE FROM specialists WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
-      await query(`DELETE FROM services WHERE tenant_id = ANY($1::uuid[])`, [BOTH_TENANTS]);
-      await query(`DELETE FROM tenants WHERE id = ANY($1::uuid[])`, [BOTH_TENANTS]);
-      await query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [
-        [CUSTOMER, OWNER_A, SPEC_USER_A, SPEC_USER_A2],
-      ]);
-    });
+    await cleanupFixtures();
 
     await withTenant(TENANT_A, async (query) => {
       await query(
@@ -155,6 +144,11 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
          VALUES ($1, $2, $3, 500000, 30, false)`,
         [SERVICE_A2, TENANT_A, 'IT Service A2'],
       );
+      await query(
+        `INSERT INTO specialist_services (tenant_id, specialist_id, service_id, is_active)
+         VALUES ($1, $2, $3, true)`,
+        [TENANT_A, SPECIALIST_A, SERVICE_A],
+      );
     });
 
     await withTenant(TENANT_B, async (query) => {
@@ -177,6 +171,11 @@ describeIntegration('ADR-011: mobile / on-site services', () => {
       await query(
         `INSERT INTO services (id, tenant_id, name, price, duration_minutes) VALUES ($1, $2, $3, 750000, 45)`,
         [SERVICE_B, TENANT_B, 'IT Service B'],
+      );
+      await query(
+        `INSERT INTO specialist_services (tenant_id, specialist_id, service_id, is_active)
+         VALUES ($1, $2, $3, true)`,
+        [TENANT_B, SPECIALIST_B, SERVICE_B],
       );
     });
   };

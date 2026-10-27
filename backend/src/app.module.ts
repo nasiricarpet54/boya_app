@@ -5,6 +5,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SlidingWindowThrottlerStorage, SlidingWindowThrottlerModule } from 'nestjs-sliding-window-throttler';
 import { RedisFailureStrategy } from 'nestjs-sliding-window-throttler';
 import { CacheModule } from '@nestjs/cache-manager';
+import { CacheServiceModule } from './modules/cache/cache-service.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -81,6 +82,7 @@ import { UserModule } from './modules/user/user.module';
       }),
     }),
     EventEmitterModule.forRoot(),
+    CacheServiceModule,
     ScheduleModule.forRoot(),
     CacheModule.registerAsync({
       isGlobal: true,
