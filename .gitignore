@@ -63,3 +63,6 @@ mobile/salon_app/build/
 design_system/tools/__pycache__/
 design_system/tools/*.json
 design_system/tools/*_maskdiff.png
+
+# FVM Version Cache
+.fvm/
