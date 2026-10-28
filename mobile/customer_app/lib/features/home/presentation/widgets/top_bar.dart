@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../notifications/data/notifications_api.dart';
 import '../../../location/application/city_provider.dart';
+import '../../../location/domain/customer_address.dart';
+import '../../../location/presentation/address_picker_sheet.dart';
 import '../../../location/presentation/city_picker_sheet.dart';
 
 /// White header of the home screen: city picker and notification bell on top,
@@ -92,7 +94,21 @@ class HomeTopBar extends ConsumerWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(24),
-                    onTap: () {},
+                    onTap: () => showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: BoyaColors.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (sheetContext) => AddressPickerSheet(
+                        // Wiring placeholder: full backend state (address list,
+                        // selection) lands in a follow-up. Empty state copies live
+                        // on the sheet itself, so the UI still reads correctly.
+                        addresses: const <CustomerAddress>[],
+                        onSelect: (address) => Navigator.of(sheetContext).pop(),
+                      ),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       child: Row(
