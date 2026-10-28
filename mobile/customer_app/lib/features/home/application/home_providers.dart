@@ -134,18 +134,23 @@ final selectedCategoryProvider =
     NotifierProvider<HomeCategoryController, String?>(HomeCategoryController.new);
 
 /// Salons around [locationProvider], nearest first, optionally filtered
-/// by [selectedCategoryProvider].
+/// by [selectedCategoryProvider] and by the «باز الان» (Open Now) chip.
 final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
+  final openNowOnly = ref.watch(homeOpenNowFilterProvider);
 
   try {
-    return await ref.watch(salonsApiProvider).getSalons(
+    final salons = await ref.watch(salonsApiProvider).getSalons(
           lat: location.lat,
           lng: location.lng,
           categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
           sort: 'distance',
         );
+    if (openNowOnly) {
+      return salons.where((salon) => salon.isOpenNow).toList();
+    }
+    return salons;
   } catch (_) {
     return const <SalonSummary>[];
   }
@@ -160,6 +165,14 @@ class HomeFilterController extends Notifier<String> {
 }
 
 final homeFilterProvider = NotifierProvider<HomeFilterController, String>(HomeFilterController.new);
+
+/// Whether the «باز الان» (Open Now) chip is the active one.
+///
+/// Derived from [homeFilterProvider] so the chip and the feed can never drift
+/// apart: the single source of truth stays the selected label.
+final homeOpenNowFilterProvider = Provider<bool>((ref) {
+  return ref.watch(homeFilterProvider) == 'باز الان';
+});
 
 /// ADR-011: the «خدمات سیار» toggle above the feed. Independent of
 /// [homeFilterProvider] on purpose: that one is single-select («نزدیک من» and

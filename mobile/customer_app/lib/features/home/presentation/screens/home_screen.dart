@@ -17,7 +17,8 @@ import '../widgets/search_bar.dart';
 import '../widgets/top_bar.dart';
 
 /// Salons around [locationProvider], nearest first, optionally filtered by
-/// [selectedCategoryProvider] and, if filtered, by [homeSameDayFilterProvider].
+/// [selectedCategoryProvider] and, if filtered, by [homeSameDayFilterProvider]
+/// or the «باز الان» (Open Now) chip through [homeOpenNowFilterProvider].
 ///
 /// This mirrors [nearbySalonsProvider] but lets errors surface: the shared
 /// provider catches every failure and returns an empty list so the search
@@ -30,6 +31,7 @@ final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final mobileOnly = ref.watch(homeMobileFilterProvider);
   final city = ref.watch(cityProvider);
   final sameDay = ref.watch(homeSameDayFilterProvider);
+  final openNowOnly = ref.watch(homeOpenNowFilterProvider);
 
   final salons = await ref.watch(salonsApiProvider).getSalons(
         lat: location.lat,
@@ -39,7 +41,7 @@ final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
         sort: 'distance',
         mobile: mobileOnly ? true : null,
       );
-  if (sameDay) {
+  if (sameDay || openNowOnly) {
     return salons.where((s) => s.isOpenNow).toList();
   }
   return salons;
