@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../features/auth/application/auth_controller.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/router/app_router.dart';
 import '../../../shared/widgets/salon_app_bar.dart';
@@ -67,7 +68,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             tooltip: 'نمای تقویم',
           ),
           IconButton(
-            onPressed: () => context.go(salonHomePath),
+            onPressed: () => context.go(
+              salonHomePathFor(ref.read(authControllerProvider).user?.role),
+            ),
             icon: const Icon(Icons.home_outlined),
             tooltip: 'خانه',
           ),

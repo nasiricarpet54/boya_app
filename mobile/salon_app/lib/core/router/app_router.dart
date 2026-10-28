@@ -288,7 +288,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Allowed in: keep the panel's own entry pages out of reach.
-      if (onLoginPage || onForbiddenPage) return '/dashboard';
+      if (onLoginPage || onForbiddenPage) {
+        // The dashboard endpoint answers `403` for the provider roles, so
+        // their session starts on the bookings branch instead. The target is
+        // computed from the same `providerRoles` set the shell's own home
+        // shortcut uses, so entry and navigation can never disagree.
+        return providerRoles.contains(user?.role) ? '/bookings' : '/dashboard';
+      }
       return null;
     },
   );

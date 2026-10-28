@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../auth/application/auth_controller.dart';
+import '../../../../shared/widgets/salon_app_bar.dart';
 import '../../data/specialist_api.dart';
 import '../../domain/salon_specialist.dart';
 
@@ -77,7 +78,8 @@ class _SpecialistSetupScreenState extends ConsumerState<SpecialistSetupScreen> {
         const SnackBar(content: Text('پروفایل شما ثبت شد.'), backgroundColor: BoyaColors.success),
       );
       if (!mounted) return;
-      context.go('/dashboard');
+      // A specialist's home is their bookings, not the owner dashboard.
+      context.go(salonHomePathFor(ref.read(authControllerProvider).user?.role));
     } catch (error) {
       if (!mounted) return;
       messenger.showSnackBar(

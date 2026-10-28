@@ -6,10 +6,12 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/upload_api.dart';
 import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
+import '../../../auth/application/auth_controller.dart';
 import '../../../salon/data/salon_api.dart';
 import '../../../salon/presentation/widgets/approval_status_banner.dart';
 import '../../../specialists/data/specialist_api.dart';
 import '../../../specialists/domain/salon_specialist.dart';
+import '../../../specialists/presentation/screens/specialist_setup_screen.dart';
 import '../../data/portfolio_api.dart';
 import '../../domain/portfolio_item.dart';
 
@@ -81,6 +83,12 @@ class PortfolioManageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final portfolioAsync = ref.watch(portfolioListProvider);
+    final isSpecialist = ref.watch(authControllerProvider).user?.role == 'specialist';
+    // The specialist's own row: `mySpecialist` asks the panel's specialist list
+    // and picks the row whose `userId` matches the signed-in account, so a
+    // specialist only ever sees their own gallery.
+    final mineAsync = ref.watch(mySpecialistProvider);
+    final mine = mineAsync.valueOrNull;
 
     return Scaffold(
       appBar: const SalonAppBar(title: 'نمونه‌کارها'),
@@ -90,37 +98,43 @@ class PortfolioManageScreen extends ConsumerWidget {
         label: const Text('تصویر جدید'),
       ),
       body: portfolioAsync.when(
-        data: (items) => RefreshIndicator(
-          onRefresh: () => ref.refresh(portfolioListProvider.future),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const ApprovalStatusBanner(),
-              if (items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 64),
-                  child: Center(
-                    child: Text('هنوز نمونه‌کاری ثبت نشده است', style: BoyaTypography.body),
+        data: (items) {
+          // A specialist manages only their own gallery; the owner sees all.
+          final visible = isSpecialist && mine != null
+              ? items.where((item) => item.specialistId == mine.id).toList()
+              : items;
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(portfolioListProvider.future),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const ApprovalStatusBanner(),
+                if (visible.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 64),
+                    child: Center(
+                      child: Text('هنوز نمونه‌کاری ثبت نشده است', style: BoyaTypography.body),
+                    ),
+                  )
+                else
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    children: [
+                      for (final item in visible)
+                        _PortfolioTile(
+                          item: item,
+                          onTap: () => _confirmDelete(context, ref, item),
+                        ),
+                    ],
                   ),
-                )
-              else
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  children: [
-                    for (final item in items)
-                      _PortfolioTile(
-                        item: item,
-                        onTap: () => _confirmDelete(context, ref, item),
-                      ),
-                  ],
-                ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
         loading: () =>
             const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
         error: (error, _) => Center(

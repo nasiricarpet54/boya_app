@@ -1,9 +1,18 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../core/navigation/salon_shell.dart';
+import '../../features/auth/application/auth_controller.dart';
 
 /// Landing tab of the salon panel. The home shortcut jumps here.
 const String salonHomePath = '/dashboard';
+
+/// The landing tab for a given role: the owner dashboard answers `403` for
+/// the provider roles, so their home is their own bookings instead.
+String salonHomePathFor(String? role) =>
+    providerRoles.contains(role) ? '/bookings' : salonHomePath;
 
 /// The app bar shared by every salon screen.
 ///
@@ -57,16 +66,21 @@ class SalonAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// Home shortcut used by both slots of [SalonAppBar].
-class _SalonHomeButton extends StatelessWidget {
+///
+/// Reads the signed-in role so the landing tab follows it: the owner jumps to
+/// the dashboard, a provider role — whose dashboard answers `403` — to their
+/// own bookings.
+class _SalonHomeButton extends ConsumerWidget {
   const _SalonHomeButton({required this.color});
 
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(authControllerProvider).user?.role;
     return IconButton(
       icon: Icon(Icons.home_outlined, color: color),
-      onPressed: () => context.go(salonHomePath),
+      onPressed: () => context.go(salonHomePathFor(role)),
       tooltip: 'خانه',
     );
   }
