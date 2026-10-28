@@ -1,6 +1,4 @@
-import { RolesGuard } from './guards/roles.guard';
-import { TenantHierarchyGuard } from './guards/tenant-hierarchy.guard';
-import { UseGuards,
+import {
   Body,
   Controller,
   Delete,
@@ -26,15 +24,12 @@ import { AuthService, CurrentUserProfile } from './auth.service';
 import { SendOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { AcceptInviteDto, CreateInviteDto } from './dto/invite.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
-import { SwitchRoleDto } from './dto/switch-role.dto';
 import { InviteTokenService } from './invite-token.service';
 import { OtpService } from './otp.service';
 import { RefreshTokenService } from './refresh-token.service';
-import { USER_ROLES } from '../user/entities/user.entity';
 import type { AuthenticatedUser } from './guards/jwt-auth.guard';
 
 @ApiTags('auth')
-@UseGuards(RolesGuard, TenantHierarchyGuard)
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -85,32 +80,12 @@ export class AuthController {
   }
 
   /** Revokes every session of the caller — "sign out everywhere". */
-  @Roles(...USER_ROLES)
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(@Req() request: Request): Promise<{ revoked: number }> {
     const user = request.user as AuthenticatedUser;
     const revoked = await this.refreshTokenService.revokeAll(user.userId);
-    return { revoked: Number(revoked) };
-  }
-
-  /**
-   * Switches the session to another role the account holds.
-   *
-   * The role must be one the database recorded for this account — the service
-   * re-reads `users.role`, so a token that had a role *written into it* still
-   * cannot switch to anything its row does not carry. The reply is a fresh
-   * session: `role` is a signed claim, so "switching" means re-issuing, never
-   * editing the live token.
-   */
-  @Roles(...USER_ROLES)
-  @Post('switch-role')
-  @HttpCode(HttpStatus.OK)
-  async switchRole(
-    @Body() body: SwitchRoleDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.authService.switchRole(user, body.role);
+    return { revoked };
   }
 
   /**
@@ -118,7 +93,6 @@ export class AuthController {
    * route into the onboarding screens. Behind the JWT guard like `logout-all`:
    * the tenant and role come from the token, never from the request.
    */
-  @Roles(...USER_ROLES)
   @Get('me')
   @ApiOperation({ summary: 'اطلاعات کاربر واردشده به همراه وضعیت تکمیل پروفایل' })
   async me(@CurrentUser() user: AuthenticatedUser): Promise<CurrentUserProfile> {

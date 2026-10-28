@@ -31,7 +31,7 @@ export const USER_ROLES = [
   'super_admin',
 ] as const;
 
-export type UserRole = (typeof USER_ROLES)[number];
+export type UserRole = 'customer' | 'salon_owner' | 'line_manager' | 'specialist' | 'employed' | 'booth_renter' | 'freelance_mobile' | 'admin' | 'super_admin';
 
 /** Roles that may use the admin back-office (`/admin/*`). */
 export const ADMIN_ROLES: readonly UserRole[] = ['admin', 'super_admin'];

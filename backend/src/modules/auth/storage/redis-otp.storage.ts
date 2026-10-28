@@ -5,7 +5,7 @@ import { OtpStorage } from './otp-storage.interface';
 
 export class OtpStorageError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
+    super(message);
     this.name = 'OtpStorageError';
   }
 }

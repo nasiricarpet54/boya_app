@@ -1,11 +1,10 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
 import { AuthenticatedUser } from './guards/jwt-auth.guard';
 import { AcceptedInvite, InviteTokenService } from './invite-token.service';
-import { IssuedTokens, RefreshTokenService } from './refresh-token.service';
 import { OtpService } from './otp.service';
-import { UserRole } from '../user/entities/user.entity';
+import { RefreshTokenService } from './refresh-token.service';
 
 export interface AuthUser {
   id: string;
@@ -43,47 +42,8 @@ export interface AuthResponse {
   /** Long-lived, single-use, rotatable. Only its SHA-256 hash is stored. */
   refreshToken: string;
   refreshExpiresAt: Date;
-  /** The role this session acts under. Signed into the access token. */
-  activeRole: UserRole;
-  /**
-   * Every role the account is recorded with. One user row carries one role
-   * today, so this is always a single-entry list; the client renders a role
-   * picker from it regardless, so a future multi-role account changes data,
-   * not contract.
-   */
-  allowedRoles: UserRole[];
-  /**
-   * Where the client lands after login for [activeRole]. Staff roles share the
-   * single salon panel (ADR-003/ADR-008: the specialist app was folded into it
-   * and role separation happens inside the panel through role-scoped APIs and
-   * the router's role guard), so they all point at the panel's dashboard.
-   */
-  redirectRoute: string;
   user: AuthUser;
 }
-
-/**
- * The post-login destination per role. Kept server-side so the client cannot be
- * tricked into routing a `specialist` token to an owner screen: the route it
- * is handed is the route its role earns.
- */
-export function redirectRouteFor(role: UserRole): string {
-  switch (role) {
-    case 'customer':
-      return '/';
-    case 'admin':
-    case 'super_admin':
-      // The platform back-office is a separate web app; neither mobile panel
-      // admits these roles (the salon panel's role guard shows its forbidden
-      // page), so no panel route is promised here.
-      return '/';
-    default:
-      // salon_owner, line_manager, specialist, employed, booth_renter,
-      // freelance_mobile — one salon panel, role-scoped inside it.
-      return '/dashboard';
-  }
-}
-
 
 @Injectable()
 export class AuthService {
@@ -143,80 +103,17 @@ export class AuthService {
       role: row.role,
     });
 
-    return this.toAuthResponse(issued, row, row.is_new);
-  }
-
-  /**
-   * `POST /auth/switch-role` — re-mints the session for another role the
-   * account actually holds, so the active role always comes from the database
-   * and never from what the caller claims.
-   *
-   * A hand-edited token can carry any `role` it likes; that claim is what
-   * `JwtAuthGuard` reads, so without this lookup switching would be a
-   * self-issued privilege escalation. Here the requested role is compared to
-   * the row, and a mismatch is a 403 — the same rule the charter states as
-   * "role selection happens among the roles recorded in the database only".
-   * The token is re-issued rather than patched because `role` is a signed
-   * claim: mutating it in place is exactly the tampering the guard rejects.
-   *
-   * `users` is FORCE ROW LEVEL SECURITY on `app.current_tenant_id`, which
-   * `TenantRlsInterceptor` mirrors from the verified JWT for tenant users —
-   * the same exception `currentUser()` documented for its own lookup.
-   */
-  async switchRole(user: AuthenticatedUser, requestedRole: UserRole): Promise<AuthResponse> {
-    const rows = await this.dataSource.query<
-      Array<{
-        id: string;
-        phone: string;
-        full_name: string | null;
-        role: string;
-        tenant_id: string | null;
-      }>
-    >(`SELECT id, phone, full_name, role, tenant_id FROM users WHERE id = $1`, [user.userId]);
-
-    const row = rows[0];
-    if (!row) throw new UnauthorizedException('حساب کاربری یافت نشد');
-    if (row.role !== requestedRole) {
-      throw new ForbiddenException('این نقش برای حساب شما تعریف نشده است');
-    }
-
-    const issued = await this.refreshTokenService.issue({
-      userId: row.id,
-      tenantId: row.tenant_id ?? null,
-      phone: row.phone,
-      role: row.role,
-    });
-
-    return this.toAuthResponse(issued, row, false);
-  }
-
-  /**
-   * The login/refresh/switch-role reply: the tokens plus the role routing the
-   * client needs. `allowedRoles` mirrors what the account is recorded with —
-   * one row, one role today, so the role-picker the spec describes will only
-   * ever show a single entry until accounts can hold several roles; the field
-   * is already here so that change is additive.
-   */
-  private toAuthResponse(
-    issued: IssuedTokens,
-    row: { id: string; phone: string; full_name: string | null; role: string; tenant_id: string | null },
-    isNewUser: boolean,
-  ): AuthResponse {
-    const role = row.role as UserRole;
     return {
       accessToken: issued.accessToken,
       refreshToken: issued.refreshToken,
       refreshExpiresAt: issued.refreshExpiresAt,
-      activeRole: role,
-      allowedRoles: [role],
-      redirectRoute: redirectRouteFor(role),
       user: {
         id: row.id,
         phoneNumber: row.phone,
         fullName: row.full_name,
-        role,
-        isNewUser,
-        tenantId: row.tenant_id ?? null,
+        role: row.role,
+        isNewUser: row.is_new,
+        tenantId,
       },
     };
   }

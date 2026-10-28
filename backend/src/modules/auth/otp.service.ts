@@ -57,17 +57,29 @@ export class OtpService {
     await this.redis.set(this.otpKey(phone, purpose), this.hash(phone, code), 'EX', OTP_TTL_SECONDS);
     await this.redis.del(this.attemptKey(phone, purpose));
 
-    // Explicit dev flag (not NODE_ENV): log the code instead of calling the SMS
-    // provider only when OTP_DEV_MODE === 'true'. Production default is false, so
-    // a missing variable can never silently disable real OTP delivery.
-    const isDevMode = process.env.OTP_DEV_MODE === 'true';
+    // Standard behavior based on environment
+    const isProduction = process.env.NODE_ENV === 'production';
+    const smsConfigured = 
+      this.config.get<string>('MELIPAYAMAK_USERNAME') &&
+      this.config.get<string>('MELIPAYAMAK_PASSWORD') &&
+      this.config.get<string>('MELIPAYAMAK_SENDER');
 
-    if (isDevMode) {
+    if (!isProduction && !smsConfigured) {
+      // In development without SMS config, log the code and consider it sent
       // eslint-disable-next-line no-console
       console.log(
         `\n===== [DEV MODE] ${purpose} OTP for ${phone}: ${code} =====\n`,
       );
       return;
+    }
+
+    if (isProduction && !smsConfigured) {
+      // In production, SMS must be configured; throw service unavailable
+      this.logger.error('SMS service not configured in production');
+      throw new HttpException(
+        'SMS سرویس در دسترس نیست',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     const bodyId = this.config.get<string>('MELIPAYAMAK_OTP_BODY_ID', '');
