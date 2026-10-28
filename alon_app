@@ -1,0 +1,71 @@
+[1mdiff --git a/mobile/salon_app/lib/features/specialists/presentation/screens/specialist_services_screen.dart b/mobile/salon_app/lib/features/specialists/presentation/screens/specialist_services_screen.dart[m
+[1mindex 21ec92d..d7bf767 100644[m
+[1m--- a/mobile/salon_app/lib/features/specialists/presentation/screens/specialist_services_screen.dart[m
+[1m+++ b/mobile/salon_app/lib/features/specialists/presentation/screens/specialist_services_screen.dart[m
+[36m@@ -1,16 +1,13 @@[m
+ import 'package:boya_shared/boya_shared.dart';[m
+ import 'package:flutter/material.dart';[m
+ import 'package:flutter_riverpod/flutter_riverpod.dart';[m
+[31m-import 'package:boya_shared/boya_shared.dart';[m
+[31m-import 'package:flutter/material.dart';[m
+[31m-import 'package:flutter_riverpod/flutter_riverpod.dart';[m
+ [m
+ import '../../../../core/network/api_client.dart';[m
+ import '../../../services/data/services_api.dart';[m
+ import '../../../services/domain/service_line.dart';[m
+ import '../../data/specialist_api.dart';[m
+ import '../widgets/specialist_service_list.dart';[m
+[31m-import '../../features/auth/application/auth_controller.dart';[m
+[32m+[m[32mimport 'package:salon_app/features/auth/application/auth_controller.dart';[m
+ [m
+ /// The owner's per-specialist service picker.[m
+ ///[m
+[36m@@ -46,7 +43,7 @@[m [mclass _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr[m
+     // Seed the local state once the current assignments arrive; this screen's[m
+     // own writes never clobber the user's in-flight edits.[m
+     ref.listen([m
+[31m-      specialistServicesProvider(widget.specialistId),[m
+[32m+[m[32m        specialistApiProvider.select((api) => api.listMySpecialistServices()),[m
+       (_, next) => next.whenData((items) {[m
+         if (!_seeded && mounted) {[m
+           setState(() {[m
+[36m@@ -62,8 +59,10 @@[m [mclass _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr[m
+   }[m
+ [m
+   bool get _hasEdits {[m
+[31m-    final current =[m
+[31m-        ref.read(specialistServicesProvider(widget.specialistId)).valueOrNull ?? [];[m
+[32m+[m[32m    final isSpecialist = ref.watch(authControllerProvider).user?.role == 'specialist';[m
+[32m+[m[32m    final current = isSpecialist[m
+[32m+[m[32m        ? ref.watch(specialistApiProvider.select((api) => api.listMySpecialistServices())).valueOrNull ?? [][m
+[32m+[m[32m        : ref.read(specialistServicesProvider(widget.specialistId)).valueOrNull ?? [];[m
+     final currentAssigned = {for (final item in current) item.serviceId: item.isActive};[m
+     final selected =[m
+         _assigned.entries.where((entry) => entry.value).map((entry) => entry.key).toSet();[m
+[36m@@ -116,16 +115,21 @@[m [mclass _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr[m
+   @override[m
+   Widget build(BuildContext context) {[m
+     final linesAsync = ref.watch(serviceLinesProvider);[m
+[31m-    final assignedAsync = ref.watch(specialistServicesProvider(widget.specialistId));[m
+[32m+[m[32m    final isSpecialist = ref.watch(authControllerProvider).user?.role == 'specialist';[m
+[32m+[m[32m    // Determine which async provider to use based on user role[m
+[32m+[m[32m    final assignedAsync = isSpecialist[m
+[32m+[m[32m        ? specialistApiProvider.select((api) => api.listMySpecialistServices())[m
+[32m+[m[32m        : specialistServicesProvider(widget.specialistId);[m
+ [m
+     return Scaffold([m
+       appBar: AppBar([m
+         title: Text('خدمات ${widget.specialistName}', style: BoyaTypography.title),[m
+         actions: [[m
+[31m-          TextButton([m
+[31m-            onPressed: _seeded && _hasEdits && !_saving ? _save : null,[m
+[31m-            child: const Text('ذخیره'),[m
+[31m-          ),[m
+[32m+[m[32m          if (!isSpecialist)[m
+[32m+[m[32m            TextButton([m
+[32m+[m[32m              onPressed: _seeded && _hasEdits && !_saving ? _save : null,[m
+[32m+[m[32m              child: const Text('ذخیره'),[m
+[32m+[m[32m            ),[m
+         ],[m
+       ),[m
+       body: linesAsync.when([m
