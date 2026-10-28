@@ -17,6 +17,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *   CREATE UNIQUE INDEX ... ON customer_addresses(user_id) WHERE is_default
  */
 export class CreateCustomerAddresses implements MigrationInterface {
+  name = 'CreateCustomerAddresses1792960000000';
+
   public async up(qr: QueryRunner): Promise<void> {
     await qr.query(`
       CREATE TABLE customer_addresses (
@@ -73,4 +75,3 @@ export class CreateCustomerAddresses implements MigrationInterface {
     await qr.query(`DROP TABLE customer_addresses CASCADE`);
   }
 }
-`, {}).toPromise();
