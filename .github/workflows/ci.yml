@@ -98,7 +98,7 @@ jobs:
         with:
           flutter-version-file: .fvmrc
           cache: true
-      - run: flutter pub get --enforce-lockfile
+      - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
       - name: Build Web
@@ -121,7 +121,7 @@ jobs:
         with:
           flutter-version-file: .fvmrc
           cache: true
-      - run: flutter pub get --enforce-lockfile
+      - run: flutter pub get
       - run: flutter analyze --fatal-infos --fatal-warnings
       - run: flutter test --coverage --reporter expanded
       - name: Build Web

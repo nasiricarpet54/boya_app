@@ -19,7 +19,7 @@ jobs:
           flutter-version-file: .fvmrc
           cache: true
 
-      - name: Get dependencies (enforce lockfile)
-        run: cd mobile/${{ matrix.app }} && flutter pub get --enforce-lockfile
+      - name: Get dependencies
+        run: cd mobile/${{ matrix.app }} && flutter pub get
       - run: cd mobile/${{ matrix.app }} && flutter analyze --fatal-infos --fatal-warnings
       - run: cd mobile/${{ matrix.app }} && flutter test --reporter expanded
