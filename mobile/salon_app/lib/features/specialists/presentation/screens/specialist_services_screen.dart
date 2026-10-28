@@ -1,12 +1,16 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:boya_shared/boya_shared.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../services/data/services_api.dart';
 import '../../../services/domain/service_line.dart';
 import '../../data/specialist_api.dart';
 import '../widgets/specialist_service_list.dart';
+import '../../features/auth/application/auth_controller.dart';
 
 /// The owner's per-specialist service picker.
 ///
