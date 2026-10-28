@@ -8,6 +8,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/image_upload_field.dart';
 import '../../../../shared/widgets/salon_app_bar.dart';
+import '../../../auth/application/auth_controller.dart';
 import '../../application/salon_edit_controller.dart';
 import '../../data/salon_api.dart';
 import '../../domain/salon_profile.dart';
@@ -90,14 +91,22 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
+      // A restricted role may only submit the fields it is allowed to edit —
+      // the rest are dropped here rather than sent, so the backend never sees
+      // values the UI never let the user touch.
+      final role = ref.read(authControllerProvider).user?.role;
+      final isRestrictedSalonRole =
+          role == 'specialist' || role == 'employed' || role == 'booth_renter';
       final status = await ref.read(salonEditControllerProvider.notifier).submitChanges(
             name: _nameController.text.trim(),
             address: _orNull(_addressController),
             // Persian and Arabic-Indic digits are what the keypad produces.
-            phone: _orNull(_phoneController) == null
+            phone: isRestrictedSalonRole
                 ? null
-                : toLatinDigits(_phoneController.text.trim()),
-            coverImage: _orNull(_coverImageController),
+                : (_orNull(_phoneController) == null
+                    ? null
+                    : toLatinDigits(_phoneController.text.trim())),
+            coverImage: isRestrictedSalonRole ? null : _orNull(_coverImageController),
           );
       if (!mounted) return;
       if (status == SalonApprovalStatus.pendingApproval) {
@@ -128,6 +137,11 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(salonEditControllerProvider).isLoading;
+    // A salon specialist (or an independent one) may only correct the salon's
+    // name and address; phone, cover and everything else stay read-only.
+    final role = ref.watch(authControllerProvider).user?.role;
+    final isRestrictedSalonRole =
+        role == 'specialist' || role == 'employed' || role == 'booth_renter';
 
     return Scaffold(
       backgroundColor: BoyaColors.surface,
@@ -172,6 +186,7 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
                 // A phone number is an LTR run even inside an RTL form.
                 textDirection: TextDirection.ltr,
                 maxLength: 15,
+                enabled: !isRestrictedSalonRole,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹٠-٩]')),
                 ],
@@ -184,11 +199,17 @@ class _SalonEditScreenState extends ConsumerState<SalonEditScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              ImageUploadField(
-                label: 'عکس کاور',
-                category: 'cover',
-                value: _coverImageController.text,
-                onChanged: (url) => setState(() => _coverImageController.text = url),
+              IgnorePointer(
+                ignoring: isRestrictedSalonRole,
+                child: Opacity(
+                  opacity: isRestrictedSalonRole ? 0.5 : 1.0,
+                  child: ImageUploadField(
+                    label: 'عکس کاور',
+                    category: 'cover',
+                    value: _coverImageController.text,
+                    onChanged: (url) => setState(() => _coverImageController.text = url),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               ListTile(

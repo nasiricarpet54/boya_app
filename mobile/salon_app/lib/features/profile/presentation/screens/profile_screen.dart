@@ -22,6 +22,13 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(salonProfileProvider);
     final user = ref.watch(authControllerProvider).user;
 
+    // Staff management is the owner's and line manager's surface: a specialist
+    // never sees it, so the tab below stays the only listing in the app.
+    final canManageSpecialists =
+        user?.role == 'salon_owner' || user?.role == 'line_manager';
+    // A mobile specialist (ADR-011) has no salon of their own to edit.
+    final canEditSalon = user?.role != 'freelance_mobile';
+
     return Scaffold(
       appBar: const SalonAppBar(title: 'پروفایل'),
       body: profileAsync.when(
@@ -30,7 +37,11 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // Sits above the identity card because it changes how the card
             // should be read: the values below are the last approved ones.
-            ApprovalStatusBanner(onEdit: () => context.push(salonEditPath)),
+            // A mobile specialist (ADR-011) has no salon to edit, so the
+            // banner's edit shortcut is withheld as well as the menu item.
+            ApprovalStatusBanner(
+              onEdit: canEditSalon ? () => context.push(salonEditPath) : null,
+            ),
             _SalonHeader(profile: profile, userFullName: user?.fullName),
             const SizedBox(height: 16),
             Row(
@@ -53,21 +64,23 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _MenuItem(
-              icon: Icons.edit_outlined,
-              title: 'ویرایش اطلاعات سالن',
-              onTap: () => context.push(salonEditPath),
-            ),
+            if (canEditSalon)
+              _MenuItem(
+                icon: Icons.edit_outlined,
+                title: 'ویرایش اطلاعات سالن',
+                onTap: () => context.push(salonEditPath),
+              ),
             _MenuItem(
               icon: Icons.miscellaneous_services_outlined,
               title: 'مدیریت خدمات',
               onTap: () => context.push(serviceLinesPath),
             ),
-            _MenuItem(
-              icon: Icons.people_outline,
-              title: 'مدیریت متخصصان',
-              onTap: () => context.push(specialistsPath),
-            ),
+            if (canManageSpecialists)
+              _MenuItem(
+                icon: Icons.people_outline,
+                title: 'مدیریت متخصصان',
+                onTap: () => context.push(specialistsPath),
+              ),
             _MenuItem(
               icon: Icons.schedule_outlined,
               title: 'ساعات کاری',
