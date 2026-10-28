@@ -32,7 +32,7 @@ export class TicketService {
     switch (userRole) {
       case 'admin':
       case 'super_admin':
-        query = query.where('ticket.customerId = :userId', { userId });
+        // Admins see all tickets in the system (no filter)
         break;
       case 'salon_owner':
       case 'line_manager':

@@ -1929,26 +1929,52 @@ export class SalonService {
    */
   async listPanelSpecialists(user: AuthenticatedUser): Promise<SalonPanelSpecialistItem[]> {
     const tenantId = this.requireStaffTenant(user);
-    const rows = await this.withPanelTenant(tenantId, (manager) =>
-      manager.query<PanelSpecialistRow[]>(
-        `SELECT sp.id,
-                sp.user_id,
-                u.full_name,
-                u.phone,
-                u.avatar_url,
-                sp.bio,
-                sp.skills,
-                sp.commission_rate,
-                sp.is_active,
-                sp.offers_mobile_service,
-                (SELECT COUNT(*)::int FROM bookings b WHERE b.specialist_id = sp.id) AS bookings_count
-           FROM specialists sp
-           LEFT JOIN users u ON u.id = sp.user_id
-          WHERE sp.tenant_id = $1
-          ORDER BY u.full_name ASC NULLS LAST, sp.created_at ASC, sp.id ASC`,
-        [tenantId],
-      ),
-    );
+    let rows: PanelSpecialistRow[];
+
+    // Restrict specialist to their own row only.
+    if (user.role === 'specialist') {
+      rows = await this.withPanelTenant(tenantId, (manager) =>
+        manager.query<PanelSpecialistRow[]>(
+          `SELECT sp.id,
+                  sp.user_id,
+                  u.full_name,
+                  u.phone,
+                  u.avatar_url,
+                  sp.bio,
+                  sp.skills,
+                  sp.commission_rate,
+                  sp.is_active,
+                  sp.offers_mobile_service,
+                  (SELECT COUNT(*)::int FROM bookings b WHERE b.specialist_id = sp.id) AS bookings_count
+             FROM specialists sp
+             LEFT JOIN users u ON u.id = sp.user_id
+            WHERE sp.tenant_id = $1 AND sp.user_id = $2
+            ORDER BY u.full_name ASC NULLS LAST, sp.created_at ASC, sp.id ASC`,
+          [tenantId, user.userId],
+        ),
+      );
+    } else {
+      rows = await this.withPanelTenant(tenantId, (manager) =>
+        manager.query<PanelSpecialistRow[]>(
+          `SELECT sp.id,
+                  sp.user_id,
+                  u.full_name,
+                  u.phone,
+                  u.avatar_url,
+                  sp.bio,
+                  sp.skills,
+                  sp.commission_rate,
+                  sp.is_active,
+                  sp.offers_mobile_service,
+                  (SELECT COUNT(*)::int FROM bookings b WHERE b.specialist_id = sp.id) AS bookings_count
+             FROM specialists sp
+             LEFT JOIN users u ON u.id = sp.user_id
+            WHERE sp.tenant_id = $1
+            ORDER BY u.full_name ASC NULLS LAST, sp.created_at ASC, sp.id ASC`,
+          [tenantId],
+        ),
+      );
+    }
 
     return rows.map((row) => ({
       id: row.id,
