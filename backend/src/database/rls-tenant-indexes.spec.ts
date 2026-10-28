@@ -15,12 +15,16 @@ const all = files.map((f) => readFileSync(join(migrationsDir, f), 'utf8')).join(
  * - ticket_messages: has no tenant_id column at all — the policy resolves the
  *   tenant through the parent `tickets` row via `ticket_id`, which is indexed
  *   (idx_ticket_messages_ticket_id) and tickets itself is audited here.
+ * - customer_addresses: user-scoped (`app.current_user_id`, decision 1).
+ *   The policy keys on `user_id`; a tenant-leading index would not apply
+ *   because customers carry no tenant (same model as support_tickets, exempt).
  */
 const exempt = new Set([
   'refresh_tokens',
   'support_tickets',
   'tenants',
   'ticket_messages',
+  'customer_addresses',
 ]);
 
 const rlsTables = [

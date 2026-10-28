@@ -1,4 +1,5 @@
 import { AccountingModule } from './modules/accounting/accounting.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import { TenantRlsInterceptor } from './modules/tenant/tenant-rls.interceptor';
 import { QueryLimitInterceptor } from './common/interceptors/query-limit.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -140,6 +141,7 @@ import { UserModule } from './modules/user/user.module';
     TicketModule,
     UploadModule,
     AccountingModule,
+    AddressesModule,
   ],
   // Order matters: the throttler runs first so an unauthenticated flood is
   // still rate limited before token verification, `JwtAuthGuard` next, and

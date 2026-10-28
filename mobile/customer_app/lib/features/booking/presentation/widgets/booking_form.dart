@@ -1,10 +1,21 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_client.dart';
 import '../../../salon/data/salon_api.dart';
 import '../../../salon/domain/available_slot.dart';
 import '../../../salon/domain/salon_detail.dart';
+import '../../../salon/domain/specialist_service.dart';
+import '../../location/application/addresses_state.dart';
+import '../../location/data/addresses_api.dart';
+import '../../location/domain/customer_address.dart';
+import '../../location/presentation/address_picker_sheet.dart';
+import '../../location/presentation/address_map_picker_screen.dart';
+import '../../location/presentation/widgets/boya_location_picker.dart';
+import 'booking_bar.dart';
+import 'booking_confirm_dialog.dart';
 import 'booking_choices.dart';
 import 'jalali_date_picker_card.dart';
 import 'slot_grid.dart';
@@ -53,48 +64,22 @@ class BookingForm extends ConsumerStatefulWidget {
   /// ADR-011: whether the customer asked for the visit at their own place.
   final bool isMobile;
 
-  /// ADR-011: the address the specialist travels to. Owned by the screen so it
-  /// survives slot changes and rebuilds.
-  final String address;
+  /// ADR-011: the address the specialist travels to (decision 6 - picked,
+  /// not typed). Owned by the screen so it survives slot changes and
+  /// rebuilds.
+  final CustomerAddress? address;
 
   /// Toggles [isMobile]; the screen validates the address on submit.
   final ValueChanged<bool> onMobile;
 
-  /// Updates [address] on every keystroke.
-  final ValueChanged<String> onAddress;
+  /// Reports the picked [CustomerAddress] back to the screen.
+  final ValueChanged<CustomerAddress?> onAddress;
 
   @override
   ConsumerState<BookingForm> createState() => _BookingFormState();
 }
 
 class _BookingFormState extends ConsumerState<BookingForm> {
-  late final TextEditingController _addressController;
-  final _addressFocus = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _addressController = TextEditingController(text: widget.address);
-  }
-
-  @override
-  void didUpdateWidget(covariant BookingForm oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // External changes (a stored draft) should land in the field, but a typing
-    // loop has to be avoided: a controller rebuild on every keystroke resets
-    // the caret to the end and makes Persian composition behave oddly.
-    if (oldWidget.address != widget.address && _addressController.text != widget.address) {
-      _addressController.text = widget.address;
-    }
-  }
-
-  @override
-  void dispose() {
-    _addressController.dispose();
-    _addressFocus.dispose();
-    super.dispose();
-  }
-
   /// `(service travels, specialist travels)`, or `null` until both are picked.
   (bool, bool)? get _mobilePair {
     final service = widget.services.cast<SalonService?>().firstWhere(
@@ -190,8 +175,6 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             enabled: canOfferMobile,
             isMobile: widget.isMobile,
             address: widget.address,
-            addressController: _addressController,
-            addressFocus: _addressFocus,
             onMobile: widget.onMobile,
             onAddress: widget.onAddress,
             reason: switch (mobile) {
@@ -214,8 +197,6 @@ class _MobileSection extends StatelessWidget {
     required this.enabled,
     required this.isMobile,
     required this.address,
-    required this.addressController,
-    required this.addressFocus,
     required this.onMobile,
     required this.onAddress,
     required this.reason,
@@ -227,13 +208,10 @@ class _MobileSection extends StatelessWidget {
   /// Whether the toggle is currently on.
   final bool isMobile;
 
-  /// Current address text, shown as an error hint when the toggle is on but the
-  /// field is empty.
-  final String address;
-  final TextEditingController addressController;
-  final FocusNode addressFocus;
+  /// The picked address (or null); renders as the picker row's text.
+  final CustomerAddress? address;
   final ValueChanged<bool> onMobile;
-  final ValueChanged<String> onAddress;
+  final ValueChanged<CustomerAddress?> onAddress;
 
   /// The exact backend message shown when the pair cannot travel, or `null`
   /// while the section is still waiting for the two picks.
@@ -276,8 +254,6 @@ class _MobileSection extends StatelessWidget {
               if (enabled && isMobile) ...[
                 const Divider(height: 1, color: BoyaColors.line),
                 _AddressField(
-                  controller: addressController,
-                  focusNode: addressFocus,
                   address: address,
                   onChanged: onAddress,
                 ),
@@ -290,57 +266,71 @@ class _MobileSection extends StatelessWidget {
   }
 }
 
-/// The multi-line address field plus the two on-site affordances under it.
+/// On-site address: a picker row (decision 6 - no manual text entry).
+/// The customer selects a saved address or drops a pin on the map.
+/// Addresses live only inside the booking form (decision 9).
 class _AddressField extends StatelessWidget {
   const _AddressField({
-    required this.controller,
-    required this.focusNode,
-    required this.address,
+    this.address,
     required this.onChanged,
+    super.key,
   });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String address;
-  final ValueChanged<String> onChanged;
+  final CustomerAddress? address;
+  final ValueChanged<CustomerAddress?> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasAddress = address != null;
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: controller,
-            focusNode: focusNode,
-            onChanged: onChanged,
-            minLines: 2,
-            maxLines: 4,
-            textInputAction: TextInputAction.done,
-            style: BoyaTypography.body.copyWith(color: BoyaColors.ink),
-            decoration: InputDecoration(
-              // Live: the field must turn red the moment the toggle is flipped
-              // on without an address to travel to.
-              errorText: address.trim().isEmpty ? 'آدرس مشتری الزامی است' : null,
-              errorStyle: BoyaTypography.overline.copyWith(color: BoyaColors.error),
-              hintText: 'آدرس کامل، پلاک و کد پستی',
-              hintStyle: BoyaTypography.body.copyWith(color: BoyaColors.inkMuted),
-              filled: true,
-              fillColor: BoyaColors.cream,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: BoyaColors.line),
+          // Pickable row: saved address text, or a call-to-action tile.
+          InkWell(
+            onTap: () {
+              showModalBottomSheet<CustomerAddress?>(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (context) => const _AddressPickerSheet(),
+              ).then((picked) {
+                if (picked != null && context.mounted) {
+                  onChanged(picked);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    hasAddress ? Icons.location_pin : Icons.location_on,
+                    color: hasAddress
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      hasAddress
+                          ? address!.address
+                          : 'آدرس مشتری را انتخاب کنید',
+                      style: BoyaTypography.body.copyWith(
+                        color: hasAddress
+                            ? BoyaColors.ink
+                            : BoyaColors.inkMuted,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_left, size: 18),
+                ],
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: BoyaColors.primary),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
           const SizedBox(height: 8),
-          // ADR-011: on-site visits are settled in cash when the specialist
+          // ADR-011: on-site visits settle in cash when the specialist
           // arrives, so the customer is told up front.
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -348,30 +338,14 @@ class _AddressField extends StatelessWidget {
               color: BoyaColors.primarySubtle,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.payments_outlined, size: 14, color: BoyaColors.primary),
-                const SizedBox(width: 6),
-                Text(
-                  'پرداخت در محل',
-                  style: BoyaTypography.overline.copyWith(
-                    color: BoyaColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Icon(Icons.payments_outlined, size: 14, color: BoyaColors.primary),
+                SizedBox(width: 6),
+                Text('پرداخت در محل', style: BoyaTypography.overline),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          // Dropping a pin is a Phase 2 concern; the button stays so the row
-          // can ship without promising a map that is not wired up yet.
-          TextButton.icon(
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('انتخاب از روی نقشه به‌زودی')),
-            ),
-            icon: const Icon(Icons.map_outlined, size: 16),
-            label: const Text('انتخاب از روی نقشه'),
           ),
         ],
       ),
