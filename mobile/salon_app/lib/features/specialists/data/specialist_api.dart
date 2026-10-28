@@ -179,13 +179,9 @@ class SpecialistApi {
   }
 
   /// The services assigned to the signed-in specialist (scoped by token).
-  /// Backend returns only the row for the caller; 403 if someone else's token is used.
   Future<List<SpecialistServiceItem>> listMySpecialistServices() async {
-    final response = await _dio.get<List<dynamic>>('/salon/me/specialist-services');
-    return [
-      for (final item in response.data ?? const [])
-        if (item is Map<String, dynamic>) SpecialistServiceItem.fromJson(item),
-    ];
+    final response = await _dio.get('/salon/me/specialist-services');
+    return (response.data as List).map((e) => SpecialistServiceItem.fromJson(e)).toList();
   }
 
   /// Replaces the specialist's whole assignment list. Anything missing from

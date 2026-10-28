@@ -1,16 +1,17 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:boya_shared/boya_shared.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../services/data/services_api.dart';
 import '../../../services/domain/service_line.dart';
 import '../../data/specialist_api.dart';
 import '../widgets/specialist_service_list.dart';
-import '../../features/auth/application/auth_controller.dart';
+import 'package:salon_app/features/auth/application/auth_controller.dart';
+
+final mySpecialistServicesProvider = FutureProvider.autoDispose<List<SpecialistServiceItem>>((ref) async {
+  return ref.watch(specialistApiProvider).listMySpecialistServices();
+});
 
 /// The owner's per-specialist service picker.
 ///
@@ -45,8 +46,9 @@ class _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr
     super.initState();
     // Seed the local state once the current assignments arrive; this screen's
     // own writes never clobber the user's in-flight edits.
+    final isSpecialistInit = ref.read(authControllerProvider).user?.role == 'specialist';
     ref.listen(
-      specialistServicesProvider(widget.specialistId),
+      isSpecialistInit ? mySpecialistServicesProvider : specialistServicesProvider(widget.specialistId),
       (_, next) => next.whenData((items) {
         if (!_seeded && mounted) {
           setState(() {
@@ -62,8 +64,10 @@ class _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr
   }
 
   bool get _hasEdits {
-    final current =
-        ref.read(specialistServicesProvider(widget.specialistId)).valueOrNull ?? [];
+    final isSpecialist = ref.read(authControllerProvider).user?.role == 'specialist';
+    final current = isSpecialist
+        ? ref.read(mySpecialistServicesProvider).valueOrNull ?? []
+        : ref.read(specialistServicesProvider(widget.specialistId)).valueOrNull ?? [];
     final currentAssigned = {for (final item in current) item.serviceId: item.isActive};
     final selected =
         _assigned.entries.where((entry) => entry.value).map((entry) => entry.key).toSet();
@@ -116,16 +120,20 @@ class _SpecialistServicesScreenState extends ConsumerState<SpecialistServicesScr
   @override
   Widget build(BuildContext context) {
     final linesAsync = ref.watch(serviceLinesProvider);
-    final assignedAsync = ref.watch(specialistServicesProvider(widget.specialistId));
+    final isSpecialist = ref.watch(authControllerProvider).user?.role == 'specialist';
+    final assignedAsync = isSpecialist
+        ? ref.watch(mySpecialistServicesProvider)
+        : ref.watch(specialistServicesProvider(widget.specialistId));
 
     return Scaffold(
       appBar: AppBar(
         title: Text('خدمات ${widget.specialistName}', style: BoyaTypography.title),
         actions: [
-          TextButton(
-            onPressed: _seeded && _hasEdits && !_saving ? _save : null,
-            child: const Text('ذخیره'),
-          ),
+          if (!isSpecialist)
+            TextButton(
+              onPressed: _seeded && _hasEdits && !_saving ? _save : null,
+              child: const Text('ذخیره'),
+            ),
         ],
       ),
       body: linesAsync.when(

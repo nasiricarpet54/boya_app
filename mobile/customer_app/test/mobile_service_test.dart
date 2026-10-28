@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:customer_app/core/network/api_client.dart';
@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// ADR-011: the آ«ط®ط¯ظ…ط§طھ ط³غŒط§ط±آ» (mobile service) feature, end to end.
+/// ADR-011: the «خدمات سیار» (mobile service) feature, end to end.
 ///
 /// The backend omits a flag rather than sending `false`, every model defaults
 /// to false, and both the service *and* the specialist must travel for an
@@ -76,7 +76,7 @@ class _StubAdapter implements HttpClientAdapter {
 /// A salon row with both the summary-level flag and the detail-level flags set.
 Map<String, dynamic> _mobileSalonJson() => {
       'id': 's1',
-      'name': 'ط³ط§ظ„ظ† ط³غŒط§ط±',
+      'name': 'سالن سیار',
       'rating': 4.8,
       'reviewCount': 10,
       'minPrice': 200000,
@@ -90,7 +90,7 @@ void main() {
       expect(withFlag.offersMobileService, isTrue,
           reason: 'the home feed badge is driven by this flag');
 
-      final withoutFlag = SalonSummary.fromJson({'id': 's2', 'name': 'ط³ط§ظ„ظ† ظ…ط¹ظ…ظˆظ„غŒ'});
+      final withoutFlag = SalonSummary.fromJson({'id': 's2', 'name': 'سالن معمولی'});
       expect(withoutFlag.offersMobileService, isFalse,
           reason: 'an omitted flag must never read as true');
     });
@@ -98,14 +98,14 @@ void main() {
     test('SalonDetail reads both flags independently', () {
       final detail = SalonDetail.fromJson({
         'id': 's1',
-        'name': 'ط³ط§ظ„ظ†',
+        'name': 'سالن',
         'services': [
-          {'id': 'sv1', 'name': 'ع©ظˆطھط§ظ‡غŒ ط¯ط± ظ…ظ†ط²ظ„', 'price': 300000, 'isMobileAvailable': true},
-          {'id': 'sv2', 'name': 'ع©ط±ط§طھغŒظ†ظ‡', 'price': 900000},
+          {'id': 'sv1', 'name': 'کوتاهی در منزل', 'price': 300000, 'isMobileAvailable': true},
+          {'id': 'sv2', 'name': 'کراتینه', 'price': 900000},
         ],
         'specialists': [
-          {'id': 'sp1', 'fullName': 'ط³ط§ط±ط§', 'offersMobileService': true},
-          {'id': 'sp2', 'fullName': 'ظ…ط±غŒظ…'},
+          {'id': 'sp1', 'fullName': 'سارا', 'offersMobileService': true},
+          {'id': 'sp2', 'fullName': 'مریم'},
         ],
       });
 
@@ -122,10 +122,10 @@ void main() {
         'startsAt': '2026-01-01T10:30:00.000Z',
         'totalPrice': 300000,
         'isMobile': true,
-        'customerAddress': 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+        'customerAddress': 'تهران، خیابان ولیعصر',
       });
       expect(record.isMobile, isTrue);
-      expect(record.customerAddress, 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±');
+      expect(record.customerAddress, 'تهران، خیابان ولیعصر');
     });
 
     test('BookingRecord keeps both fields off when they are absent', () {
@@ -207,7 +207,7 @@ void main() {
           date: DateTime(2026, 1, 1, 10, 30),
           slotStart: DateTime(2026, 1, 1, 10, 30),
           isMobile: true,
-          customerAddress: 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+          customerAddress: 'تهران، خیابان ولیعصر',
           customerLatitude: 35.7,
           customerLongitude: 51.4,
         ),
@@ -216,7 +216,7 @@ void main() {
 
       final body = jsonDecode(jsonEncode(script.requests.single.data)) as Map<String, dynamic>;
       expect(body, containsPair('isMobile', true));
-      expect(body, containsPair('customerAddress', 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±'));
+      expect(body, containsPair('customerAddress', 'تهران، خیابان ولیعصر'));
       expect(body, containsPair('customerLatitude', 35.7));
       expect(body, containsPair('customerLongitude', 51.4));
 
@@ -262,7 +262,7 @@ void main() {
               'startsAt': '2026-01-01T10:30:00.000Z',
               'totalPrice': 300000,
               'isMobile': true,
-              'customerAddress': 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+              'customerAddress': 'تهران، خیابان ولیعصر',
             }),
       });
       final container = await boot(script);
@@ -275,13 +275,13 @@ void main() {
           serviceId: 'sv1',
           date: DateTime(2026, 1, 1, 10, 30),
           isMobile: true,
-          customerAddress: 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+          customerAddress: 'تهران، خیابان ولیعصر',
         ),
       );
       final record = await controller.submit();
 
       expect(record.isMobile, isTrue);
-      expect(record.customerAddress, 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±');
+      expect(record.customerAddress, 'تهران، خیابان ولیعصر');
       expect(container.read(bookingProvider).record, same(record));
 
       container.dispose();
@@ -298,22 +298,22 @@ void main() {
                   status: 'pending',
                   start: DateTime(2026, 1, 1, 10, 30),
                   totalPrice: 300000,
-                  serviceName: 'ع©ظˆطھط§ظ‡غŒ ط¯ط± ظ…ظ†ط²ظ„',
-                  salonName: 'ط³ط§ظ„ظ† ط³غŒط§ط±',
+                  serviceName: 'کوتاهی در منزل',
+                  salonName: 'سالن سیار',
                   isMobile: true,
-                  customerAddress: 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+                  customerAddress: 'تهران، خیابان ولیعصر',
                 ))),
           ],
           child: const MaterialApp(home: BookingSuccessScreen()),
         ),
       );
 
-      expect(find.text('ط¯ط±ط®ظˆط§ط³طھ ط«ط¨طھ ط´ط¯طŒ ط¯ط± ط§ظ†طھط¸ط§ط± طھط§غŒغŒط¯ ط³ط§ظ„ظ†'), findsOneWidget);
-      expect(find.text('ط®ط¯ظ…طھ ط¯ط± ظ…ط­ظ„ ط´ظ…ط§'), findsOneWidget);
-      expect(find.text('طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±'), findsOneWidget);
-      expect(find.text('ظ¾ط±ط¯ط§ط®طھ ط¯ط± ظ…ط­ظ„'), findsOneWidget);
+      expect(find.text('درخواست ثبت شد، در انتظار تایید سالن'), findsOneWidget);
+      expect(find.text('خدمت در محل شما'), findsOneWidget);
+      expect(find.text('تهران، خیابان ولیعصر'), findsOneWidget);
+      expect(find.text('پرداخت در محل'), findsOneWidget);
       // The salon-visit card must not be shown alongside the on-site one.
-      expect(find.text('طھط³ظˆغŒظ‡ ط¯ط± ظ…ط­ظ„طŒ ظ‡ظ†ع¯ط§ظ… ظ…ط±ط§ط¬ط¹ظ‡'), findsNothing);
+      expect(find.text('تسویه در محل، هنگام مراجعه'), findsNothing);
     });
 
     testWidgets('the success screen falls back to the salon card without a mobile booking',
@@ -332,28 +332,28 @@ void main() {
         ),
       );
 
-      expect(find.text('طھط³ظˆغŒظ‡ ط¯ط± ظ…ط­ظ„طŒ ظ‡ظ†ع¯ط§ظ… ظ…ط±ط§ط¬ط¹ظ‡'), findsOneWidget);
-      expect(find.text('ط®ط¯ظ…طھ ط¯ط± ظ…ط­ظ„ ط´ظ…ط§'), findsNothing);
+      expect(find.text('تسویه در محل، هنگام مراجعه'), findsOneWidget);
+      expect(find.text('خدمت در محل شما'), findsNothing);
     });
 
     testWidgets('the confirmation lists the on-site venue', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: BookingConfirmDialog(
-            salonName: 'ط³ط§ظ„ظ† ط³غŒط§ط±',
-            specialistName: 'ط³ط§ط±ط§',
-            serviceName: 'ع©ظˆطھط§ظ‡غŒ ط¯ط± ظ…ظ†ط²ظ„',
+            salonName: 'سالن سیار',
+            specialistName: 'سارا',
+            serviceName: 'کوتاهی در منزل',
             date: DateTime(2026, 1, 1),
             isMobile: true,
-            address: 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+            address: 'تهران، خیابان ولیعصر',
           ),
         ),
       );
 
       // The row renders the label with a trailing colon, so the substring is
       // what actually distinguishes an on-site confirmation.
-      expect(find.textContaining('ظ…ط­ظ„ ط§ط¬ط±ط§'), findsOneWidget);
-      expect(find.text('طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±'), findsOneWidget);
+      expect(find.textContaining('محل اجرا'), findsOneWidget);
+      expect(find.text('تهران، خیابان ولیعصر'), findsOneWidget);
     });
 
     testWidgets('the confirmation stays quiet about a venue when the visit is at the salon',
@@ -361,15 +361,15 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: BookingConfirmDialog(
-            salonName: 'ط³ط§ظ„ظ† ط¨ظˆغŒط§',
-            specialistName: 'ط³ط§ط±ط§',
-            serviceName: 'ع©ظˆطھط§ظ‡غŒ ظ…ظˆ',
+            salonName: 'سالن بویا',
+            specialistName: 'سارا',
+            serviceName: 'کوتاهی مو',
             date: DateTime(2026, 1, 1),
           ),
         ),
       );
 
-      expect(find.textContaining('ظ…ط­ظ„ ط§ط¬ط±ط§'), findsNothing);
+      expect(find.textContaining('محل اجرا'), findsNothing);
     });
   });
 
@@ -380,12 +380,12 @@ void main() {
     SalonDetail makeSalon({bool serviceMobile = true, bool specialistMobile = true}) {
       return SalonDetail(
         id: 's1',
-        name: 'ط³ط§ظ„ظ†',
+        name: 'سالن',
         services: [
-          SalonService(id: 'sv1', name: 'ع©ظˆطھط§ظ‡غŒ ط¯ط± ظ…ظ†ط²ظ„', price: 300000, isMobileAvailable: serviceMobile),
+          SalonService(id: 'sv1', name: 'کوتاهی در منزل', price: 300000, isMobileAvailable: serviceMobile),
         ],
         specialists: [
-          SalonSpecialist(id: 'sp1', fullName: 'ط³ط§ط±ط§', offersMobileService: specialistMobile),
+          SalonSpecialist(id: 'sp1', fullName: 'سارا', offersMobileService: specialistMobile),
         ],
       );
     }
@@ -438,7 +438,7 @@ void main() {
       // Let the stubbed slot future settle, then bring step 5 on screen.
       await tester.pumpAndSettle();
       if (specialistId != null && serviceId != null) {
-        await tester.scrollUntilVisible(find.text('غµ. ظ…ط­ظ„ ط§ط¬ط±ط§'), 400);
+        await tester.scrollUntilVisible(find.text('۵. محل اجرا'), 400);
         await tester.pumpAndSettle();
       }
     }
@@ -454,7 +454,7 @@ void main() {
 
       // Step 5 renders only once the calendar does, so the placeholder is not
       // even on the tree yet.
-      expect(find.text('غµ. ظ…ط­ظ„ ط§ط¬ط±ط§'), findsNothing);
+      expect(find.text('۵. محل اجرا'), findsNothing);
     });
 
     testWidgets('says the specialist does not travel', (tester) async {
@@ -466,8 +466,8 @@ void main() {
         isMobile: false,
       );
 
-      expect(find.text('غµ. ظ…ط­ظ„ ط§ط¬ط±ط§'), findsOneWidget);
-      expect(find.text('ط§غŒظ† ظ…طھط®طµطµ ط®ط¯ظ…ط§طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط¯ظ‡ط¯'), findsOneWidget);
+      expect(find.text('۵. محل اجرا'), findsOneWidget);
+      expect(find.text('این متخصص خدمات سیار ارائه نمی‌دهد'), findsOneWidget);
       // Disabled, so tapping it must not flip the switch.
       expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged, isNull);
     });
@@ -481,7 +481,7 @@ void main() {
         isMobile: false,
       );
 
-      expect(find.text('ط§غŒظ† ط®ط¯ظ…طھ ط¨ظ‡â€Œطµظˆط±طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط´ظˆط¯'), findsOneWidget);
+      expect(find.text('این خدمت به‌صورت سیار ارائه نمی‌شود'), findsOneWidget);
       expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged, isNull);
     });
 
@@ -492,13 +492,13 @@ void main() {
         specialistId: 'sp1',
         serviceId: 'sv1',
         isMobile: true,
-        address: 'طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±',
+        address: 'تهران، خیابان ولیعصر',
       );
 
       expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged, isNotNull);
       expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isTrue);
-      expect(find.text('طھظ‡ط±ط§ظ†طŒ ط®غŒط§ط¨ط§ظ† ظˆظ„غŒط¹طµط±'), findsOneWidget);
-      expect(find.text('ظ¾ط±ط¯ط§ط®طھ ط¯ط± ظ…ط­ظ„'), findsOneWidget);
+      expect(find.text('تهران، خیابان ولیعصر'), findsOneWidget);
+      expect(find.text('پرداخت در محل'), findsOneWidget);
     });
 
     testWidgets('flags a missing address on the spot', (tester) async {
@@ -510,7 +510,7 @@ void main() {
         isMobile: true,
       );
 
-      expect(find.text('ط¢ط¯ط±ط³ ظ…ط´طھط±غŒ ط§ظ„ط²ط§ظ…غŒ ط§ط³طھ'), findsOneWidget);
+      expect(find.text('آدرس مشتری الزامی است'), findsOneWidget);
     });
 
     testWidgets('forwards the toggle to the screen', (tester) async {
