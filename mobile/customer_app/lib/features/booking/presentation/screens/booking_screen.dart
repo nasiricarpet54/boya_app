@@ -1,5 +1,6 @@
-import 'package:boya_shared/boya_shared.dart';
+﻿import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
+import '../../../location/domain/customer_address.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,8 +26,8 @@ class BookingScreen extends ConsumerStatefulWidget {
 
   final String salonId;
 
-  /// Pre-selection handed over from the salon page's «خدمات قابل ارائه»
-  /// cards, so tapping رزرو on a specialist's service lands here with both
+  /// Pre-selection handed over from the salon page's آ«ط®ط¯ظ…ط§طھ ظ‚ط§ط¨ظ„ ط§ط±ط§ط¦ظ‡آ»
+  /// cards, so tapping ط±ط²ط±ظˆ on a specialist's service lands here with both
   /// picks already made instead of asking the customer to repeat them.
   final String? initialSpecialistId;
   final String? initialServiceId;
@@ -50,7 +51,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   /// The services the booking form may offer. Before a specialist is picked
   /// that is the salon catalogue; after, it narrows to the services the salon
-  /// *assigned to that specialist* (`specialist_services`) — picking another
+  /// *assigned to that specialist* (`specialist_services`) â€” picking another
   /// specialist empties the earlier service choice, because that choice
   /// belonged to someone else's list. `loading` separates "the list has not
   /// arrived yet" from "the specialist has nothing assigned", because only the
@@ -84,14 +85,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   /// ADR-011: the on-site address. Kept here as well so re-picking a slot does
   /// not discard what the customer typed.
-  String _address = '';
+  CustomerAddress? _address;
 
   @override
   Widget build(BuildContext context) {
     final salonAsync = ref.watch(salonDetailProvider(widget.salonId));
     final bookingState = ref.watch(bookingProvider);
     return Scaffold(
-      appBar: const BoyaAppBar(title: 'رزرو نوبت'),
+      appBar: const BoyaAppBar(title: 'ط±ط²ط±ظˆ ظ†ظˆط¨طھ'),
       body: salonAsync.when(
         data: (salon) {
           final (:services, :loading) = _bookableServices(salon);
@@ -106,7 +107,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             onSpecialist: (id) => setState(() {
               _specialistId = id;
               // The service pick belonged to the previous specialist's list, so
-              // it cannot follow the customer into a new one — re-choosing is
+              // it cannot follow the customer into a new one â€” re-choosing is
               // the only honest option (specialist_services differ per person).
               _serviceId = null;
               _selectedSlot = null;
@@ -119,7 +120,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           onService: (id) => setState(() {
             _serviceId = id;
             _selectedSlot = null;
-            // ADR-011: same reasoning as the specialist pick — a service that
+            // ADR-011: same reasoning as the specialist pick â€” a service that
             // stays in the salon cannot be delivered at the customer's place.
             // The lookup uses the (possibly specialist-filtered) list, not the
             // salon catalogue, so the flag tracks what the form is showing.
@@ -139,7 +140,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => const Center(child: Text('خطا در دریافت اطلاعات', style: BoyaTypography.body)),
+        error: (_, _) => const Center(child: Text('ط®ط·ط§ ط¯ط± ط¯ط±غŒط§ظپطھ ط§ط·ظ„ط§ط¹ط§طھ', style: BoyaTypography.body)),
       ),
       bottomNavigationBar: salonAsync.maybeWhen(
         data: (salon) => BookingBar(
@@ -183,9 +184,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
     // ADR-011: the backend answers a missing on-site address with a 400, which
     // is worth stopping locally before the dialog is even shown.
-    if (_isMobile && _address.trim().isEmpty) {
+    if (_isMobile && (_address?.address.trim() ?? '').isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('آدرس مشتری الزامی است')),
+        const SnackBar(content: Text('ط¢ط¯ط±ط³ ظ…ط´طھط±غŒ ط§ظ„ط²ط§ظ…غŒ ط§ط³طھ')),
       );
       return;
     }
@@ -200,7 +201,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         price: _price(salon),
         time: formatJalaliTime(slotStart),
         isMobile: _isMobile,
-        address: _address.trim(),
+        address: (_address?.address.trim() ?? ''),
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -214,7 +215,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         date: _date,
         slotStart: slotStart,
         isMobile: _isMobile,
-        customerAddress: _isMobile ? _address.trim() : null,
+        customerAddress: _isMobile ? (_address?.address.trim() ?? '') : null,
       ),
     );
     try {
@@ -234,7 +235,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     for (final specialist in salon.specialists) {
       if (specialist.id == _specialistId) return specialist.fullName;
     }
-    return 'انتخاب نشده';
+    return 'ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡';
   }
 
   String _serviceName(SalonDetail salon) {
@@ -242,6 +243,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     for (final service in services) {
       if (service.id == _serviceId) return service.name;
     }
-    return 'انتخاب نشده';
+    return 'ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡';
   }
 }
+
+
+
+

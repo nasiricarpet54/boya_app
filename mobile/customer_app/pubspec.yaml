@@ -19,7 +19,7 @@ dependencies:
   shimmer: ^3.0.0
   geolocator: ^14.0.3
   flutter_secure_storage: ^11.2.0
-  neshan_maps_flutter: ^1.0.2
+  neshan_maps_flutter: ^1.1.0
   latlong2: ^0.10.1
 
 dev_dependencies:

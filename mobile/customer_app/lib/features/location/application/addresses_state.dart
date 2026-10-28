@@ -1,11 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_client.dart';
 import '../data/addresses_api.dart';
 import '../domain/customer_address.dart';
 
 /// State + logic for the customer's saved addresses (booking form picker).
 final addressesProvider = StateNotifierProvider<AddressesController, AddressesState>(
-  (ref) => AddressesController(ref.read),
+  (ref) => AddressesController(ref),
 );
 
 class AddressesState {
@@ -39,16 +40,16 @@ class AddressesState {
 }
 
 class AddressesController extends StateNotifier<AddressesState> {
-  final Reader _read;
+  final Ref _ref;
 
-  AddressesController(this._read) : super(const AddressesState()) {
+  AddressesController(this._ref) : super(const AddressesState()) {
     _load();
   }
 
   Future<void> _load() async {
     state = state.copyWith(isLoading: true);
     try {
-      state = state.copyWith(addresses: await fetchCustomerAddresses(_read), isLoading: false);
+      state = state.copyWith(addresses: await fetchCustomerAddresses(_ref.read(dioProvider)), isLoading: false);
     } catch (error) {
       state = state.copyWith(error: error.toString(), isLoading: false);
     }
@@ -58,11 +59,11 @@ class AddressesController extends StateNotifier<AddressesState> {
     state = state.copyWith(selectedId: address.id, error: null);
   }
 
-  /// "Add address" — the map picker submits (title, address, lat, lng).
+  /// "Add address" â€” the map picker submits (title, address, lat, lng).
   Future<void> addAddress(String title, String address, double latitude, double longitude) async {
     try {
       final created = await createCustomerAddress(
-        _read(),
+        _ref.read(dioProvider),
         title,
         address,
         latitude,
@@ -85,3 +86,6 @@ class AddressesController extends StateNotifier<AddressesState> {
     await _load();
   }
 }
+
+
+

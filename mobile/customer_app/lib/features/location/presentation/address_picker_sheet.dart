@@ -1,31 +1,31 @@
-import 'package:boya_shared/boya_shared.dart';
+﻿import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../domain/customer_address.dart';
+import '../domain/customer_address.dart';
 
-/// Bottom sheet: saved addresses + «افزودن آدرس جدید» tile.
+/// Bottom sheet: saved addresses + آ«ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯آ» tile.
 ///
 /// Decision 9: the address UI is shown only inside the booking form.
-/// Decision 6: no manual address text field — the customer selects a saved
+/// Decision 6: no manual address text field â€” the customer selects a saved
 /// address or picks a fresh one from the map (decision 7: full-screen
 /// NeshanLocationPicker).
 class AddressPickerSheet extends StatelessWidget {
   const AddressPickerSheet({
     super.key,
-    required this.addresses,
-    required this.selectedId,
-    required this.onSelect,
-    required this.onCreate,
-    required this.onUpdateTitle,
-    required this.enabled,
+    this.addresses = const [],
+    this.selectedId,
+    this.onSelect,
+    this.onCreate,
+    this.onUpdateTitle,
+    this.enabled = true,
   });
 
   final List<CustomerAddress> addresses;
   final String? selectedId;
-  final ValueChanged<CustomerAddress> onSelect;
-  final Future<void> Function(String title, String address) onCreate;
-  final ValueChanged<CustomerAddress> onUpdateTitle;
+  final ValueChanged<CustomerAddress>? onSelect;
+  final Future<void> Function(String title, String address)? onCreate;
+  final ValueChanged<CustomerAddress>? onUpdateTitle;
   final bool enabled;
 
   @override
@@ -38,20 +38,18 @@ class AddressPickerSheet extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(topRadius: 20),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            container(
+            Container(
               height: 6,
               color: theme.colorScheme.primary.withValues(alpha: 0.16),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                'آدرس مورد نظر',
-                style: BoyaTypography.headlineMedium,
+            Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Text(
+                'ط¢ط¯ط±ط³ ظ…ظˆط±ط¯ ظ†ط¸ط±',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const SizedBox(height: 4),
@@ -65,14 +63,14 @@ class AddressPickerSheet extends StatelessWidget {
                       const Padding(
                         padding: EdgeInsets.all(12),
                         child: Text(
-                          'هنوز آدرس ذخیره‌شده‌ای ندارید. دکمه «افزودن آدرس جدید» را بزنید.',
+                          'ظ‡ظ†ظˆط² ط¢ط¯ط±ط³ ط°ط®غŒط±ظ‡â€Œط´ط¯ظ‡â€Œط§غŒ ظ†ط¯ط§ط±غŒط¯. ط¯ع©ظ…ظ‡ آ«ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯آ» ط±ط§ ط¨ط²ظ†غŒط¯.',
                           style: BoyaTypography.body,
                         ),
                       ),
                     for (final address in addresses)
                       ListTile(
-                        onTap: enabled ? () => onSelect(address) : null,
-                        leading: container(
+                        onTap: enabled && onSelect != null ? () => onSelect!(address) : null,
+                        leading: Container(
                           width: 6,
                           height: 6,
                           color: address.isDefault
@@ -93,11 +91,11 @@ class AddressPickerSheet extends StatelessWidget {
             const SizedBox(height: 12),
             ListTile(
               onTap: enabled
-                  ? () => context.router.push('/booking/address/new')
+                  ? () => context.push('/booking/address/new')
                   : null,
               leading: const Icon(Icons.add_location,
               color: BoyaColors.primary),
-              title: const Text('افزودن آدرس جدید'),
+              title: const Text('ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯'),
               trailing: const Icon(Icons.chevron_right),
             ),
           ],
@@ -106,3 +104,6 @@ class AddressPickerSheet extends StatelessWidget {
     );
   }
 }
+
+
+

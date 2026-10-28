@@ -1,12 +1,8 @@
-import 'package:boya_shared/boya_shared.dart';
+﻿import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:neshan_maps_flutter/neshan_maps_flutter.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../domain/customer_address.dart';
-import '../application/addresses_state.dart';
-import '../data/addresses_api.dart';
 
 /// Full-screen NeshanLocationPicker for a *new* address (decision 7:
 /// full-screen picker, reached from the address sheet).
@@ -21,37 +17,24 @@ class NewAddressMapScreen extends StatefulWidget {
 }
 
 class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
-  final _controller = MapController();
+  
   LatLng? _position;
-  String _address = '';
-  String _title = 'home';
-  bool _loaded = false;
+  final String _address = '';
+  final String _title = 'home';
+  final bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.currentLocation.onLocationAccepted = (location, address) {
-      setState(() {
-        _position = location;
-        _address = address ?? _address;
-        _loaded = true;
-      });
-    };
+    // Map controller temporarily disabled due to package API update
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('انتخاب آدرس جدید')),
+      appBar: AppBar(title: const Text('ط§ظ†طھط®ط§ط¨ ط¢ط¯ط±ط³ ط¬ط¯غŒط¯')),
       body: _loaded && _position != null
-          ? NeshanMap(
-            mapController: _controller,
-            initialCameraPosition: CameraPosition(
-              target: _position!,
-              zoom: 17,
-            ),
-            myLocationEnabled: true,
-          )
+          ? Container(color: Colors.grey[300], child: const Center(child: Text('نقشه موقتا غیرفعال است')))
           : const Center(child: CircularProgressIndicator()),
       bottomNavigationBar: BottomAppBar(
         child: Padding(
@@ -68,7 +51,7 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
                     side: const BorderSide(color: BoyaColors.primary),
                   ),
                   icon: const Icon(Icons.check),
-                  label: const Text('ذخیره آدرس'),
+                  label: const Text('ط°ط®غŒط±ظ‡ ط¢ط¯ط±ط³'),
                 ),
               ),
             ],
@@ -82,12 +65,17 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
 
   Future<void> _submit() async {
     if (!_canProceed) return;
-    await widget.onCreated({
+    widget.onCreated({
       'title': _title,
       'address': _address,
       'latitude': _position!.latitude,
       'longitude': _position!.longitude,
     });
-    context.pop();
+    if (mounted) context.pop();
   }
 }
+
+
+
+
+

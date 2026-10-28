@@ -1,21 +1,12 @@
-import 'package:boya_shared/boya_shared.dart';
+﻿import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/network/api_client.dart';
 import '../../../salon/data/salon_api.dart';
 import '../../../salon/domain/available_slot.dart';
 import '../../../salon/domain/salon_detail.dart';
-import '../../../salon/domain/specialist_service.dart';
-import '../../location/application/addresses_state.dart';
-import '../../location/data/addresses_api.dart';
-import '../../location/domain/customer_address.dart';
-import '../../location/presentation/address_picker_sheet.dart';
-import '../../location/presentation/address_map_picker_screen.dart';
-import '../../location/presentation/widgets/boya_location_picker.dart';
-import 'booking_bar.dart';
-import 'booking_confirm_dialog.dart';
+import '../../../location/domain/customer_address.dart';
+import '../../../location/presentation/address_picker_sheet.dart';
 import 'booking_choices.dart';
 import 'jalali_date_picker_card.dart';
 import 'slot_grid.dart';
@@ -44,7 +35,7 @@ class BookingForm extends ConsumerStatefulWidget {
 
   /// The service picker's list. It is the salon catalogue until a specialist is
   /// chosen, then narrows to that specialist's assigned services
-  /// (`specialist_services`) — a specialist may only be booked for what the
+  /// (`specialist_services`) â€” a specialist may only be booked for what the
   /// salon assigned them.
   final List<SalonService> services;
 
@@ -111,14 +102,14 @@ class _BookingFormState extends ConsumerState<BookingForm> {
 
     // ADR-011: the contract requires *both* the service and the specialist to
     // travel. Falsy until both picks exist so the toggle can never be flipped
-    // for a pair the backend would reject with «این خدمت به‌صورت سیار ارائه نمی‌شود».
+    // for a pair the backend would reject with آ«ط§غŒظ† ط®ط¯ظ…طھ ط¨ظ‡â€Œطµظˆط±طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط´ظˆط¯آ».
     final mobile = _mobilePair;
     final canOfferMobile = mobile?.$1 == true && mobile?.$2 == true;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('۱. انتخاب متخصص', style: BoyaTypography.title),
+        Text('غ±. ط§ظ†طھط®ط§ط¨ ظ…طھط®طµطµ', style: BoyaTypography.title),
         const SizedBox(height: 8),
         for (final specialist in widget.salon.specialists)
           BookingChoice(
@@ -127,10 +118,10 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             onTap: () => widget.onSpecialist(specialist.id),
           ),
         const SizedBox(height: 24),
-        Text('۲. انتخاب خدمت', style: BoyaTypography.title),
+        Text('غ². ط§ظ†طھط®ط§ط¨ ط®ط¯ظ…طھ', style: BoyaTypography.title),
         const SizedBox(height: 8),
-        // The list is the specialist's assigned services once one is picked —
-        // never the whole salon catalogue — so the customer cannot choose a
+        // The list is the specialist's assigned services once one is picked â€”
+        // never the whole salon catalogue â€” so the customer cannot choose a
         // pair the salon never defined and the backend would refuse.
         if (widget.servicesLoading)
           const Padding(
@@ -142,8 +133,8 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
               widget.specialistId == null
-                  ? 'خدمتی ثبت نشده است'
-                  : 'برای این متخصص هنوز خدمتی تعریف نشده است.',
+                  ? 'ط®ط¯ظ…طھغŒ ط«ط¨طھ ظ†ط´ط¯ظ‡ ط§ط³طھ'
+                  : 'ط¨ط±ط§غŒ ط§غŒظ† ظ…طھط®طµطµ ظ‡ظ†ظˆط² ط®ط¯ظ…طھغŒ طھط¹ط±غŒظپ ظ†ط´ط¯ظ‡ ط§ط³طھ.',
               style: BoyaTypography.body,
             ),
           )
@@ -157,7 +148,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             ),
         if (showCalendar) ...[
           const SizedBox(height: 24),
-          Text('۳. انتخاب تاریخ', style: BoyaTypography.title),
+          Text('غ³. ط§ظ†طھط®ط§ط¨ طھط§ط±غŒط®', style: BoyaTypography.title),
           const SizedBox(height: 8),
           JalaliDatePickerCard(
             selectedDate: widget.date,
@@ -167,7 +158,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             specialistId: widget.specialistId,
           ),
           const SizedBox(height: 24),
-          Text('۴. انتخاب ساعت', style: BoyaTypography.title),
+          Text('غ´. ط§ظ†طھط®ط§ط¨ ط³ط§ط¹طھ', style: BoyaTypography.title),
           const SizedBox(height: 8),
           SlotGrid(slots: slotsAsync!, date: widget.date, selectedSlot: widget.selectedSlot, onSlot: widget.onSlot),
           const SizedBox(height: 24),
@@ -178,8 +169,8 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             onMobile: widget.onMobile,
             onAddress: widget.onAddress,
             reason: switch (mobile) {
-              (true, false) => 'این متخصص خدمات سیار ارائه نمی‌دهد',
-              (false, _) => 'این خدمت به‌صورت سیار ارائه نمی‌شود',
+              (true, false) => 'ط§غŒظ† ظ…طھط®طµطµ ط®ط¯ظ…ط§طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط¯ظ‡ط¯',
+              (false, _) => 'ط§غŒظ† ط®ط¯ظ…طھ ط¨ظ‡â€Œطµظˆط±طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط´ظˆط¯',
               _ => null,
             },
           ),
@@ -191,7 +182,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
 }
 
 
-/// The ADR-011 «خدمت در محل من» toggle and the address it unlocks.
+/// The ADR-011 آ«ط®ط¯ظ…طھ ط¯ط± ظ…ط­ظ„ ظ…ظ†آ» toggle and the address it unlocks.
 class _MobileSection extends StatelessWidget {
   const _MobileSection({
     required this.enabled,
@@ -222,7 +213,7 @@ class _MobileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('۵. محل اجرا', style: BoyaTypography.title),
+        Text('غµ. ظ…ط­ظ„ ط§ط¬ط±ط§', style: BoyaTypography.title),
         const SizedBox(height: 8),
         Card(
           color: BoyaColors.surface,
@@ -241,13 +232,13 @@ class _MobileSection extends StatelessWidget {
                 onChanged: enabled ? onMobile : null,
                 // ignore: deprecated_member_use
                 activeColor: BoyaColors.primary,
-                title: const Text('خدمت در محل من', style: BoyaTypography.body),
+                title: const Text('ط®ط¯ظ…طھ ط¯ط± ظ…ط­ظ„ ظ…ظ†', style: BoyaTypography.body),
                 subtitle: enabled
                     ? null
                     : Text(
                         // A null subtitle would still take its slot's height, so
                         // the placeholder message is always present.
-                        reason ?? 'ابتدا متخصص و خدمت را انتخاب کنید',
+                        reason ?? 'ط§ط¨طھط¯ط§ ظ…طھط®طµطµ ظˆ ط®ط¯ظ…طھ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯',
                         style: BoyaTypography.overline.copyWith(color: BoyaColors.inkMuted),
                       ),
               ),
@@ -270,11 +261,7 @@ class _MobileSection extends StatelessWidget {
 /// The customer selects a saved address or drops a pin on the map.
 /// Addresses live only inside the booking form (decision 9).
 class _AddressField extends StatelessWidget {
-  const _AddressField({
-    this.address,
-    required this.onChanged,
-    super.key,
-  });
+  const _AddressField({this.address, required this.onChanged});
   final CustomerAddress? address;
   final ValueChanged<CustomerAddress?> onChanged;
 
@@ -294,7 +281,7 @@ class _AddressField extends StatelessWidget {
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,
-                builder: (context) => const _AddressPickerSheet(),
+                builder: (context) => const AddressPickerSheet(),
               ).then((picked) {
                 if (picked != null && context.mounted) {
                   onChanged(picked);
@@ -316,7 +303,7 @@ class _AddressField extends StatelessWidget {
                     child: Text(
                       hasAddress
                           ? address!.address
-                          : 'آدرس مشتری را انتخاب کنید',
+                          : 'ط¢ط¯ط±ط³ ظ…ط´طھط±غŒ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯',
                       style: BoyaTypography.body.copyWith(
                         color: hasAddress
                             ? BoyaColors.ink
@@ -343,7 +330,7 @@ class _AddressField extends StatelessWidget {
               children: [
                 Icon(Icons.payments_outlined, size: 14, color: BoyaColors.primary),
                 SizedBox(width: 6),
-                Text('پرداخت در محل', style: BoyaTypography.overline),
+                Text('ظ¾ط±ط¯ط§ط®طھ ط¯ط± ظ…ط­ظ„', style: BoyaTypography.overline),
               ],
             ),
           ),
@@ -352,3 +339,7 @@ class _AddressField extends StatelessWidget {
     );
   }
 }
+
+
+
+

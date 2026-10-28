@@ -1,4 +1,4 @@
-/// Saved address the customer selects from (no manual entry — decision 6).
+﻿/// Saved address the customer selects from (no manual entry â€” decision 6).
 class CustomerAddress {
   const CustomerAddress({
     required this.id,
@@ -23,6 +23,20 @@ class CustomerAddress {
   /// ISO-8601 timestamp returned by the API (`created_at`).
   final String createdAt;
   final String updatedAt;
+
+  factory CustomerAddress.fromJson(Map<String, dynamic> json) {
+    return CustomerAddress(
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      title: json['title'] as String,
+      address: json['address'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      isDefault: json['is_default'] as bool? ?? false,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+    );
+  }
 
   CustomerAddress copyWith({
     String? id,
@@ -63,3 +77,4 @@ class CustomerAddress {
   String toString() =>
       'CustomerAddress(id: $id, title: $title, isDefault: $isDefault)';
 }
+
