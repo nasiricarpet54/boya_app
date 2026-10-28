@@ -62,4 +62,24 @@
 - دکمه بدون عملکرد ممنوع (مگر با tooltip «به‌زودی» و disabled)
 - هر فرم ویرایش باید endpoint PATCH/PUT متناظر داشته باشد
 - هر صفحه detail باید حداقل: مشاهده + ویرایش + حذف داشته باشد
+# Project Rules for Cursor
+
+## Project Location — CRITICAL
+- This project lives at: `E:\boya\boya`
+- NEVER reference paths under `E:\BOYA platform\` or `E:\BOYA platform_OLD_BACKUP\`
+- Those are OLD/ARCHIVED projects. Do not modify them.
+- All file paths MUST start with `E:\boya\boya\`
+
+## Path Conventions
+- Backend: `E:\boya\boya\backend\`
+- Flutter apps: `E:\boya\boya\mobile\`
+  - customer_app
+  - salon_app
+  - shared
+
+## Workflow Rules
+1. Always run `git status` before making changes.
+2. After changes, run `fvm flutter analyze` (in mobile apps) or `npm test` (in backend).
+3. Never claim work is done without showing actual command output.
+4. Commit with a clear message when done.
 
