@@ -1,0 +1,1 @@
+Select-String -Path "e:\boya\boya\backend\src\modules\salon\salon.controller.ts" -Pattern "@Roles\(|Get\('me'\)|Patch\('me'\)|Post\('me'\)|Get\('me/schedule|Patch\('me/schedule|Get\('me/portfolio|Post\('me/portfolio|Delete\('me/portfolio|Get\('me/lines|schedule/block" | ForEach-Object { "$($_.LineNumber): $($_.Line.Trim())" }
