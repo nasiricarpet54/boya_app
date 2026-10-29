@@ -138,6 +138,7 @@ final selectedCategoryProvider =
 final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
+  final searchQuery = ref.watch(searchQueryProvider);
   final openNowOnly = ref.watch(homeOpenNowFilterProvider);
 
   try {
@@ -146,6 +147,7 @@ final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
           lng: location.lng,
           categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
           sort: 'distance',
+          q: searchQuery.isNotEmpty ? searchQuery : null,
         );
     if (openNowOnly) {
       return salons.where((salon) => salon.isOpenNow).toList();
@@ -165,6 +167,8 @@ class HomeFilterController extends Notifier<String> {
 }
 
 final homeFilterProvider = NotifierProvider<HomeFilterController, String>(HomeFilterController.new);
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
 
 /// Whether the «باز الان» (Open Now) chip is the active one.
 ///

@@ -639,7 +639,12 @@ export class SalonService {
 
     // The count query is a separate statement that only needs the filters, and
     // those are bound first, so its placeholders still line up.
-    const whereParams = [...params];
+        // Search: case-insensitive match on salon name (both Persian and English).
+    if (query.q && query.q.trim().length > 0) {
+      const likePattern = '%' + query.q.trim() + '%';
+      where.push('(t.name ILIKE ' + bind(likePattern) + ' OR t.name_en ILIKE ' + bind(likePattern) + ')');
+    }
+const whereParams = [...params];
     const whereSql = where.join(' AND ');
 
     // Haversine in plain SQL: PostGIS is not installed. The acos() argument is

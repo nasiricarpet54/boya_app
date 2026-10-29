@@ -35,6 +35,7 @@ class SalonsApi {
     String? categorySlug,
     String? sort,
     bool? mobile,
+    String? q,
     int page = 1,
     int limit = 20,
   }) async {
@@ -47,6 +48,7 @@ class SalonsApi {
         if (categorySlug != null && categorySlug.isNotEmpty) 'category': categorySlug,
         if (sort != null && sort.isNotEmpty) 'sort': sort,
         if (mobile == true) 'mobile': true,
+        if (q != null && q.isNotEmpty) 'q': q,
         'page': page,
         'limit': limit,
       },

@@ -71,6 +71,13 @@ export class SalonQueryDto {
   @MaxLength(60)
   categorySlug?: string;
 
+  /** Search query: searched in salon name and service names. */
+  @ApiPropertyOptional({ example: 'hair' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
   @ApiPropertyOptional({ enum: SalonSort, default: SalonSort.Rating })
   @IsOptional()
   @IsEnum(SalonSort)

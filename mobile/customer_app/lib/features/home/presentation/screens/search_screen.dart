@@ -46,6 +46,7 @@ class SearchScreen extends ConsumerWidget {
               autofocus: searchQuery.isEmpty,
               textInputAction: TextInputAction.search,
               controller: TextEditingController(text: searchQuery),
+              onChanged: (value) => ref.read(searchQueryProvider.notifier).state = value,
               decoration: InputDecoration(
                 hintText: 'جستجو در بویا...',
                 prefixIcon: const Icon(Icons.search),
