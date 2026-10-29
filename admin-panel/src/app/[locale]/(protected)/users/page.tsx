@@ -51,7 +51,7 @@ export default function UsersPage() {
   // `?role=freelance_mobile` lands here from the nested "Mobile Specialists" nav
   // item; `?role=all` (or none) shows the whole list. Anything else is ignored.
   const urlRole = searchParams.get('role');
-  const initialRole = urlRole && ROLE_FILTERS.includes(urlRole) ? (urlRole as UserRole | 'all') : 'all';
+  const initialRole = urlRole && (ROLE_FILTERS as readonly string[]).includes(urlRole) ? (urlRole as UserRole | 'all') : 'all';
 
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>(initialRole);
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>('active');

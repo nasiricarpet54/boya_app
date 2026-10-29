@@ -11,7 +11,9 @@ import { routing } from '../routing';
  * the locale prefix and bounce through the middleware.
  *
  * `useSearchParams` is not locale-aware (query strings carry no locale), so it
- * is re-exported as-is for the pages that filter on them.
+ * is re-exported from `next/navigation` as-is for the pages that filter on them.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname, useSearchParams } =
+export const { Link, redirect, usePathname, useRouter, getPathname } =
   createNavigation(routing);
+
+export { useSearchParams } from 'next/navigation';
