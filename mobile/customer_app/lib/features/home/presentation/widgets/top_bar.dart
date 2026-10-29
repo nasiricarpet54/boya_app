@@ -1,11 +1,11 @@
 import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
+import '../../../location/application/addresses_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../notifications/data/notifications_api.dart';
 import '../../../location/application/city_provider.dart';
-import '../../../location/domain/customer_address.dart';
 import '../../../location/presentation/address_picker_sheet.dart';
 import '../../../location/presentation/city_picker_sheet.dart';
 
@@ -105,8 +105,12 @@ class HomeTopBar extends ConsumerWidget {
                         // Wiring placeholder: full backend state (address list,
                         // selection) lands in a follow-up. Empty state copies live
                         // on the sheet itself, so the UI still reads correctly.
-                        addresses: const <CustomerAddress>[],
-                        onSelect: (address) => Navigator.of(sheetContext).pop(),
+                        addresses: ref.watch(addressesProvider).addresses,
+                        selectedId: ref.watch(addressesProvider).selectedId,
+                        onSelect: (address) {
+                          ref.read(addressesProvider.notifier).select(address);
+                          Navigator.of(sheetContext).pop();
+                        },
                       ),
                     ),
                     child: Padding(
