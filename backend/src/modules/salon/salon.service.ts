@@ -3339,6 +3339,46 @@ const whereParams = [...params];
       isOpenNow: isSalonOpenNow(row.working_hours, now),
     };
   }
+
+  async getMySpecialistServices(user: AuthenticatedUser): Promise<any[]> {
+    const tenantId = this.requireStaffTenant(user);
+    return this.withPanelTenant(tenantId, (manager) =>
+      manager.query(
+        `SELECT ss.id, ss.specialist_id, ss.service_id, ss.is_active,
+                s.name AS service_name, s.price, s.duration_minutes
+           FROM specialist_services ss
+           JOIN services s ON s.id = ss.service_id
+           JOIN specialists sp ON sp.id = ss.specialist_id
+          WHERE sp.user_id = $1 AND sp.tenant_id = $2
+          ORDER BY s.name ASC`,
+        [user.userId, tenantId],
+      ),
+    );
+  }
+
+  async updateMySpecialistSchedule(user: AuthenticatedUser, workingHours: any): Promise<any> {
+    const tenantId = this.requireStaffTenant(user);
+    await this.withPanelTenant(tenantId, (manager) =>
+      manager.query(
+        `UPDATE specialists SET working_hours = $1 WHERE user_id = $2 AND tenant_id = $3`,
+        [JSON.stringify(workingHours), user.userId, tenantId],
+      ),
+    );
+    return { success: true };
+  }
+
+  async getMySpecialistPortfolio(user: AuthenticatedUser): Promise<any[]> {
+    const tenantId = this.requireStaffTenant(user);
+    const rows = await this.withPanelTenant(tenantId, (manager) =>
+      manager.query(
+        `SELECT sp.portfolio_images
+           FROM specialists sp
+          WHERE sp.user_id = $1 AND sp.tenant_id = $2`,
+        [user.userId, tenantId],
+      ),
+    );
+    return rows[0]?.portfolio_images ?? [];
+  }
 }
 
 /** Weights as stored and echoed back, always summing to 1. */

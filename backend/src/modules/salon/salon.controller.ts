@@ -204,6 +204,27 @@ export class SalonController {
   portfolio(@Param('id', ParseUUIDPipe) id: string): Promise<SalonPortfolio> {
     return this.salons.portfolio(id);
   }
+
+  @Get('me/specialist-services')
+  @Roles('specialist', 'employed', 'booth_renter')
+  @ApiOperation({ summary: 'خدمات اختصاصی متخصص' })
+  async getMySpecialistServices(@CurrentUser() user: AuthenticatedUser) {
+    return this.salons.getMySpecialistServices(user);
+  }
+
+  @Patch('me/specialist-schedule')
+  @Roles('specialist', 'employed', 'booth_renter')
+  @ApiOperation({ summary: 'ویرایش ساعات کاری متخصص' })
+  async updateMySpecialistSchedule(@CurrentUser() user: AuthenticatedUser, @Body() body: any) {
+    return this.salons.updateMySpecialistSchedule(user, body);
+  }
+
+  @Get('me/specialist-portfolio')
+  @Roles('specialist', 'employed', 'booth_renter')
+  @ApiOperation({ summary: 'نمونهکارهای متخصص' })
+  async getMySpecialistPortfolio(@CurrentUser() user: AuthenticatedUser) {
+    return this.salons.getMySpecialistPortfolio(user);
+  }
 }
 
 /**
