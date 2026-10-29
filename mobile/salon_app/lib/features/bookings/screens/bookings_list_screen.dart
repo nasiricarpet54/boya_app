@@ -34,12 +34,17 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   /// Read once, in [initState], and only when the router actually carried a
   /// date: the list owns its filters afterwards, so a later rebuild (or a tab
   /// switch) must not silently re-apply a day the user has since cleared.
+  bool _dateInitialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    final date = GoRouterState.of(context).uri.queryParameters['date'];
-    if (date != null && date.isNotEmpty) {
-      _query = const BookingsQuery.all().copyWith(date: date);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_dateInitialized) {
+      _dateInitialized = true;
+      final date = GoRouterState.of(context).uri.queryParameters['date'];
+      if (date != null && date.isNotEmpty) {
+        _query = const BookingsQuery.all().copyWith(date: date);
+      }
     }
   }
 
