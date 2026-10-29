@@ -2,6 +2,15 @@ import moment from 'moment-jalaali';
 
 import { faDigits } from './persian';
 
+// Register Jalali month names for the `fa` locale. Without this call,
+// moment-jalaali falls back to Latin transliteration for Jalali-specific
+// tokens (`jMMMM` → `Aabaan`); the standard moment `fa` locale only covers
+// Gregorian tokens (`dddd`, `MMMM`). Persian digits are handled separately
+// by `faDigits()` in the `format` helper below, so the locale is told to
+// leave digits as ASCII (single source of truth for digit conversion).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(moment as any).loadPersian({ dialect: 'persian-modern', usePersianDigits: false });
+
 /**
  * Jalali display helpers.
  *
