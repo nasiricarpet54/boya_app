@@ -20,6 +20,7 @@
     "auditLogs": "لاگ اقدامات",
     "settings": "تنظیمات",
     "mobileSpecialists": "متخصصان سیار",
+    "specialists": "متخصصان",
     "sections": {
       "main": "اصلی",
       "manage": "مدیریت",
@@ -381,6 +382,74 @@
       "resendOtp": "ارسال مجدد کد ورود",
       "resendOtpToast": "کد ورود ارسال شد.",
       "actionFailed": "انجام عملیات ناموفق بود. دوباره تلاش کنید."
+    }
+  },
+  "specialists": {
+    "title": "متخصصان",
+    "subtitle": "مدیریت متخصصان مدیران لاین و متخصصان سیار.",
+    "countSuffix": "متخصص",
+    "searchLabel": "جستجو",
+    "searchPlaceholder": "نام یا شماره تلفن",
+    "filters": {
+      "all": "همه",
+      "active": "فعال",
+      "inactive": "غیرفعال"
+    },
+    "table": {
+      "name": "کاربر",
+      "phone": "تلفن",
+      "commissionRate": "درصد کمیسیون",
+      "status": "وضعیت",
+      "mobileService": "خدمات سیار",
+      "date": "تاریخ عضویت"
+    },
+    "statusActive": "فعال",
+    "statusInactive": "غیرفعال",
+    "showInactive": "نمایش غیرفعالها",
+    "softDeleteHint": "متخصصان غیرفعال حذف نشدهاند فقط غیرفعال شدهاند",
+    "empty": "متخصصی با این مشخصات پیدا نشد.",
+    "prev": "قبلی",
+    "next": "بعدی",
+    "newSpecialist": "متخصص جدید",
+    "actions": {
+      "edit": "ویرایش",
+      "activate": "فعالسازی",
+      "deactivate": "غیرفعالسازی",
+      "actionFailed": "انجام عملیات ناموفق بود. دوباره تلاش کنید."
+    },
+    "confirm": {
+      "deactivateTitle": "غیرفعالسازی متخصص",
+      "deactivateDescription": "این متخصص غیرفعال میشود (حذف نرم). مطمئنید",
+      "deactivateConfirm": "غیرفعال کن",
+      "activateTitle": "فعالسازی متخصص",
+      "activateDescription": "این متخصص مجددا فعال میشود. مطمئنید",
+      "activateConfirm": "فعال کن"
+    },
+    "create": {
+      "title": "متخصص جدید",
+      "subtitle": "این متخصص به سالن شما اضافه میشود.",
+      "userIdLabel": "شناسه کاربر",
+      "userIdPlaceholder": "UUID کاربر",
+      "bioLabel": "بیوگرافی",
+      "skillsLabel": "مهارتها",
+      "skillsPlaceholder": "با کاما جدا کنید",
+      "commissionRateLabel": "درصد کمیسیون",
+      "mobileServiceLabel": "ارائه خدمات سیار",
+      "submit": "ساخت متخصص",
+      "cancel": "انصراف",
+      "createdToast": "متخصص ساخته شد.",
+      "actionFailed": "انجام عملیات ناموفق بود."
+    },
+    "edit": {
+      "title": "ویرایش متخصص",
+      "bioLabel": "بیوگرافی",
+      "skillsLabel": "مهارتها",
+      "skillsPlaceholder": "با کاما جدا کنید",
+      "commissionRateLabel": "درصد کمیسیون",
+      "mobileServiceLabel": "ارائه خدمات سیار",
+      "save": "ذخیره",
+      "saved": "تغییرات ذخیره شد.",
+      "saveFailed": "خطا در ذخیره."
     }
   },
   "invites": {

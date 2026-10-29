@@ -23,6 +23,14 @@ export interface CreateSpecialistPayload {
   commissionRate?: number;
 }
 
+export interface UpdateSpecialistPayload {
+  bio?: string;
+  skills?: string[];
+  commissionRate?: number;
+  isActive?: boolean;
+  offersMobileService?: boolean;
+}
+
 export interface MobileSpecialist {
   id: string;
   name: string;
@@ -45,6 +53,17 @@ export const specialistsApi = {
 
   createSpecialist(payload: CreateSpecialistPayload): Promise<SpecialistItem> {
     return api.post<SpecialistItem>('/specialists', payload).then((r) => r.data);
+  },
+
+  updateSpecialist(
+    id: string,
+    payload: UpdateSpecialistPayload,
+    tenantId?: string,
+  ): Promise<SpecialistItem> {
+    const params = tenantId ? { tenantId } : undefined;
+    return api
+      .patch<SpecialistItem>(`/specialists/${id}`, payload, { params })
+      .then((r) => r.data);
   },
 
   getMobileSpecialists(): Promise<MobileSpecialist[]> {

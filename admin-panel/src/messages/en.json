@@ -20,6 +20,7 @@
     "auditLogs": "Audit log",
     "settings": "Settings",
     "mobileSpecialists": "Mobile Specialists",
+    "specialists": "Specialists",
     "sections": {
       "main": "Main",
       "manage": "Management",
@@ -381,6 +382,74 @@
       "resendOtp": "Resend sign-in code",
       "resendOtpToast": "Sign-in code sent.",
       "actionFailed": "The action failed. Please try again."
+    }
+  },
+  "specialists": {
+    "title": "Specialists",
+    "subtitle": "Manage specialists, line managers and mobile specialists.",
+    "countSuffix": "specialists",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Name or phone",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "name": "User",
+      "phone": "Phone",
+      "commissionRate": "Commission",
+      "status": "Status",
+      "mobileService": "Mobile service",
+      "date": "Joined"
+    },
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "showInactive": "Show inactive",
+    "softDeleteHint": "Inactive specialists are hidden, not deleted",
+    "empty": "No specialists found.",
+    "prev": "Previous",
+    "next": "Next",
+    "newSpecialist": "New specialist",
+    "actions": {
+      "edit": "Edit",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "actionFailed": "Operation failed. Try again."
+    },
+    "confirm": {
+      "deactivateTitle": "Deactivate specialist",
+      "deactivateDescription": "This specialist will be deactivated (soft delete). Continue?",
+      "deactivateConfirm": "Deactivate",
+      "activateTitle": "Activate specialist",
+      "activateDescription": "This specialist will be reactivated. Continue?",
+      "activateConfirm": "Activate"
+    },
+    "create": {
+      "title": "New specialist",
+      "subtitle": "This specialist will be added to your salon.",
+      "userIdLabel": "User ID",
+      "userIdPlaceholder": "User UUID",
+      "bioLabel": "Bio",
+      "skillsLabel": "Skills",
+      "skillsPlaceholder": "Comma-separated",
+      "commissionRateLabel": "Commission rate",
+      "mobileServiceLabel": "Offers mobile service",
+      "submit": "Create specialist",
+      "cancel": "Cancel",
+      "createdToast": "Specialist created.",
+      "actionFailed": "Operation failed."
+    },
+    "edit": {
+      "title": "Edit specialist",
+      "bioLabel": "Bio",
+      "skillsLabel": "Skills",
+      "skillsPlaceholder": "Comma-separated",
+      "commissionRateLabel": "Commission rate",
+      "mobileServiceLabel": "Offers mobile service",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "saveFailed": "Save failed."
     }
   },
   "invites": {
