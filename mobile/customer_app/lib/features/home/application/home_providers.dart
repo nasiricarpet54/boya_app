@@ -139,6 +139,9 @@ final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
   final searchQuery = ref.watch(searchQueryProvider);
+  final activeFilter = ref.watch(homeFilterProvider);
+  final hasDiscount = activeFilter == homeFilterLabels[3];
+  final minRating = activeFilter == homeFilterLabels[4] ? 4.5 : null;
   final openNowOnly = ref.watch(homeOpenNowFilterProvider);
 
   try {
@@ -148,6 +151,8 @@ final nearbySalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
           categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
           sort: 'distance',
           q: searchQuery.isNotEmpty ? searchQuery : null,
+          hasDiscount: hasDiscount,
+          minRating: minRating,
         );
     if (openNowOnly) {
       return salons.where((salon) => salon.isOpenNow).toList();

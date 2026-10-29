@@ -112,6 +112,22 @@ export class SalonQueryDto {
   @IsBoolean()
   mobile?: boolean;
 
+  /** Has discount: shows only salons with active discount */
+  @ApiPropertyOptional({ example: true, description: 'فقط سالن‌هایی که OfferDiscount دارند' })
+  @Transform(toOptionalBoolean)
+  @IsOptional()
+  @IsBoolean()
+  hasDiscount?: boolean;
+
+  /** Minimum rating filter: shows only salons with rating >= this value */
+  @ApiPropertyOptional({ example: 4.5, description: 'فقط سالن‌هایی که امتیاز >= این مقدار باشند' })
+  @Transform(toOptionalNumber)
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  minRating?: number;
+
   /** `cities.id` — narrow the feed to one city (migration 1730000000038). */
   @ApiPropertyOptional({ example: 'b1c2d3e4-...', description: 'city_id از جدول cities' })
   @IsOptional()

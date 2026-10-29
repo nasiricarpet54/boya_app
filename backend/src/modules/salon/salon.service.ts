@@ -644,6 +644,15 @@ export class SalonService {
       const likePattern = '%' + query.q.trim() + '%';
       where.push('(t.name ILIKE ' + bind(likePattern) + ' OR t.name_en ILIKE ' + bind(likePattern) + ')');
     }
+    // Discount filter: only salons with an active discount.
+    if (query.hasDiscount === true) {
+      where.push('t.discount_percent > 0');
+    }
+
+    // Rating filter: only salons with rating >= minRating.
+    if (query.minRating !== undefined && query.minRating !== null) {
+      where.push('t.rating >= ' + bind(query.minRating));
+    }
 const whereParams = [...params];
     const whereSql = where.join(' AND ');
 
