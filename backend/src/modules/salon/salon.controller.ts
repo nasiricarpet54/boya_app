@@ -215,7 +215,7 @@ export class SalonController {
   @Patch('me/specialist-schedule')
   @Roles('specialist', 'employed', 'booth_renter')
   @ApiOperation({ summary: 'ویرایش ساعات کاری متخصص' })
-  async updateMySpecialistSchedule(@CurrentUser() user: AuthenticatedUser, @Body() body: any) {
+  async updateMySpecialistSchedule(@CurrentUser() user: AuthenticatedUser, @Body() body: Record<string, unknown>) {
     return this.salons.updateMySpecialistSchedule(user, body);
   }
 

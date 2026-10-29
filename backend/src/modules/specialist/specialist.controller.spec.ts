@@ -1,15 +1,23 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import { SpecialistController } from './specialist.controller';
 import { SpecialistService } from './specialist.service';
+import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
+import { CreateSpecialistDto } from './dto/create-specialist.dto';
 
 describe('SpecialistController', () => {
   let controller: SpecialistController;
-  let service: SpecialistService;
 
   const mockSpecialistService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findById: jest.fn(),
+  };
+
+  const mockUser: AuthenticatedUser = {
+    userId: 'u1',
+    phoneNumber: '09120000000',
+    role: 'salon_owner',
+    tenantId: 'tenant-1',
   };
 
   beforeEach(async () => {
@@ -24,7 +32,6 @@ describe('SpecialistController', () => {
     }).compile();
 
     controller = module.get<SpecialistController>(SpecialistController);
-    service = module.get<SpecialistService>(SpecialistService);
     jest.clearAllMocks();
   });
 
@@ -37,8 +44,7 @@ describe('SpecialistController', () => {
       const mockResult = [{ id: 'spec-1', tenantId: 'tenant-1' }];
       mockSpecialistService.findAll.mockResolvedValue(mockResult);
 
-      const user = { userId: 'u1', phoneNumber: '09120000000', role: 'salon_owner', tenantId: 'tenant-1' } as any;
-      const result = await (controller as any).findAll(user);
+      const result = await controller.findAll(mockUser);
 
       expect(mockSpecialistService.findAll).toHaveBeenCalledWith('tenant-1');
       expect(result).toEqual(mockResult);
@@ -47,12 +53,16 @@ describe('SpecialistController', () => {
 
   describe('create', () => {
     it('should create a specialist for the tenant', async () => {
-      const mockDto = { userId: 'u2', bio: 'Expert', skills: ['haircut'], commissionRate: 40 };
+      const mockDto: CreateSpecialistDto = {
+        userId: 'u2',
+        bio: 'Expert',
+        skills: ['haircut'],
+        commissionRate: 40,
+      };
       const mockCreated = { id: 'spec-2', tenantId: 'tenant-1', ...mockDto };
       mockSpecialistService.create.mockResolvedValue(mockCreated);
 
-      const user = { userId: 'u1', phoneNumber: '09120000000', role: 'salon_owner', tenantId: 'tenant-1' } as any;
-      const result = await (controller as any).create(user, mockDto);
+      const result = await controller.create(mockUser, mockDto);
 
       expect(mockSpecialistService.create).toHaveBeenCalledWith({
         ...mockDto,
@@ -67,8 +77,7 @@ describe('SpecialistController', () => {
       const mockSpecialist = { id: 'spec-1', tenantId: 'tenant-1' };
       mockSpecialistService.findById.mockResolvedValue(mockSpecialist);
 
-      const user = { userId: 'u1', phoneNumber: '09120000000', role: 'salon_owner', tenantId: 'tenant-1' } as any;
-      const result = await (controller as any).findById(user, 'spec-1');
+      const result = await controller.findById(mockUser, 'spec-1');
 
       expect(mockSpecialistService.findById).toHaveBeenCalledWith('tenant-1', 'spec-1');
       expect(result).toEqual(mockSpecialist);

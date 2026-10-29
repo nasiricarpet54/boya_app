@@ -17,7 +17,7 @@ function makeRepo(): Repository<CustomerAddress> {
 }
 
 function makeDataSource(): { transaction: jest.Mock } {
-  return { transaction: jest.fn(((callback: (qr: unknown) => unknown) => Promise.resolve({})) as any) };
+  return { transaction: jest.fn((_callback: (qr: unknown) => unknown) => Promise.resolve({})) };
 }
 
 describe('AddressesService', () => {

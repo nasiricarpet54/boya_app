@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches-ignore: [master]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
@@ -141,3 +141,24 @@ jobs:
         run: docker build -f backend/Dockerfile -t boya-backend:test ./backend
       - name: Verify Image
         run: docker run --rm boya-backend:test node -e "console.log('OK')"
+
+  # ============================================
+  # Admin Panel (Next.js) - Typecheck + Build
+  # ============================================
+  admin-panel:
+    name: Admin Panel (Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: admin-panel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: admin-panel/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build

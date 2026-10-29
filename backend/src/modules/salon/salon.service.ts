@@ -2972,7 +2972,7 @@ const whereParams = [...params];
                   'WHERE sp.offers_mobile_service = true AND sp.is_active = true ' +
                   'ORDER BY u.full_name ASC';
     const rows = await this.dataSource.query(query);
-    return rows.map((row: any) => ({
+    return rows.map((row: { id: string; full_name: string; phone: string; avatar_url: string; bio: string; skills?: string[]; offers_mobile_service?: boolean }) => ({
       id: row.id,
       fullName: row.full_name,
       phone: row.phone,
@@ -3340,7 +3340,7 @@ const whereParams = [...params];
     };
   }
 
-  async getMySpecialistServices(user: AuthenticatedUser): Promise<any[]> {
+  async getMySpecialistServices(user: AuthenticatedUser): Promise<Record<string, unknown>[]> {
     const tenantId = this.requireStaffTenant(user);
     return this.withPanelTenant(tenantId, (manager) =>
       manager.query(
@@ -3356,7 +3356,7 @@ const whereParams = [...params];
     );
   }
 
-  async updateMySpecialistSchedule(user: AuthenticatedUser, workingHours: any): Promise<any> {
+  async updateMySpecialistSchedule(user: AuthenticatedUser, workingHours: unknown): Promise<{ success: boolean }> {
     const tenantId = this.requireStaffTenant(user);
     await this.withPanelTenant(tenantId, (manager) =>
       manager.query(
@@ -3367,7 +3367,7 @@ const whereParams = [...params];
     return { success: true };
   }
 
-  async getMySpecialistPortfolio(user: AuthenticatedUser): Promise<any[]> {
+  async getMySpecialistPortfolio(user: AuthenticatedUser): Promise<Record<string, unknown>[]> {
     const tenantId = this.requireStaffTenant(user);
     const rows = await this.withPanelTenant(tenantId, (manager) =>
       manager.query(

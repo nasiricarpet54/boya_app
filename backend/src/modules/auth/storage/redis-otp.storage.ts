@@ -4,7 +4,7 @@ import Redis from 'ioredis';
 import { OtpStorage } from './otp-storage.interface';
 
 export class OtpStorageError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
+  constructor(message: string, _options?: { cause?: unknown }) {
     super(message);
     this.name = 'OtpStorageError';
   }
