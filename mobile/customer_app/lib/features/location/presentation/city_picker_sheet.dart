@@ -318,16 +318,22 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
   var _resolving = false;
 
   Future<void> _resolve() async {
+    // Capture navigator and messenger BEFORE the async gap.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Guard against double-tap.
+    if (_resolving) return;
+
     setState(() => _resolving = true);
     try {
       final outcome = await ref.read(userLocationProvider.notifier).resolve();
-      if (!mounted) return;
 
       // Only a resolved city closes the sheet: every other outcome leaves the
       // customer on the picker, where they can still choose by hand instead of
       // staring at a feed that silently stayed scoped to the default city.
       if (outcome == UserLocationOutcome.resolved) {
-        Navigator.of(context).pop();
+        navigator.pop();
         return;
       }
 
@@ -339,7 +345,7 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
       };
 
       if (message.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(message)),
         );
       }
@@ -348,7 +354,7 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
       // platform channel that throws outright — the tile still has to
       // unblock and say something rather than hang on the spinner.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('خطا در دریافت موقعیت، لطفاً دوباره تلاش کنید')),
       );
     } finally {
