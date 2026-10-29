@@ -69,6 +69,8 @@ import {
   SalonScheduleBlockList,
 } from './salon.service';
 
+import { MobileSpecialistDto } from './dto/mobile-specialist.dto';
+
 /**
  * Public salon catalogue.
  *
@@ -630,6 +632,12 @@ export class CategoryController {
   @ApiOperation({ summary: 'دسته‌بندی‌های خدمات زیبایی' })
   list(): Promise<{ data: SalonCategoryItem[] }> {
     return this.salons.listCategories();
+  }
+
+  @Get('customer/mobile-specialists')
+  @ApiOperation({ summary: 'لیست متخصصان سیار' })
+  async getMobileSpecialists(): Promise<MobileSpecialistDto[]> {
+    return this.salons.getMobileSpecialists();
   }
 }
 

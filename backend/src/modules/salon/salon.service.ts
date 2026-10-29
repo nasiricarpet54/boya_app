@@ -58,6 +58,7 @@ import {
 import { SalonQueryDto, SalonSort } from './dto/salon-query.dto';
 import { UpdateSalonProfileDto } from './dto/update-salon-profile.dto';
 import { UpdateSalonScheduleDto } from './dto/update-salon-schedule.dto';
+import { MobileSpecialistDto } from './dto/mobile-specialist.dto';
 
 const TAG_LIMIT = 3;
 const MAX_LIMIT = 50;
@@ -2948,6 +2949,24 @@ export class SalonService {
 
       return this.selectPanelSpecialistServices(manager, tenantId, specialistId);
     });
+  }
+
+  async getMobileSpecialists(): Promise<MobileSpecialistDto[]> {
+    const query = 'SELECT sp.id, u.full_name, u.phone, u.avatar_url, sp.bio, sp.skills, sp.offers_mobile_service ' +
+                  'FROM specialists sp ' +
+                  'JOIN users u ON u.id = sp.user_id ' +
+                  'WHERE sp.offers_mobile_service = true AND sp.is_active = true ' +
+                  'ORDER BY u.full_name ASC';
+    const rows = await this.dataSource.query(query);
+    return rows.map((row: any) => ({
+      id: row.id,
+      fullName: row.full_name,
+      phone: row.phone,
+      avatarUrl: row.avatar_url,
+      bio: row.bio,
+      skills: row.skills,
+      offersMobileService: row.offers_mobile_service === true,
+    }));
   }
 
   /** The shared `specialist_services` join of the two panel endpoints above. */
