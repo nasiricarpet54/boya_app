@@ -17,6 +17,8 @@ class FilterChips extends ConsumerWidget {
     if (label == 'همه') {
       ref.read(homeFilterProvider.notifier).select(label);
       ref.read(homeSameDayFilterProvider.notifier).select(false);
+      ref.read(selectedCategoryProvider.notifier).select(null);
+      ref.read(homeMobileFilterProvider.notifier).select(false);
       return;
     }
     // "پذیرش امروز" toggles the same-day acceptance filter

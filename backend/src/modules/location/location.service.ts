@@ -96,7 +96,9 @@ export class LocationService {
   async reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult> {
     const apiKey = this.config.get<string>('NESHAN_API_KEY', '');
     if (!apiKey || apiKey === 'unused' || apiKey === 'change-me') {
-      throw new ServiceUnavailableException('سرویس موقعیت‌یابی پیکربندی نشده است');
+      // Instead of throwing, return result with null cityName — the Flutter app
+      // already handles this gracefully (home_providers.dart line 54).
+      return { cityName: null, formattedAddress: null, provinceName: null, city: null, province: null };
     }
 
     const data = await this.callNeshanReverse(lat, lng, apiKey);

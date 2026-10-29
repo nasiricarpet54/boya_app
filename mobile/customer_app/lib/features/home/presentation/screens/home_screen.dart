@@ -29,6 +29,7 @@ final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
   final location = ref.watch(locationProvider);
   final categorySlug = ref.watch(selectedCategoryProvider);
   final mobileOnly = ref.watch(homeMobileFilterProvider);
+  
   final city = ref.watch(cityProvider);
   final sameDay = ref.watch(homeSameDayFilterProvider);
   final openNowOnly = ref.watch(homeOpenNowFilterProvider);
