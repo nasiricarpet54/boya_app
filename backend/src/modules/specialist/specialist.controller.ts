@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -7,6 +7,7 @@
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -18,6 +19,7 @@ import { AuthenticatedUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantHierarchyGuard } from '../auth/guards/tenant-hierarchy.guard';
 import { CreateSpecialistDto } from './dto/create-specialist.dto';
+import { UpdateSpecialistDto } from './dto/update-specialist.dto';
 import { Specialist } from './entities/specialist.entity';
 import { SpecialistService } from './specialist.service';
 
@@ -79,5 +81,28 @@ export class SpecialistController {
       throw new BadRequestException('شناسه سالن مشخص نشده است');
     }
     return this.specialistService.findById(tenantId, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'ویرایش متخصص (شامل غیرفعالسازی نرم)' })
+  @ApiQuery({ name: 'tenantId', required: false, description: 'شناسه سالن (برای نقش ادمین)' })
+  @ApiResponse({ status: 200, description: 'اطلاعات متخصص ویرایش شد' })
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateSpecialistDto,
+    @Query('tenantId') queryTenantId?: string,
+  ): Promise<Specialist> {
+    const tenantId = user.tenantId || queryTenantId;
+    if (!tenantId) {
+      throw new BadRequestException('شناسه سالن مشخص نشده است');
+    }
+    return this.specialistService.update(tenantId, id, {
+      bio: dto.bio,
+      skills: dto.skills,
+      commissionRate: dto.commissionRate,
+      isActive: dto.isActive,
+      offersMobileService: dto.offersMobileService,
+    });
   }
 }
