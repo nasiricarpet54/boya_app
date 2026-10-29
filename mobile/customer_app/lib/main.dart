@@ -20,6 +20,7 @@ import 'features/support/presentation/my_tickets_screen.dart';
 import 'features/support/presentation/support_screen.dart';
 import 'features/support/presentation/ticket_detail_screen.dart';
 import 'shared/widgets/placeholder_screen.dart';
+import 'features/specialist/presentation/screens/mobile_specialists_screen.dart';
 
 /// Held outside the widget tree so the router's [GoRouter.redirect] can read
 /// auth state. `ProviderScope` cannot expose a container to a top-level final,
@@ -94,10 +95,7 @@ final _router = GoRouter(
       path: '/loyalty',
       builder: (_, _) => const PlaceholderScreen(title: 'امتیاز وفاداری'),
     ),
-    GoRoute(
-      path: '/mobile-specialists',
-      builder: (_, _) => const PlaceholderScreen(title: 'متخصصان سیار'),
-    ),
+    GoRoute(path: '/mobile-specialists', builder: (_, _) => const MobileSpecialistsScreen()),
     // Support area: FAQ is static bundle content, tickets are the dynamic half.
     GoRoute(path: '/support', builder: (_, _) => const SupportScreen()),
     GoRoute(path: '/support/faq', builder: (_, _) => const FaqScreen()),
