@@ -3,6 +3,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLocale, useTranslations } from 'next-intl';
 import { CalendarDays, Check, Globe, LogOut, Moon, Sun, UserRound } from 'lucide-react';
+import { BoyaLogo } from '@/components/ui/BoyaLogo';
 import { useEffect, useState } from 'react';
 
 import { useAuthStore } from '@/lib/stores/auth';
@@ -22,6 +23,7 @@ const MENU_ITEM =
 export function Topbar() {
   const tTopbar = useTranslations('topbar');
   const tAuth = useTranslations('auth');
+  const tCommon = useTranslations('common');
   const user = useAuthStore((state) => state.user);
   const handleSignOut = useSignOut();
   const { theme, toggleTheme } = useTheme();
@@ -41,6 +43,11 @@ export function Topbar() {
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-6">
+      <div className="flex items-center gap-2">
+        <BoyaLogo className="h-8 w-auto" title="بویا" />
+        <span className="text-title font-bold text-ink">{tCommon('appName')}</span>
+      </div>
+      
       <p className="flex items-center gap-2 text-caption text-ink-muted">
         <CalendarDays className="h-4 w-4" aria-hidden />
         {/* Reserved width keeps the bar from shifting once the date arrives. */}
