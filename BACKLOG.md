@@ -540,3 +540,29 @@ Before `[IO.File]::WriteAllText($path, ...)`، always run:
   - OR relax CI: `npm install` instead of `npm ci` (loses lockfile guarantee  discouraged).
 - **Impact:** admin-panel CI job red on Linux. Does NOT block Windows local development.
 - **Cannot be fixed on Windows**  npm 11 behavior differs from npm 10. Hard stop.
+
+### P-04d  CI npm ci UNRESOLVED (escalation cutoff)
+
+**Status:** After 6 attempts across 2026-10-30 session, @emnapi/core and @emnapi/runtime remain unresolved on npm 10 CI. All approaches failed.
+
+**Attempted fixes (all reverted or kept as noted):**
+1. ca87ddd  --save-optional on @emnapi/* + @opentelemetry/api  partial
+2. 3135499  @opentelemetry/api to dependencies (admin-panel)  KEPT (works)
+3. 79326ed  @opentelemetry/api to dependencies (backend)  KEPT (works)
+4. f6a2cde  @emnapi/* to dependencies  reverted
+5. 2146ef9  URL rewrite mirror.kargadan.ir to npmjs.org  reverted
+6. 1f8f551  --legacy-peer-deps on npm ci in CI  reverted
+
+**Root cause (proven):** npm 11 (Windows local) and npm 10 (Linux CI) produce incompatible peer-resolution graphs for @emnapi/*. Windows cannot produce a CI-satisfying lock regardless of flags (--save-optional, --include=peer, --os=linux, --no-save, --save). Only Docker on Linux (failed due to Desktop instability + file locks) works.
+
+**Recommended fix (Linux-only):**
+  cd admin-panel
+  rm -rf node_modules package-lock.json
+  npm install
+  git add package-lock.json && git commit && git push
+
+**Interim workarounds:**
+- continue-on-error: true on admin-panel npm ci step
+- OR npm install instead of npm ci (loses lockfile guarantee)
+
+**Impact:** CI admin-panel red. Local Windows dev unaffected. Backend CI green (opentelemetry fix in 79326ed). All 6 tasks shipped.
