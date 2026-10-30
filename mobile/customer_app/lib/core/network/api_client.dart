@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -171,21 +170,7 @@ final dioProvider = Provider<Dio>((ref) {
   );
   dio.interceptors.add(AuthInterceptor(store: ref.watch(sessionStoreProvider)));
 
-  // B-INV-13: Force UTF-8 decoding for all responses to fix Mojibake
-  dio.interceptors.add(InterceptorsWrapper(
-    onResponse: (response, handler) {
-      if (response.data is String) {
-        try {
-          final latin1Bytes = latin1.encode(response.data as String);
-          final utf8String = utf8.decode(latin1Bytes, allowMalformed: true);
-          if (!utf8String.contains('ط') && !utf8String.contains('ط')) {
-            response.data = jsonDecode(utf8String);
-          }
-        } catch (_) {}
-      }
-      handler.next(response);
-    },
-  ));
+  
 
   return dio;
 });
