@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -159,6 +160,7 @@ class AuthInterceptor extends Interceptor {
 }
 
 final dioProvider = Provider<Dio>((ref) {
+  // B-INV-13-decoder
   final dio = Dio(
     BaseOptions(
       baseUrl: boyaApiBaseUrl,
@@ -171,6 +173,22 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(AuthInterceptor(store: ref.watch(sessionStoreProvider)));
 
   
+
+  
+  dio.interceptors.add(InterceptorsWrapper(
+    onResponse: (response, handler) {
+      if (response.data is String) {
+        try {
+          final bytes = latin1.encode(response.data as String);
+          final decoded = utf8.decode(bytes, allowMalformed: true);
+          if (decoded != response.data) {
+            response.data = jsonDecode(decoded);
+          }
+        } catch (_) {}
+      }
+      handler.next(response);
+    },
+  ));
 
   return dio;
 });
