@@ -31,7 +31,7 @@ class WorkingHoursSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('����� ���?', style: BoyaTypography.title),
+          Text('ساعات کاری', style: BoyaTypography.title),
           const SizedBox(height: 12),
           for (var index = 0; index < keys.length; index++)
             _HourRow(
@@ -105,7 +105,7 @@ class _HourRow extends StatelessWidget {
     final String label;
     final Color color;
     if (schedule.closed) {
-      label = '���?�';
+      label = 'تعطیل';
       color = BoyaColors.error;
     } else if (schedule.isSet) {
       label = '${schedule.open} تا ${schedule.close}';

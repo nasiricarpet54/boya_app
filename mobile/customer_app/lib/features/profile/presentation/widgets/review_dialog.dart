@@ -58,7 +58,7 @@ class _ReviewDialogState extends ConsumerState<ReviewDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('����� ��� �� �?� ������ ���� ��Ͽ', style: BoyaTypography.body),
+          Text('تجربه شما از این مراجعه چطور بود؟', style: BoyaTypography.body),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

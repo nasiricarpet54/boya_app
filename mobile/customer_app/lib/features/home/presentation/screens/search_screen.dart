@@ -106,7 +106,7 @@ class SearchScreen extends ConsumerWidget {
               ),
               error: (_, _) => Center(
                 child: Text(
-                  '��� �� ��?��� �������',
+                  'خطا در دریافت اطلاعات',
                   style: BoyaTypography.body,
                 ),
               ),
@@ -126,7 +126,7 @@ class SearchScreen extends ConsumerWidget {
       'skin': 'پوست و زیبایی',
       'eyelash': 'مژه و ابرو',
       'massage': 'ماساژ و استرخاء',
-      'makeup': '���?� � ����',
+      'makeup': 'آرایش و عروس',
       'beard': 'ریش و موهای صورت',
       'spa': 'اسپا و حمام',
       'epilation': 'ازالة مو',

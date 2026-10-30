@@ -15,7 +15,7 @@ class SalonWeekSection extends StatelessWidget {
           Text('نوبت‌های این هفته', style: BoyaTypography.title),
           const SizedBox(height: 8),
           Text(
-            '���� ���?� ���. ���� ���? ��?� ����� ���� ��� ����.',
+            'جمعه تعطیل است. ساعت کاری بقیه روزها هنوز ثبت نشده.',
             style: BoyaTypography.caption,
           ),
           const SizedBox(height: 12),
@@ -57,7 +57,7 @@ class _DayChip extends StatelessWidget {
                 toPersianDigits(toJalali(date).day),
                 style: BoyaTypography.caption.copyWith(color: BoyaColors.ink),
               ),
-              Text(friday ? '���?�' : '—', style: BoyaTypography.overline),
+              Text(friday ? 'تعطیل' : '—', style: BoyaTypography.overline),
             ],
           ),
         ),

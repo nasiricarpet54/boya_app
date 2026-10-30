@@ -320,7 +320,7 @@ class _SalonHeader extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${toPersianDigits(salon.reviewCount)} ���',
+                  '${toPersianDigits(salon.reviewCount)} نظر',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: BoyaTypography.overline,
@@ -482,7 +482,7 @@ class _SalonErrorView extends StatelessWidget {
     final isNotFound = statusCode == 404;
     final message = isNotFound
         ? 'این سالن یافت نشد'
-        : '��� �� ��?��� ������� ����';
+        : 'خطا در دریافت اطلاعات سالن';
 
     return Center(
       child: Padding(

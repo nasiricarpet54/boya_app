@@ -63,7 +63,7 @@ class AddressPickerSheet extends StatelessWidget {
                       const Padding(
                         padding: EdgeInsets.all(12),
                         child: Text(
-                          'هنوز آدرس ذخیره‌شده‌ای ندارید. دکمه «افزودن آدرس جدید» را بزنید.',
+                          'ظ‡ظ†ظˆط² ط¢ط¯ط±ط³ ط°ط®غŒط±ظ‡â€Œط´ط¯ظ‡â€Œط§غŒ ظ†ط¯ط§ط±غŒط¯. ط¯ع©ظ…ظ‡ آ«ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯آ» ط±ط§ ط¨ط²ظ†غŒط¯.',
                           style: BoyaTypography.body,
                         ),
                       ),
@@ -95,7 +95,7 @@ class AddressPickerSheet extends StatelessWidget {
                   : null,
               leading: const Icon(Icons.add_location,
               color: BoyaColors.primary),
-              title: const Text('افزودن آدرس جدید'),
+              title: const Text('ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯'),
               trailing: const Icon(Icons.chevron_right),
             ),
           ],

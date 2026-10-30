@@ -16,7 +16,7 @@ class BookingHistoryScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: const BoyaAppBar(
           title: 'رزروهای من',
-          bottom: TabBar(tabs: [Tab(text: '����'), Tab(text: 'تاریخی')]),
+          bottom: TabBar(tabs: [Tab(text: 'فعال'), Tab(text: 'تاریخی')]),
         ),
         body: const TabBarView(
           children: [
@@ -63,7 +63,7 @@ class BookingList extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => const Center(child: Text('��� �� ��?��� ������', style: BoyaTypography.body)),
+        error: (_, _) => const Center(child: Text('خطا در دریافت رزروها', style: BoyaTypography.body)),
       ),
     );
   }

@@ -46,7 +46,7 @@ class BookingConfirmDialog extends StatelessWidget {
           _SummaryRow(label: 'متخصص', value: specialistName),
           _SummaryRow(label: 'خدمت', value: serviceName),
           _SummaryRow(label: 'تاریخ', value: formatJalaliFull(date)),
-          if (time != null) _SummaryRow(label: '����', value: time!),
+          if (time != null) _SummaryRow(label: 'ساعت', value: time!),
           if (price != null) _SummaryRow(label: 'مبلغ خدمت', value: price!),
           // ADR-011: the on-site visit swaps the salon address for the
           // customer's, which is what the confirmation is really approving.
@@ -61,7 +61,7 @@ class BookingConfirmDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '������ ����?� ���� ����Ϻ ���?� �� ��� ���� ������ ����� �?����.',
+              'پرداخت آنلاین وجود ندارد؛ تسویه در محل، هنگام مراجعه انجام می‌شود.',
               style: BoyaTypography.caption.copyWith(color: BoyaColors.ink),
             ),
           ),

@@ -32,9 +32,9 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('انتخاب آدرس جدید')),
+      appBar: AppBar(title: const Text('ط§ظ†طھط®ط§ط¨ ط¢ط¯ط±ط³ ط¬ط¯غŒط¯')),
       body: _loaded && _position != null
-          ? Container(color: Colors.grey[300], child: const Center(child: Text('���� ����� �?����� ���')))
+          ? Container(color: Colors.grey[300], child: const Center(child: Text('نقشه موقتا غیرفعال است')))
           : const Center(child: CircularProgressIndicator()),
       bottomNavigationBar: BottomAppBar(
         child: Padding(
@@ -51,7 +51,7 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
                     side: const BorderSide(color: BoyaColors.primary),
                   ),
                   icon: const Icon(Icons.check),
-                  label: const Text('ذخیره آدرس'),
+                  label: const Text('ط°ط®غŒط±ظ‡ ط¢ط¯ط±ط³'),
                 ),
               ),
             ],

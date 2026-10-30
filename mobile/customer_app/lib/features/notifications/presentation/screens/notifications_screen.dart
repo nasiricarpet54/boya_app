@@ -48,7 +48,7 @@ String relativeTimeLabel(DateTime createdAt) {
   final elapsed = DateTime.now().difference(createdAt);
   if (elapsed.inMinutes < 1) return 'همین حالا';
   if (elapsed.inMinutes < 60) return '${toPersianDigits(elapsed.inMinutes)} دقیقه پیش';
-  if (elapsed.inHours < 24) return '${toPersianDigits(elapsed.inHours)} ���� �?�';
+  if (elapsed.inHours < 24) return '${toPersianDigits(elapsed.inHours)} ساعت پیش';
   if (elapsed.inDays < 7) return '${toPersianDigits(elapsed.inDays)} روز پیش';
   return formatJalaliDate(createdAt);
 }
@@ -95,7 +95,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       length: 2,
       child: Scaffold(
         appBar: BoyaAppBar(
-          title: '�������',
+          title: 'اعلان‌ها',
           actions: [TextButton(onPressed: _markAllRead, child: const Text('همه را خوانده'))],
           bottom: const TabBar(tabs: [Tab(text: 'همه'), Tab(text: 'خوانده‌نشده')]),
         ),
@@ -143,7 +143,7 @@ class _NotificationList extends ConsumerWidget {
       error: (_, _) => Center(
         child: TextButton(
           onPressed: () => ref.invalidate(notificationsListProvider),
-          child: const Text('��� �� ��?��� �������', style: BoyaTypography.body),
+          child: const Text('خطا در دریافت اعلان‌ها', style: BoyaTypography.body),
         ),
       ),
     );
@@ -202,7 +202,7 @@ class _EmptyState extends StatelessWidget {
         children: [
           SizedBox(
             height: constraints.maxHeight,
-            child: const Center(child: Text('����� ��?�? ����?�', style: BoyaTypography.body)),
+            child: const Center(child: Text('اعلان جدیدی ندارید', style: BoyaTypography.body)),
           ),
         ],
       ),

@@ -34,7 +34,7 @@ class SlotGrid extends StatelessWidget {
       ),
       error: (_, _) => Padding(
         padding: const EdgeInsets.all(8),
-        child: Text('��� �� ��?��� ������? ���?', style: BoyaTypography.caption),
+        child: Text('خطا در دریافت زمان‌های خالی', style: BoyaTypography.caption),
       ),
       data: (list) {
         if (list.isEmpty) return SlotNotice(date: date);

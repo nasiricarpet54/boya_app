@@ -45,8 +45,8 @@ class FilterChips extends ConsumerWidget {
     }
 
     final message = switch (outcome) {
-      UserLocationOutcome.positionUnavailable => '�����? �� ����?� ���? �����?� �?��',
-      UserLocationOutcome.cityNotServed => '��?� �� ��� ��� ���� �?��',
+      UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت مکانی امکانپذیر نیست',
+      UserLocationOutcome.cityNotServed => 'بویا در شهر شما فعال نیست',
       UserLocationOutcome.geocoderUnavailable => 'نزدیکترین شهر یافت نشد',
       UserLocationOutcome.resolved => '', // unreachable: selected above
     };

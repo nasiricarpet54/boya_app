@@ -79,9 +79,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onFieldSubmitted: (_) => _sendOtp(),
                   validator: (value) {
                     final normalized = toLatinDigits((value ?? '').trim());
-                    if (normalized.isEmpty) return '����� ����� ����?� �� ���� ��?�';
+                    if (normalized.isEmpty) return 'لطفاً شماره موبایل را وارد کنید';
                     if (!RegExp(r'^09[0-9]{9}$').hasMatch(normalized)) {
-                      return '����� ����?� ���� ��� ����� �?��';
+                      return 'شماره موبایل وارد شده معتبر نیست';
                     }
                     return null;
                   },
@@ -99,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  '�� ���� �� ��?ǡ ���?� ������� � �?��� ��?� ����? �� �?���?��',
+                  'با ورود به بویا، شرایط استفاده و سیاست حریم خصوصی را می‌پذیرم',
                   style: BoyaTypography.overline,
                   textAlign: TextAlign.center,
                 ),

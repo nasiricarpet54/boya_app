@@ -40,7 +40,7 @@ class SupportApi {
     if (json is! Map<String, dynamic>) {
       throw DioException(
         requestOptions: response.requestOptions,
-        message: '���� ���� ������� ���',
+        message: 'پاسخ سرور نامعتبر است',
       );
     }
     return SupportTicket.fromJson(json);

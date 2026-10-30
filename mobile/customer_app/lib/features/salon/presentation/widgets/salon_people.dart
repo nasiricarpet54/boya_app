@@ -179,13 +179,13 @@ class SpecialistServicesSection extends ConsumerWidget {
             ),
             error: (_, _) => const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('��� �� ��?��� �����', style: BoyaTypography.body),
+              child: Text('خطا در دریافت خدمات', style: BoyaTypography.body),
             ),
             data: (services) {
               if (services.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('���? �?� ����� ���� ����? ���?� ���� ���.', style: BoyaTypography.body),
+                  child: Text('برای این متخصص هنوز خدمتی تعریف نشده است.', style: BoyaTypography.body),
                 );
               }
               return Column(

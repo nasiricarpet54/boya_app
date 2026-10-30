@@ -338,9 +338,9 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
       }
 
       final message = switch (outcome) {
-        UserLocationOutcome.positionUnavailable => '�����? �� ����?� ���? �����?� �?��',
-        UserLocationOutcome.cityNotServed => '�������� ��?� �� ��� ��� ���� �?��',
-        UserLocationOutcome.geocoderUnavailable => '���?���?� ��� ?��� ��ϡ ����� ���? ������ ��?�',
+        UserLocationOutcome.positionUnavailable => 'دسترسی به موقعیت مکانی امکانپذیر نیست',
+        UserLocationOutcome.cityNotServed => 'متأسفانه بویا در شهر شما فعال نیست',
+        UserLocationOutcome.geocoderUnavailable => 'نزدیکترین شهر یافت نشد، لطفاً دستی انتخاب کنید',
         UserLocationOutcome.resolved => '', // unreachable: popped above
       };
 
@@ -355,7 +355,7 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
       // unblock and say something rather than hang on the spinner.
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('��� �� ��?��� ����?ʡ ����� ������ ���� ��?�')),
+        const SnackBar(content: Text('خطا در دریافت موقعیت، لطفاً دوباره تلاش کنید')),
       );
     } finally {
       // Runs on every path out, including the early returns above, so the tile
@@ -385,7 +385,7 @@ class _MyLocationTileState extends ConsumerState<_MyLocationTile> {
               )
             : const Icon(Icons.my_location, color: BoyaColors.primary),
         title: Text(
-          '����?� ��',
+          'موقعیت من',
           style: BoyaTypography.body.copyWith(
             color: _resolving ? BoyaColors.inkMuted : BoyaColors.ink,
             fontWeight: FontWeight.w500,

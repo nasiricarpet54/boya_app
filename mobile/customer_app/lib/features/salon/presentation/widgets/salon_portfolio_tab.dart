@@ -46,7 +46,7 @@ class _SalonPortfolioTabState extends ConsumerState<SalonPortfolioTab>
 
     return async.when(
       loading: () => const SalonPortfolioSkeleton(),
-      error: (_, _) => const Center(child: _PortfolioEmptyOrError('��� �� ��?��� ����坘����')),
+      error: (_, _) => const Center(child: _PortfolioEmptyOrError('خطا در دریافت نمونه‌کارها')),
       data: (items) {
         final usable = items.where((item) => item.isUsable).toList(growable: false);
         if (usable.isEmpty) return const Center(child: _PortfolioEmptyOrError('هنوز نمونه‌کاری ثبت نشده'));

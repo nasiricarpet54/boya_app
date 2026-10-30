@@ -35,7 +35,7 @@ class TicketDetailScreen extends ConsumerWidget {
           }
           if (ticket == null) {
             return const Center(
-              child: Text('�?�� ������� ?��� ���', style: BoyaTypography.body),
+              child: Text('تیکت موردنظر یافت نشد', style: BoyaTypography.body),
             );
           }
           return _TicketDetailBody(ticket: ticket);

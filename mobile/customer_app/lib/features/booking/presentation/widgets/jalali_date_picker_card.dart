@@ -145,7 +145,7 @@ class _JalaliDatePickerCardState extends ConsumerState<JalaliDatePickerCard> {
             ),
             IconButton(
               onPressed: _canGoNext ? _goNextWeek : null,
-              tooltip: '���� ���',
+              tooltip: 'هفته بعد',
               icon: const Icon(Icons.chevron_left),
             ),
           ],
@@ -307,7 +307,7 @@ class _DayCell extends ConsumerWidget {
                   )
                 else
                   Text(
-                    friday ? '���?�' : '',
+                    friday ? 'تعطیل' : '',
                     style: BoyaTypography.overline.copyWith(fontSize: 10),
                     textAlign: TextAlign.center,
                   ),
