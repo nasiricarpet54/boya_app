@@ -103,17 +103,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
               // while the TabBar stays pinned. The leading and action widgets
               // come from BoyaAppBar, not from here.
               BoyaAppBar.sliver(
-                title: SafeArea(
-          bottom: false,
-          child: Text(
-            salon.name,
-            style: const TextStyle(
-              color: BoyaColors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+                title: salon.name,
                 backgroundColor: BoyaColors.primary,
                 foregroundColor: BoyaColors.white,
                 pinned: true,
