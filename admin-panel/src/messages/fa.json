@@ -20,6 +20,7 @@
     "auditLogs": "لاگ اقدامات",
     "settings": "تنظیمات",
     "mobileSpecialists": "متخصصان سیار",
+    "support": "پشتیبانی",
     "specialists": "متخصصان",
     "sections": {
       "main": "اصلی",
@@ -527,6 +528,62 @@
     },
     "empty": "تراکنشی ثبت نشده",
     "enableGateway": "فعال‌سازی درگاه (فاز ۲)"
+  },
+  "support": {
+    "title": "پشتیبانی",
+    "subtitle": "تیکتهای پشتیبانی مشتریان.",
+    "countSuffix": "تیکت",
+    "searchLabel": "جستجو",
+    "searchPlaceholder": "موضوع یا متن تیکت...",
+    "filters": {
+      "all": "همه"
+    },
+    "table": {
+      "subject": "موضوع",
+      "type": "نوع",
+      "status": "وضعیت",
+      "priority": "اولویت",
+      "date": "تاریخ"
+    },
+    "types": {
+      "question": "سوال",
+      "complaint": "شکایت",
+      "suggestion": "پیشنهاد",
+      "other": "دیگر"
+    },
+    "statuses": {
+      "open": "باز",
+      "answered": "پاسخ داده شده",
+      "closed": "بسته"
+    },
+    "priorities": {
+      "low": "کم",
+      "medium": "متوسط",
+      "high": "بالا"
+    },
+    "empty": "تیکتی با این مشخصات پیدا نشد.",
+    "prev": "قبلی",
+    "next": "بعدی",
+    "view": "مشاهده",
+    "actions": {
+      "actionFailed": "انجام عملیات ناموفق بود."
+    },
+    "detail": {
+      "title": "جزئیات تیکت",
+      "subject": "موضوع",
+      "message": "متن",
+      "type": "نوع",
+      "status": "وضعیت",
+      "priority": "اولویت",
+      "salon": "سالن",
+      "booking": "رزرو",
+      "createdAt": "تاریخ ثبت",
+      "adminResponse": "پاسخ مدیر",
+      "adminResponsePlaceholder": "پاسخ شما به مشتری...",
+      "save": "ذخیره",
+      "saved": "تغییرات ذخیره شد.",
+      "saveFailed": "خطا در ذخیره."
+    }
   },
   "placeholder": {
     "title": "به‌زودی",

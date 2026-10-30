@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   LayoutDashboard,
   Mail,
+  MessageCircle,
   Receipt,
   ScrollText,
   Settings,
@@ -50,6 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/specialists', icon: UserCheck, labelKey: 'specialists' },
       { href: '/invites', icon: Mail, labelKey: 'invites' },
       { href: '/transactions', icon: Receipt, labelKey: 'transactions' },
+      { href: '/support', icon: MessageCircle, labelKey: 'support' },
     ],
   },
   {

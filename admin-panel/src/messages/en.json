@@ -20,6 +20,7 @@
     "auditLogs": "Audit log",
     "settings": "Settings",
     "mobileSpecialists": "Mobile Specialists",
+    "support": "Support",
     "specialists": "Specialists",
     "sections": {
       "main": "Main",
@@ -527,6 +528,62 @@
     },
     "empty": "No transaction recorded",
     "enableGateway": "Enable gateway (Phase 2)"
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Customer support tickets.",
+    "countSuffix": "tickets",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Subject or ticket text...",
+    "filters": {
+      "all": "All"
+    },
+    "table": {
+      "subject": "Subject",
+      "type": "Type",
+      "status": "Status",
+      "priority": "Priority",
+      "date": "Date"
+    },
+    "types": {
+      "question": "Question",
+      "complaint": "Complaint",
+      "suggestion": "Suggestion",
+      "other": "Other"
+    },
+    "statuses": {
+      "open": "Open",
+      "answered": "Answered",
+      "closed": "Closed"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "empty": "No tickets found.",
+    "prev": "Previous",
+    "next": "Next",
+    "view": "View",
+    "actions": {
+      "actionFailed": "Operation failed."
+    },
+    "detail": {
+      "title": "Ticket details",
+      "subject": "Subject",
+      "message": "Message",
+      "type": "Type",
+      "status": "Status",
+      "priority": "Priority",
+      "salon": "Salon",
+      "booking": "Booking",
+      "createdAt": "Created",
+      "adminResponse": "Admin response",
+      "adminResponsePlaceholder": "Your reply to the customer...",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "saveFailed": "Save failed."
+    }
   },
   "placeholder": {
     "title": "Coming soon",
