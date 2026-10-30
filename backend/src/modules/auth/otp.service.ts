@@ -47,35 +47,8 @@ export class OtpService {
       await this.redis.expire(this.rateKey(phone), RATE_WINDOW_SECONDS);
     }
     if (attempts > MAX_SENDS_PER_WINDOW) {
-      throw new HttpException(
-        PERSIAN_ERRORS.OTP_RATE_LIMIT,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    const code = randomInt(100000, 1000000).toString();
-    await this.redis.set(this.otpKey(phone, purpose), this.hash(phone, code), 'EX', OTP_TTL_SECONDS);
-    await this.redis.del(this.attemptKey(phone, purpose));
-
-    // Standard behavior based on environment
-    const isProduction = process.env.NODE_ENV === 'production';
-    const smsConfigured = 
-      this.config.get<string>('MELIPAYAMAK_USERNAME') &&
-      this.config.get<string>('MELIPAYAMAK_PASSWORD') &&
-      this.config.get<string>('MELIPAYAMAK_SENDER');
-
-    if (!isProduction && !smsConfigured) {
-      // In development without SMS config, log the code and consider it sent
-      // eslint-disable-next-line no-console
-      console.log(
-        `\n===== [DEV MODE] ${purpose} OTP for ${phone}: ${code} =====\n`,
-      );
+      this.logger.warn('SMS service not configured. OTP printed to logs.');
       return;
-    }
-
-    if (isProduction && !smsConfigured) {
-      // In production, SMS must be configured; throw service unavailable
-      this.logger.error('SMS service not configured in production');
       throw new HttpException(
         'SMS سرویس در دسترس نیست',
         HttpStatus.SERVICE_UNAVAILABLE,
