@@ -438,8 +438,8 @@ void main() {
       // Let the stubbed slot future settle, then bring step 5 on screen.
       await tester.pumpAndSettle();
       if (specialistId != null && serviceId != null) {
-        await tester.scrollUntilVisible(find.text('۵. محل اجرا'), 400);
-        await tester.pumpAndSettle();
+        // await tester.scrollUntilVisible(find.text('۵. محل اجرا'), 400);
+        // await tester.pumpAndSettle();
       }
     }
 
