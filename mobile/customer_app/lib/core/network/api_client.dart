@@ -174,29 +174,12 @@ final dioProvider = Provider<Dio>((ref) {
 
   // Force UTF-8 decoding for all API responses
   dio.options.responseDecoder = (bytes, options, type) {
-    if (type == ResponseType.json) {
-      return jsonDecode(utf8.decode(bytes));
-    }
     return utf8.decode(bytes);
   };
 
   
 
   
-  dio.interceptors.add(InterceptorsWrapper(
-    onResponse: (response, handler) {
-      if (response.data is String) {
-        try {
-          final bytes = latin1.encode(response.data as String);
-          final decoded = utf8.decode(bytes, allowMalformed: true);
-          if (decoded != response.data) {
-            response.data = jsonDecode(decoded);
-          }
-        } catch (_) {}
-      }
-      handler.next(response);
-    },
-  ));
 
   return dio;
 });
