@@ -107,7 +107,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
                 backgroundColor: BoyaColors.primary,
                 foregroundColor: BoyaColors.white,
                 pinned: true,
-                expandedHeight: 160,
+                expandedHeight: 240,
                 flexibleSpaceBackground: _SalonCover(url: salon.coverImage),
                 bottom: TabBar(
                   controller: _tabs,
