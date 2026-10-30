@@ -39,7 +39,14 @@ export const NAV_SECTIONS: NavSection[] = [
         showsApprovalBadge: true,
       },
       { href: '/tenants', icon: Building2, labelKey: 'tenants' },
-      { href: '/users', icon: Users, labelKey: 'users' },
+      {
+        href: '/users',
+        icon: Users,
+        labelKey: 'users',
+        children: [
+          { href: '/mobile-specialists', icon: UserCheck, labelKey: 'mobileSpecialists' },
+        ],
+      },
       { href: '/specialists', icon: UserCheck, labelKey: 'specialists' },
       { href: '/invites', icon: Mail, labelKey: 'invites' },
       { href: '/transactions', icon: Receipt, labelKey: 'transactions' },
