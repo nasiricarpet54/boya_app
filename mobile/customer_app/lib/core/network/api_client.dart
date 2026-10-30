@@ -172,6 +172,14 @@ final dioProvider = Provider<Dio>((ref) {
   );
   dio.interceptors.add(AuthInterceptor(store: ref.watch(sessionStoreProvider)));
 
+  // Force UTF-8 decoding for all API responses
+  dio.options.responseDecoder = (bytes, options, type) {
+    if (type == ResponseType.json) {
+      return jsonDecode(utf8.decode(bytes));
+    }
+    return utf8.decode(bytes);
+  };
+
   
 
   
