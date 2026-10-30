@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:boya_shared/boya_shared.dart';
 import '../../application/specialist_providers.dart';
+import '../../../../core/network/api_client.dart';
 
 class MobileSpecialistsScreen extends ConsumerWidget {
   const MobileSpecialistsScreen({super.key});
@@ -14,7 +15,7 @@ class MobileSpecialistsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('متخصصان سیار')),
       body: specialistsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('خطا: $err')),
+        error: (err, _) => Center(child: Text('خطا: ${messageFromDio(err)}')),
         data: (specialists) {
           if (specialists.isEmpty) {
             return const Center(child: Text('هیچ متخصص سیاری یافت نشد.'));
