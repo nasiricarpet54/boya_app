@@ -1,316 +1,319 @@
+import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
-import 'package:boya_shared/theme/boya_colors.dart';
-import 'package:boya_shared/theme/boya_typography.dart';
-import '../../../../shared/widgets/boya_header.dart';
-import '../../../../shared/widgets/boya_salon_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
-class HomeScreen extends StatefulWidget {
+import '../../../location/application/city_provider.dart';
+import '../../application/home_providers.dart';
+import '../../data/salon_api.dart';
+import '../../domain/salon_summary.dart';
+import '../widgets/bottom_nav.dart';
+import '../widgets/category_grid.dart';
+import '../widgets/filter_chips.dart';
+import '../widgets/promo_banner.dart';
+import '../widgets/salon_card.dart';
+import '../widgets/search_bar.dart';
+import '../widgets/top_bar.dart';
+
+/// Salons around [locationProvider], nearest first, optionally filtered by
+/// [selectedCategoryProvider] and, if filtered, by [homeSameDayFilterProvider]
+/// or the «باز الان» (Open Now) chip through [homeOpenNowFilterProvider].
+///
+/// This mirrors [nearbySalonsProvider] but lets errors surface: the shared
+/// provider catches every failure and returns an empty list so the search
+/// screen degrades gracefully, whereas the home feed needs the failure to
+/// render its retry button. Defined here rather than in `home_providers.dart`
+/// because only this screen consumes it.
+final homeSalonsProvider = FutureProvider<List<SalonSummary>>((ref) async {
+  final location = ref.watch(locationProvider);
+  final categorySlug = ref.watch(selectedCategoryProvider);
+  final mobileOnly = ref.watch(homeMobileFilterProvider);
+  
+  final city = ref.watch(cityProvider);
+  final sameDay = ref.watch(homeSameDayFilterProvider);
+  final openNowOnly = ref.watch(homeOpenNowFilterProvider);
+
+  final salons = await ref.watch(salonsApiProvider).getSalons(
+        lat: location.lat,
+        lng: location.lng,
+        cityId: city.cityId,
+        categorySlug: categorySlug?.isNotEmpty == true ? categorySlug : null,
+        sort: 'distance',
+        mobile: mobileOnly ? true : null,
+      );
+  if (sameDay || openNowOnly) {
+    return salons.where((s) => s.isOpenNow).toList();
+  }
+  return salons;
+});
+
+/// Snappfood-style landing screen: header, search, categories, banner,
+/// filters and the nearby salon feed.
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCity = 'تهران';
-  final TextEditingController _searchController = TextEditingController();
-  bool _filterMobileOnly = false;
-
-  final List<Map<String, dynamic>> _serviceLines = [
-    {'id': 'all', 'name': 'همه خدمات', 'emoji': '✨'},
-    {'id': 'hair', 'name': 'مو و استایل', 'emoji': '💇‍♀️'},
-    {'id': 'nail', 'name': 'ناخن و دست', 'emoji': '💅'},
-    {'id': 'lashes', 'name': 'مژه و ابرو', 'emoji': '👁️'},
-    {'id': 'skin', 'name': 'پوست و فیشیال', 'emoji': '🫧'},
-    {'id': 'makeup', 'name': 'میکاپ عروس', 'emoji': '💄'},
-    {'id': 'spa', 'name': 'اسپا و ماساژ', 'emoji': '🕯️'},
-    {'id': 'mobile', 'name': 'خدمات در محل', 'emoji': '🚗'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: BoyaColors.background,
-      appBar: BoyaHeader(
-        selectedCity: _selectedCity,
-        onCityTapped: () {},
-      ),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildHeroBanner(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: _buildSearchBar(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: _buildServiceLines(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('سالن‌های مورد تایید بویا', style: BoyaTypography.heading1),
-                      Text('تضمین اصالت مجوز و نظارت کیفی', style: BoyaTypography.bodySmall),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(foregroundColor: BoyaColors.accentRose),
-                    child: const Row(
-                      children: [
-                        Text('لیست کامل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        Icon(Icons.chevron_left, size: 16),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return BoyaSalonCard(
-                    salon: {
-                      'name': 'سالن زیبایی و عمارت گل سرخ',
-                      'city': 'تهران',
-                      'district': 'الهیه',
-                      'coverImage': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1000&q=80',
-                      'isApproved': true,
-                      'services': [
-                        {'name': 'کراتین و احیا', 'durationMinutes': 120, 'price': 3800000}
-                      ],
-                      'specialists': [
-                        {'name': 'مریم شمس‌آرا', 'role': 'فیشیالیست', 'avatar': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&q=80'}
-                      ],
-                      'availableSlots': []
-                    },
-                    isWishlisted: false,
-                    onToggleWishlist: () {},
-                    onBookNow: (service, specialist, date, time) {},
-                    onViewPortfolio: (specialist) {},
-                  );
-                },
-                childCount: 3,
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _buildFeaturesBanner(),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildHeroBanner() {
-    return Container(
-      decoration: BoxDecoration(
-        color: BoyaColors.primary,
-        borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(
-          image: const NetworkImage('https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(BoyaColors.primary.withOpacity(0.85), BlendMode.srcOver),
-        ),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: BoyaColors.surface.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: BoyaColors.accentSilk.withOpacity(0.3)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.auto_awesome, size: 14, color: BoyaColors.accentSilk),
-                SizedBox(width: 6),
-                Text('پلتفرم جامع رزرواسیون زیبایی', style: TextStyle(color: BoyaColors.accentSilk, fontSize: 11, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'رزرو آنلاین معتبرترین سالن‌ها\nو اعزام متخصص در محل',
-            style: TextStyle(fontFamily: BoyaTypography.fontFamily, fontSize: 22, fontWeight: FontWeight.w900, color: BoyaColors.surface, height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'دسترسی آسان به برترین سالن‌ها و متخصصین تایید شده در تهران. بدون کارمزد، با تایید آنی.',
-            style: TextStyle(color: BoyaColors.background, fontSize: 12, height: 1.5),
-          ),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BoyaColors.accentRose,
-                  foregroundColor: BoyaColors.surface,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  elevation: 0,
-                ),
-                child: const Text('جستجو و رزرو نوبت', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _filterMobileOnly = !_filterMobileOnly),
-                icon: Icon(Icons.directions_car, size: 16, color: _filterMobileOnly ? BoyaColors.primary : BoyaColors.surface),
-                label: Text(
-                  _filterMobileOnly ? 'فیلتر سیار فعال است' : 'خدمات در منزل',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _filterMobileOnly ? BoyaColors.primary : BoyaColors.surface),
-                ),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: _filterMobileOnly ? BoyaColors.accentSilk : Colors.transparent,
-                  side: BorderSide(color: _filterMobileOnly ? BoyaColors.accentSilk : BoyaColors.surface.withOpacity(0.3)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return TextField(
-      controller: _searchController,
-      decoration: InputDecoration(
-        hintText: 'جستجوی سریع: کراتین مو، فیشیال، نام سالن...',
-        hintStyle: const TextStyle(color: BoyaColors.textSecondary, fontSize: 12),
-        prefixIcon: const Icon(Icons.search, color: BoyaColors.accentRose),
-        filled: true,
-        fillColor: BoyaColors.surface,
-        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: BoyaColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: BoyaColors.accentRose, width: 1.5),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServiceLines() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('لاین‌های تخصصی خدمات زیبایی', style: BoyaTypography.heading1),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.85,
-          ),
-          itemCount: _serviceLines.length,
-          itemBuilder: (context, index) {
-            final line = _serviceLines[index];
-            return GestureDetector(
-              onTap: () {},
+      backgroundColor: BoyaColors.cream,
+      body: RefreshIndicator(
+        // Invalidate then await the fresh future so the spinner stays visible
+        // for as long as the refetch actually takes.
+        onRefresh: () async {
+          ref.invalidate(homeSalonsProvider);
+          await ref.read(homeSalonsProvider.future);
+        },
+        child: ListView(
+          // Pull-to-refresh must stay reachable even when the feed fits on one
+          // screen, which is the common case below the fold on a short list.
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          children: [
+            const HomeTopBar(),
+            const SizedBox(height: 12),
+            HomeSearchBar(onTap: () => context.push('/search')),
+            const SizedBox(height: 16),
+            const CategoryGrid(),
+            const SizedBox(height: 16),
+            const PromoBanner(),
+            const SizedBox(height: 16),
+            // Mobile specialists banner
+            InkWell(
+              onTap: () => context.push('/mobile-specialists'),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: BoyaColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: BoyaColors.border),
+                  border: Border.all(color: BoyaColors.primary),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
-                    Text(line['emoji']!, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(height: 8),
-                    Text(
-                      line['name']!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: BoyaColors.textMain),
+                    Icon(Icons.directions_car, color: BoyaColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'متخصصان سیار',
+                        style: BoyaTypography.body.copyWith(fontWeight: FontWeight.w600),
+                      ),
                     ),
+                    Icon(Icons.chevron_right, color: BoyaColors.inkMuted, size: 20),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeaturesBanner() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: BoyaColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BoyaColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFeatureItem(Icons.verified_user, BoyaColors.success, 'تاییدیه پیامکی', 'دریافت فوری کد رهگیری'),
-          const SizedBox(width: 8),
-          _buildFeatureItem(Icons.calendar_month, BoyaColors.accentRose, 'بدون تداخل', 'الگوریتم هوشمند زمانبندی'),
-          const SizedBox(width: 8),
-          _buildFeatureItem(Icons.directions_car, BoyaColors.warning, 'خدمات سیار', 'اعزام متخصص به منزل'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(IconData icon, Color color, String title, String subtitle) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: BoyaColors.background,
-              shape: BoxShape.circle,
-              border: Border.all(color: BoyaColors.border),
             ),
-            child: Icon(icon, color: color, size: 20),
+            const SizedBox(height: 16),
+            const FilterChips(),
+            const SizedBox(height: 8),
+            _SectionHeader(
+              title: 'سالن‌های اطراف شما',
+              // The full salon listing screen is not built yet.
+              onSeeAll: () {},
+            ),
+            const _NearbySalons(),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      bottomNavigationBar: HomeBottomNav(
+        currentIndex: 0,
+        onSelect: (index) => _onTabSelected(context, index),
+      ),
+    );
+  }
+}
+
+/// The salon feed with explicit loading, error, empty and success states.
+///
+/// The list layout is unchanged from before: one full-width [SalonCard] per
+/// row. `when` only swaps what fills the section, never its shape.
+class _NearbySalons extends ConsumerWidget {
+  const _NearbySalons();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final salonsAsync = ref.watch(homeSalonsProvider);
+    return salonsAsync.when(
+      loading: () => const _SalonShimmerList(),
+      error: (_, _) => _SalonFeedError(
+        onRetry: () => ref.invalidate(homeSalonsProvider),
+      ),
+      data: (salons) {
+        if (salons.isEmpty) {
+          return const _SalonFeedEmpty();
+        }
+        return Column(
+          children: [for (final salon in salons) SalonCard(salon: salon)],
+        );
+      },
+    );
+  }
+}
+
+void _onTabSelected(BuildContext context, int index) {
+  switch (index) {
+    case 0:
+      // Already on home.
+      break;
+    case 1:
+      context.go('/profile/bookings');
+      break;
+    case 2:
+      // Offers screen is not built yet.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تخفیف‌ها به‌زودی')),
+      );
+      break;
+    case 3:
+      context.go('/profile');
+      break;
+    default:
+      break;
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.onSeeAll});
+
+  final String title;
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(title, style: BoyaTypography.title.copyWith(fontSize: 18))),
+          TextButton(
+            onPressed: onSeeAll,
+            style: TextButton.styleFrom(
+              foregroundColor: BoyaColors.primary,
+              textStyle: BoyaTypography.caption.copyWith(fontWeight: FontWeight.w600),
+            ),
+            child: const Text('مشاهده همه'),
           ),
-          const SizedBox(height: 8),
-          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: BoyaColors.textMain), textAlign: TextAlign.center),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 9, color: BoyaColors.textSecondary), textAlign: TextAlign.center),
         ],
+      ),
+    );
+  }
+}
+
+/// Three shimmer placeholders shaped like a [SalonCard] so the feed does not
+/// jump when the real rows arrive.
+class _SalonShimmerList extends StatelessWidget {
+  const _SalonShimmerList();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: BoyaColors.line,
+      highlightColor: BoyaColors.primarySubtle,
+      child: const Column(
+        children: [
+          _SalonCardPlaceholder(),
+          _SalonCardPlaceholder(),
+          _SalonCardPlaceholder(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SalonCardPlaceholder extends StatelessWidget {
+  const _SalonCardPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Card(
+        elevation: 1,
+        child: SizedBox(
+          height: 120,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                _bar(100, 100, 12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _bar(150, 14, 4),
+                      const SizedBox(height: 8),
+                      _bar(210, 10, 4),
+                      const SizedBox(height: 8),
+                      _bar(110, 10, 4),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bar(double width, double height, double radius) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: BoyaColors.white,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+class _SalonFeedEmpty extends StatelessWidget {
+  const _SalonFeedEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 28),
+      child: Center(
+        child: Text(
+          'سالنی در این محدوده پیدا نشد',
+          style: BoyaTypography.body,
+        ),
+      ),
+    );
+  }
+}
+
+class _SalonFeedError extends StatelessWidget {
+  const _SalonFeedError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'دریافت لیست سالن‌ها ناموفق بود',
+              style: BoyaTypography.body.copyWith(color: BoyaColors.inkMuted),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('تلاش دوباره'),
+            ),
+          ],
+        ),
       ),
     );
   }

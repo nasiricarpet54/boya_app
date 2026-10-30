@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/widgets/boya_app_bar.dart';
-import '../../../../shared/widgets/boya_salon_card.dart';
 import '../../application/home_providers.dart';
 import '../widgets/salon_card.dart';
 
@@ -99,18 +98,7 @@ class SearchScreen extends ConsumerWidget {
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: salons.length,
-                  itemBuilder: (context, index) {
-                    final salon = salons[index];
-                    return BoyaSalonCard(
-                      name: salon.name,
-                      district: salon.cityName.isNotEmpty ? salon.cityName : salon.provinceName,
-                      coverUrl: salon.imageUrl,
-                      rating: salon.rating,
-                      reviewsCount: salon.reviewCount,
-                      isApproved: false,
-                      onBookTapped: () => context.push('/salon/${salon.id}'),
-                    );
-                  },
+                  itemBuilder: (context, index) => SalonCard(salon: salons[index]),
                 );
               },
               loading: () => const Center(
