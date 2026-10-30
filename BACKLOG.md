@@ -495,3 +495,48 @@ scope for the current feature set but must be tracked.
 - **Location:** `admin-panel/src/lib/utils/jalali.ts:12`
 - **Reason:** `(moment as any).loadPersian(...)` needs the cast
 - **Fix:** consider adding `@types/moment-jalaali` with `loadPersian` declared
+### Path with `[`، `]`، `(`، `)`، `$`
+Always use `-LiteralPath`. `Get-Item "path\[locale]\file"` returns empty (no error)
+because `[locale]` is a wildcard character class. `Get-Item -LiteralPath "...\[locale]\file"` works.
+
+### Type-check with project config
+Use `npx tsc --noEmit -p tsconfig.build.json` (NOT `npx tsc file1.ts file2.ts`).
+Without `-p`, `experimentalDecorators` is not applied and NestJS decorators fail with 91 false positives.
+
+### Multi-line TS content
+PowerShell here-strings (`@'...'@`) crash on large Persian content (>500 chars).
+For files > 20 lines or with Persian، use VS Code manual edit + `Ctrl+S`.
+
+### Pre-write check
+Before `[IO.File]::WriteAllText($path, ...)`، always run:
+`git ls-files -- $path` — if it returns a match, the file is tracked; STOP and read it.
+
+### P-03  Flutter test: `_MobileSection` not rendering in `mobile_service_test.dart`
+
+- **Symptom:** 5 tests in `the booking form toggle` describe fail with `Found 0 widgets with type "SwitchListTile"` (and `findsOneWidget` fails for `'. محل اجرا'`).
+- **Root cause:** Not proven. Hypothesis: `_MobileSection` inside `if (showCalendar) ...[...]` fails to render despite `showCalendar=true` (both `specialistId` and `serviceId` set in test). Possible contributors: `slotsAsync!` null-check throw before `_MobileSection` builds, or Column layout issue.
+- **Impact:** 5/74 tests fail in `mobile/customer_app` suite. Blocks CI green. Pre-existing  NOT caused by admin-panel session (verified: only `city_picker_sheet.dart` touched in session, unrelated).
+- **Fix attempted:** Replace `scrollUntilVisible` with `ensureVisible` guard in `pumpForm`  narrowed error message but did NOT resolve root cause.
+- **Next step (separate session):** Instrument `booking_form.dart` with `debugPrint` or breakpoint to confirm whether `_MobileSection` build runs at all in test. Check if `slotsAsync` (AsyncValue) throws in `SlotGrid(slots: slotsAsync!, ...)` before reaching `_MobileSection`. Check `pumpForm` widget tree structure (viewport size, provider overrides).
+
+### P-04  CI: `admin-panel` lock drift (`npm ci` fails)
+
+- **Symptom:** CI `admin-panel` job fails: `Missing: @opentelemetry/api@1.10.0`, `@emnapi/core`, `@emnapi/runtime` from lock file.
+- **Root cause:** `admin-panel/package-lock.json` has `@opentelemetry/api` only as peer dep ref (lines 2385, 2392)  not resolved as installable. Transitive from `next@14.2.35`.
+- **Impact:** CI `admin-panel` job cannot pass `npm ci`.
+- **Fix:** `cd admin-panel; npm install --package-lock-only` (regenerate lock, do not modify package.json).
+- **Status:** In progress this session (Step 3 below).
+### P-04b  NPM CI lock drift: diagnostic results (final)
+
+- **Finding:** `npm ci --dry-run` **passes locally** (Windows, node v24.11.0, npm 11.6.1). `npm install --package-lock-only` reports "up to date"  no change to lockfile.
+- **Root cause (final):** Environment mismatch.
+  - Local: node 24 / npm 11  optional peer deps pruned (`@opentelemetry/api`, `@emnapi/*` are `optional: true` in `peerDependenciesMeta` of `next`).
+  - CI: node 22 / npm 10  `npm ci` treats missing optional peer resolutions as lockfile errors.
+- **Attempted fixes (all rejected):**
+  - `npm install --package-lock-only` on Windows  "up to date", no change (npm 11 correctly skips optional peers).
+- **Recommended fix (separate session, requires Linux):**
+  - Regenerate lockfile on Linux (docker or CI): `rm -rf node_modules && npm install`  commit updated lock.
+  - OR add `@opentelemetry/api`, `@emnapi/core`, `@emnapi/runtime` explicitly to `admin-panel/package.json` dependencies (R19 approval required  touches dependency set).
+  - OR relax CI: `npm install` instead of `npm ci` (loses lockfile guarantee  discouraged).
+- **Impact:** admin-panel CI job red on Linux. Does NOT block Windows local development.
+- **Cannot be fixed on Windows**  npm 11 behavior differs from npm 10. Hard stop.
