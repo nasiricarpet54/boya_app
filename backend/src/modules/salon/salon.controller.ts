@@ -655,10 +655,17 @@ export class CategoryController {
     return this.salons.listCategories();
   }
 
-  @Get('customer/mobile-specialists')
+}
+
+@Public()
+@ApiTags('customer')
+@Controller('customer')
+export class CustomerController {
+  constructor(private readonly salons: SalonService) {}
+
+  @Get('mobile-specialists')
   @ApiOperation({ summary: 'لیست متخصصان سیار' })
   async getMobileSpecialists(): Promise<MobileSpecialistDto[]> {
     return this.salons.getMobileSpecialists();
   }
 }
-
