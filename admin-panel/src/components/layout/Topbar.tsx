@@ -48,11 +48,11 @@ export function Topbar() {
         <span className="text-title font-bold text-ink">{tCommon('appName')}</span>
       </div>
       
-      <p className="flex items-center gap-2 text-caption text-ink-muted">
+      <div className="flex flex-1 items-center justify-center gap-2 text-caption text-ink-muted">
         <CalendarDays className="h-4 w-4" aria-hidden />
         {/* Reserved width keeps the bar from shifting once the date arrives. */}
         <span className="tabular-nums">{today ?? '—'}</span>
-      </p>
+      </div>
 
       <div className="flex items-center gap-2">
         <DropdownMenu.Root>
