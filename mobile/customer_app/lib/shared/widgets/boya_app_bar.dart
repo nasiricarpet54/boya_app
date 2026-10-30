@@ -143,7 +143,7 @@ class BoyaAppBar extends StatelessWidget implements PreferredSizeWidget {
           titlePadding: EdgeInsetsDirectional.only(
             start: kToolbarHeight,
             end: kToolbarHeight,
-            bottom: (bottom?.preferredSize.height ?? 0) + 16,
+            bottom: (bottom?.preferredSize.height ?? 0) + 32,
           ),
           background: flexibleSpaceBackground,
         ),
