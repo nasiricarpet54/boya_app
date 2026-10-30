@@ -20,6 +20,8 @@
     "migration:generate": "typeorm-ts-node-commonjs -d src/database/data-source.migration.ts migration:generate"
   },
   "dependencies": {
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@jeonghochoi/rbac": "0.1.7",
     "@keyv/redis": "5.1.6",
     "@mirad-work/sms-core": "0.5.1",
