@@ -1,4 +1,4 @@
-﻿import 'package:boya_shared/boya_shared.dart';
+import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import '../../../location/domain/customer_address.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,7 +92,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final salonAsync = ref.watch(salonDetailProvider(widget.salonId));
     final bookingState = ref.watch(bookingProvider);
     return Scaffold(
-      appBar: const BoyaAppBar(title: 'ط±ط²ط±ظˆ ظ†ظˆط¨طھ'),
+      appBar: const BoyaAppBar(title: 'رزرو نوبت'),
       body: salonAsync.when(
         data: (salon) {
           final (:services, :loading) = _bookableServices(salon);
@@ -140,7 +140,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => const Center(child: Text('ط®ط·ط§ ط¯ط± ط¯ط±غŒط§ظپطھ ط§ط·ظ„ط§ط¹ط§طھ', style: BoyaTypography.body)),
+        error: (_, _) => const Center(child: Text('خطا در دریافت اطلاعات', style: BoyaTypography.body)),
       ),
       bottomNavigationBar: salonAsync.maybeWhen(
         data: (salon) => BookingBar(
@@ -186,7 +186,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     // is worth stopping locally before the dialog is even shown.
     if (_isMobile && (_address?.address.trim() ?? '').isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ط¢ط¯ط±ط³ ظ…ط´طھط±غŒ ط§ظ„ط²ط§ظ…غŒ ط§ط³طھ')),
+        const SnackBar(content: Text('آدرس مشتری الزامی است')),
       );
       return;
     }
@@ -235,7 +235,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     for (final specialist in salon.specialists) {
       if (specialist.id == _specialistId) return specialist.fullName;
     }
-    return 'ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡';
+    return 'انتخاب نشده';
   }
 
   String _serviceName(SalonDetail salon) {
@@ -243,7 +243,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     for (final service in services) {
       if (service.id == _serviceId) return service.name;
     }
-    return 'ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡';
+    return 'انتخاب نشده';
   }
 }
 

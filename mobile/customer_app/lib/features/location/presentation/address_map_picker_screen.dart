@@ -1,4 +1,4 @@
-﻿import 'package:boya_shared/boya_shared.dart';
+import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -32,7 +32,7 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ط§ظ†طھط®ط§ط¨ ط¢ط¯ط±ط³ ط¬ط¯غŒط¯')),
+      appBar: AppBar(title: const Text('انتخاب آدرس جدید')),
       body: _loaded && _position != null
           ? Container(color: Colors.grey[300], child: const Center(child: Text('نقشه موقتا غیرفعال است')))
           : const Center(child: CircularProgressIndicator()),
@@ -51,7 +51,7 @@ class _NewAddressMapScreenState extends State<NewAddressMapScreen> {
                     side: const BorderSide(color: BoyaColors.primary),
                   ),
                   icon: const Icon(Icons.check),
-                  label: const Text('ط°ط®غŒط±ظ‡ ط¢ط¯ط±ط³'),
+                  label: const Text('ذخیره آدرس'),
                 ),
               ),
             ],

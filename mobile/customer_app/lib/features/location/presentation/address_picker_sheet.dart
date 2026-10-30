@@ -1,10 +1,10 @@
-﻿import 'package:boya_shared/boya_shared.dart';
+import 'package:boya_shared/boya_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../domain/customer_address.dart';
 
-/// Bottom sheet: saved addresses + آ«ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯آ» tile.
+/// Bottom sheet: saved addresses + آ«افزودن آدرس جدیدآ» tile.
 ///
 /// Decision 9: the address UI is shown only inside the booking form.
 /// Decision 6: no manual address text field â€” the customer selects a saved
@@ -48,7 +48,7 @@ class AddressPickerSheet extends StatelessWidget {
               color: theme.colorScheme.primary.withValues(alpha: 0.16),
             ),
             Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Text(
-                'ط¢ط¯ط±ط³ ظ…ظˆط±ط¯ ظ†ط¸ط±',
+                'آدرس مورد نظر',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -63,7 +63,7 @@ class AddressPickerSheet extends StatelessWidget {
                       const Padding(
                         padding: EdgeInsets.all(12),
                         child: Text(
-                          'ظ‡ظ†ظˆط² ط¢ط¯ط±ط³ ط°ط®غŒط±ظ‡â€Œط´ط¯ظ‡â€Œط§غŒ ظ†ط¯ط§ط±غŒط¯. ط¯ع©ظ…ظ‡ آ«ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯آ» ط±ط§ ط¨ط²ظ†غŒط¯.',
+                          'هنوز آدرس ذخیره‌شده‌ای ندارید. دکمه «افزودن آدرس جدید» را بزنید.',
                           style: BoyaTypography.body,
                         ),
                       ),
@@ -95,7 +95,7 @@ class AddressPickerSheet extends StatelessWidget {
                   : null,
               leading: const Icon(Icons.add_location,
               color: BoyaColors.primary),
-              title: const Text('ط§ظپط²ظˆط¯ظ† ط¢ط¯ط±ط³ ط¬ط¯غŒط¯'),
+              title: const Text('افزودن آدرس جدید'),
               trailing: const Icon(Icons.chevron_right),
             ),
           ],
