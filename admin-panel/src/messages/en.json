@@ -585,6 +585,42 @@
       "saveFailed": "Save failed."
     }
   },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Profile, preferences and panel settings.",
+    "profile": {
+      "title": "My profile",
+      "phone": "Phone",
+      "name": "Full name",
+      "nameEmpty": "Not set",
+      "role": "Role",
+      "tenant": "Salon",
+      "tenantEmpty": ""
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "toggleTheme": "Toggle theme",
+      "language": "Language"
+    },
+    "comingSoon": {
+      "title": "Coming soon",
+      "description": "Advanced settings (SMTP, SMS, general) will arrive in the next phase."
+    },
+    "roles": {
+      "customer": "Customer",
+      "salon_owner": "Salon owner",
+      "line_manager": "Line manager",
+      "specialist": "Specialist",
+      "admin": "Admin",
+      "super_admin": "Super admin",
+      "employed": "Employed",
+      "booth_renter": "Booth renter",
+      "freelance_mobile": "Mobile specialist"
+    }
+  },
   "placeholder": {
     "title": "Coming soon",
     "description": "This section is wired to the API in the next step.",

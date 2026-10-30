@@ -585,6 +585,42 @@
       "saveFailed": "خطا در ذخیره."
     }
   },
+  "settings": {
+    "title": "تنظیمات",
+    "subtitle": "پروفایل ترجیحات و تنظیمات پنل.",
+    "profile": {
+      "title": "پروفایل من",
+      "phone": "شماره موبایل",
+      "name": "نام کامل",
+      "nameEmpty": "ثبت نشده",
+      "role": "نقش",
+      "tenant": "سالن",
+      "tenantEmpty": ""
+    },
+    "preferences": {
+      "title": "ترجیحات",
+      "theme": "پوسته",
+      "themeLight": "روشن",
+      "themeDark": "تیره",
+      "toggleTheme": "تغییر پوسته",
+      "language": "زبان"
+    },
+    "comingSoon": {
+      "title": "بهزودی",
+      "description": "تنظیمات پیشرفتهتر (SMTP پیامک تنظیمات عمومی) در فاز بعد اضافه میشود."
+    },
+    "roles": {
+      "customer": "مشتری",
+      "salon_owner": "مالک سالن",
+      "line_manager": "مدیر لاین",
+      "specialist": "متخصص",
+      "admin": "ادمین",
+      "super_admin": "ادمین ارشد",
+      "employed": "استخدامی",
+      "booth_renter": "اجارهباکس",
+      "freelance_mobile": "متخصص سیار"
+    }
+  },
   "placeholder": {
     "title": "به‌زودی",
     "description": "این بخش در مرحلهٔ بعد به API متصل می‌شود.",
