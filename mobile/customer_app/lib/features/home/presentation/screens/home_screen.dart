@@ -108,7 +108,7 @@ class HomeScreen extends ConsumerWidget {
             const FilterChips(),
             const SizedBox(height: 8),
             _SectionHeader(
-              title: 'سالن‌های اطراف شما',
+              title: '������? ����� ���',
               // The full salon listing screen is not built yet.
               onSeeAll: () {},
             ),

@@ -49,7 +49,7 @@ class _BoyaLocationPickerState extends State<BoyaLocationPicker> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'انتخاب موقعیت روی نقشه',
+                  '������ ����?� ��? ����',
                   style: BoyaTypography.title.copyWith(color: BoyaColors.ink),
                 ),
                 TextButton(
@@ -96,7 +96,7 @@ class _BoyaLocationPickerState extends State<BoyaLocationPicker> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'برای ثبت آدرس، محل مورد نظر را روی نقشه انتخاب کنید.',
+              '���? ��� ���ӡ ��� ���� ��� �� ��? ���� ������ ��?�.',
               style: BoyaTypography.caption,
               textAlign: TextAlign.center,
             ),

@@ -45,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
             _MenuItem(icon: Icons.calendar_month, title: 'رزروهای من', onTap: () => context.push('/profile/bookings')),
             _MenuItem(
               icon: Icons.notifications_outlined,
-              title: 'اعلان‌ها',
+              title: '�������',
               onTap: () => context.push('/notifications'),
               // Same counter as the home bell, so the two never disagree.
               badge: unread,
@@ -69,7 +69,7 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator(color: BoyaColors.primary)),
-        error: (_, _) => const Center(child: Text('خطا در دریافت اطلاعات', style: BoyaTypography.body)),
+        error: (_, _) => const Center(child: Text('��� �� ��?��� �������', style: BoyaTypography.body)),
       ),
     );
   }

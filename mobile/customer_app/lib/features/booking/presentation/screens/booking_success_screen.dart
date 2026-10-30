@@ -30,7 +30,7 @@ class BookingSuccessScreen extends ConsumerWidget {
           const Icon(Icons.check_circle, size: 96, color: BoyaColors.success),
           const SizedBox(height: 16),
           Text(
-            'درخواست ثبت شد، در انتظار تایید سالن',
+            '������� ��� �ϡ �� ������ ��??� ����',
             textAlign: TextAlign.center,
             style: BoyaTypography.headline,
           ),
@@ -40,7 +40,7 @@ class BookingSuccessScreen extends ConsumerWidget {
                 // ADR-011: the specialist travels to the customer, so the copy
                 // promises a visit rather than a salon appointment.
                 ? 'پس از تایید سالن، متخصص در محل شما حاضر می‌شود.'
-                : 'پس از تایید سالن، نوبت شما قطعی می‌شود.',
+                : '�� �� ��??� ���� ���� ��� ���? �?����.',
             textAlign: TextAlign.center,
             style: BoyaTypography.body.copyWith(color: BoyaColors.inkMuted),
           ),
@@ -69,7 +69,7 @@ class BookingSuccessScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                     ],
                     Text(
-                      'متخصص در تاریخ و ساعت مقرر به این آدرس مراجعه می‌کند.',
+                      '����� �� ���?� � ���� ���� �� �?� ���� ������ �?����.',
                       textAlign: TextAlign.center,
                       style: BoyaTypography.caption,
                     ),
@@ -100,10 +100,10 @@ class BookingSuccessScreen extends ConsumerWidget {
                   children: [
                     const Icon(Icons.storefront_outlined, size: 40, color: BoyaColors.primary),
                     const SizedBox(height: 12),
-                    Text('تسویه در محل، هنگام مراجعه', style: BoyaTypography.title),
+                    Text('���?� �� ��� ���� ������', style: BoyaTypography.title),
                     const SizedBox(height: 8),
                     Text(
-                      'پرداخت آنلاین در بویا وجود ندارد؛ مبلغ خدمت را هنگام مراجعه به سالن پرداخت می‌کنید.',
+                      '������ ����?� �� ��?� ���� ����Ϻ ���� ���� �� ���� ������ �� ���� ������ �?���?�.',
                       textAlign: TextAlign.center,
                       style: BoyaTypography.caption,
                     ),

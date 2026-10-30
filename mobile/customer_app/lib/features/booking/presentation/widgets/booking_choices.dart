@@ -42,7 +42,7 @@ class SlotNotice extends StatelessWidget {
         children: [
           Icon(friday ? Icons.weekend : Icons.event_busy, size: 48, color: BoyaColors.inkMuted),
           const SizedBox(height: 12),
-          Text(friday ? 'جمعه تعطیل است' : 'زمان خالی برای این روز وجود ندارد', style: BoyaTypography.body),
+          Text(friday ? '���� ���?� ���' : 'زمان خالی برای این روز وجود ندارد', style: BoyaTypography.body),
           const SizedBox(height: 4),
           Text(formatJalaliFull(date), style: BoyaTypography.caption),
         ],

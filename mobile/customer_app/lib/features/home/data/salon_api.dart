@@ -86,7 +86,7 @@ class SalonsApi {
     final json = response.data;
 
     if (json is! Map<String, dynamic>) {
-      throw StateError('پاسخ نامعتبر از سرویس سالن‌ها');
+      throw StateError('���� ������� �� ���?� ������');
     }
     return SalonSummary.fromJson(json);
   }

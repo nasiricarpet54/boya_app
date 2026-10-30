@@ -41,7 +41,7 @@ class SalonCard extends ConsumerWidget {
                   Expanded(child: _SalonInfo(salon: salon, cityName: cityName)),
                   IconButton(
                     onPressed: () => ref.read(favoriteSalonsProvider.notifier).toggle(salon.id),
-                    tooltip: isFavorite ? 'حذف از علاقه‌مندی' : 'افزودن به علاقه‌مندی',
+                    tooltip: isFavorite ? '��� �� ��������?' : '������ �� ��������?',
                     iconSize: 20,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -172,7 +172,7 @@ class _SalonInfo extends StatelessWidget {
             const SizedBox(width: 2),
             Expanded(
               child: Text(
-                '${_persianDecimal(salon.rating)} · ${toPersianDigits(salon.reviewCount)} نظر · '
+                '${_persianDecimal(salon.rating)} � ${toPersianDigits(salon.reviewCount)} ��� � '
                 '${_persianDecimal(salon.distanceKm)} کیلومتر',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -190,7 +190,7 @@ class _SalonInfo extends StatelessWidget {
         ),
         SizedBox(height: gap),
         Text(
-          'شروع قیمت از ${formatPrice(salon.minPrice)}',
+          '���� �?�� �� ${formatPrice(salon.minPrice)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: BoyaTypography.overline.copyWith(color: BoyaColors.ink, fontWeight: FontWeight.w600),

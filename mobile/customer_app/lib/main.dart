@@ -89,7 +89,7 @@ final _router = GoRouter(
     GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
     GoRoute(
       path: '/referral',
-      builder: (_, _) => const PlaceholderScreen(title: 'معرفی دوستان'),
+      builder: (_, _) => const PlaceholderScreen(title: '����? ������'),
     ),
     GoRoute(
       path: '/loyalty',

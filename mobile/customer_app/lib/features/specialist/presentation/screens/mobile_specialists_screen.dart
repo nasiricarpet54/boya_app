@@ -14,7 +14,7 @@ class MobileSpecialistsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('متخصصان سیار')),
       body: specialistsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('خطا: $err')),
+        error: (err, _) => Center(child: Text('���: $err')),
         data: (specialists) {
           if (specialists.isEmpty) {
             return const Center(child: Text('هیچ متخصص سیاری یافت نشد.'));

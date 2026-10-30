@@ -109,7 +109,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('غ±. ط§ظ†طھط®ط§ط¨ ظ…طھط®طµطµ', style: BoyaTypography.title),
+        Text('۱. انتخاب متخصص', style: BoyaTypography.title),
         const SizedBox(height: 8),
         for (final specialist in widget.salon.specialists)
           BookingChoice(
@@ -118,7 +118,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             onTap: () => widget.onSpecialist(specialist.id),
           ),
         const SizedBox(height: 24),
-        Text('غ². ط§ظ†طھط®ط§ط¨ ط®ط¯ظ…طھ', style: BoyaTypography.title),
+        Text('۲. انتخاب خدمت', style: BoyaTypography.title),
         const SizedBox(height: 8),
         // The list is the specialist's assigned services once one is picked â€”
         // never the whole salon catalogue â€” so the customer cannot choose a
@@ -133,8 +133,8 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
               widget.specialistId == null
-                  ? 'ط®ط¯ظ…طھغŒ ط«ط¨طھ ظ†ط´ط¯ظ‡ ط§ط³طھ'
-                  : 'ط¨ط±ط§غŒ ط§غŒظ† ظ…طھط®طµطµ ظ‡ظ†ظˆط² ط®ط¯ظ…طھغŒ طھط¹ط±غŒظپ ظ†ط´ط¯ظ‡ ط§ط³طھ.',
+                  ? 'خدمتی ثبت نشده است'
+                  : 'برای این متخصص هنوز خدمتی تعریف نشده است.',
               style: BoyaTypography.body,
             ),
           )
@@ -148,7 +148,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             ),
         if (showCalendar) ...[
           const SizedBox(height: 24),
-          Text('غ³. ط§ظ†طھط®ط§ط¨ طھط§ط±غŒط®', style: BoyaTypography.title),
+          Text('۳. انتخاب تاریخ', style: BoyaTypography.title),
           const SizedBox(height: 8),
           JalaliDatePickerCard(
             selectedDate: widget.date,
@@ -158,7 +158,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             specialistId: widget.specialistId,
           ),
           const SizedBox(height: 24),
-          Text('غ´. ط§ظ†طھط®ط§ط¨ ط³ط§ط¹طھ', style: BoyaTypography.title),
+          Text('۴. انتخاب ساعت', style: BoyaTypography.title),
           const SizedBox(height: 8),
           SlotGrid(slots: slotsAsync!, date: widget.date, selectedSlot: widget.selectedSlot, onSlot: widget.onSlot),
           const SizedBox(height: 24),
@@ -169,8 +169,8 @@ class _BookingFormState extends ConsumerState<BookingForm> {
             onMobile: widget.onMobile,
             onAddress: widget.onAddress,
             reason: switch (mobile) {
-              (true, false) => 'ط§غŒظ† ظ…طھط®طµطµ ط®ط¯ظ…ط§طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط¯ظ‡ط¯',
-              (false, _) => 'ط§غŒظ† ط®ط¯ظ…طھ ط¨ظ‡â€Œطµظˆط±طھ ط³غŒط§ط± ط§ط±ط§ط¦ظ‡ ظ†ظ…غŒâ€Œط´ظˆط¯',
+              (true, false) => 'این متخصص خدمات سیار ارائه نمی‌دهد',
+              (false, _) => 'این خدمت به‌صورت سیار ارائه نمی‌شود',
               _ => null,
             },
           ),
@@ -213,7 +213,7 @@ class _MobileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('غµ. ظ…ط­ظ„ ط§ط¬ط±ط§', style: BoyaTypography.title),
+        Text('۵. محل اجرا', style: BoyaTypography.title),
         const SizedBox(height: 8),
         Card(
           color: BoyaColors.surface,
@@ -232,13 +232,13 @@ class _MobileSection extends StatelessWidget {
                 onChanged: enabled ? onMobile : null,
                 // ignore: deprecated_member_use
                 activeColor: BoyaColors.primary,
-                title: const Text('ط®ط¯ظ…طھ ط¯ط± ظ…ط­ظ„ ظ…ظ†', style: BoyaTypography.body),
+                title: const Text('خدمت در محل من', style: BoyaTypography.body),
                 subtitle: enabled
                     ? null
                     : Text(
                         // A null subtitle would still take its slot's height, so
                         // the placeholder message is always present.
-                        reason ?? 'ط§ط¨طھط¯ط§ ظ…طھط®طµطµ ظˆ ط®ط¯ظ…طھ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯',
+                        reason ?? 'ابتدا متخصص و خدمت را انتخاب کنید',
                         style: BoyaTypography.overline.copyWith(color: BoyaColors.inkMuted),
                       ),
               ),
@@ -303,7 +303,7 @@ class _AddressField extends StatelessWidget {
                     child: Text(
                       hasAddress
                           ? address!.address
-                          : 'ط¢ط¯ط±ط³ ظ…ط´طھط±غŒ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯',
+                          : 'آدرس مشتری را انتخاب کنید',
                       style: BoyaTypography.body.copyWith(
                         color: hasAddress
                             ? BoyaColors.ink
@@ -330,7 +330,7 @@ class _AddressField extends StatelessWidget {
               children: [
                 Icon(Icons.payments_outlined, size: 14, color: BoyaColors.primary),
                 SizedBox(width: 6),
-                Text('ظ¾ط±ط¯ط§ط®طھ ط¯ط± ظ…ط­ظ„', style: BoyaTypography.overline),
+                Text('پرداخت در محل', style: BoyaTypography.overline),
               ],
             ),
           ),

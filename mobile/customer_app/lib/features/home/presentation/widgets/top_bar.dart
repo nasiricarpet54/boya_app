@@ -70,7 +70,7 @@ class HomeTopBar extends ConsumerWidget {
                   const Spacer(),
                   IconButton(
                     onPressed: () => context.push('/notifications'),
-                    tooltip: 'اعلان‌ها',
+                    tooltip: '�������',
                     icon: Badge(
                       isLabelVisible: unread > 0,
                       backgroundColor: BoyaColors.error,

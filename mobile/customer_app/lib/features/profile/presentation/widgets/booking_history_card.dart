@@ -102,12 +102,12 @@ class _StatusBadge extends StatelessWidget {
 
   String _label(String value) {
     return switch (value) {
-      'pending' => 'در انتظار تایید',
+      'pending' => '�� ������ ��??�',
       'confirmed' => 'تایید شده',
       'completed' => 'انجام‌شده',
       'reviewed' => 'بازخورد داده شده',
       'cancelled' => 'لغو‌شده',
-      'no_show' => 'عدم مراجعه',
+      'no_show' => '��� ������',
       _ => value,
     };
   }

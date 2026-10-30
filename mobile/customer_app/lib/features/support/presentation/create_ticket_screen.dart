@@ -77,7 +77,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Text('نوع تیکت', style: BoyaTypography.title),
+              const Text('��� �?��', style: BoyaTypography.title),
               const SizedBox(height: 8),
               _TicketTypeSelector(
                 value: _type,
@@ -88,15 +88,15 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                 controller: _subject,
                 textDirection: TextDirection.rtl,
                 decoration: const InputDecoration(
-                  labelText: 'موضوع',
+                  labelText: '�����',
                   hintText: 'خلاصه کوتاه',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   final text = (value ?? '').trim();
-                  if (text.isEmpty) return 'موضوع را وارد کنید';
-                  if (text.length < 3) return 'موضوع باید حداقل ۳ کاراکتر باشد';
-                  if (text.length > 200) return 'موضوع باید حداکثر ۲۰۰ کاراکتر باشد';
+                  if (text.isEmpty) return '����� �� ���� ��?�';
+                  if (text.length < 3) return '����� ��?� ����� ? ���ǘ�� ����';
+                  if (text.length > 200) return '����� ��?� ��ǘ�� ??? ���ǘ�� ����';
                   return null;
                 },
               ),
