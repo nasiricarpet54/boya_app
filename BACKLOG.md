@@ -432,4 +432,66 @@ provider can be dropped and the shared one can propagate errors for both.
 - font باید در فاز ۳ bundle شه (~۲ مگ Vazirmatn variable)
 - فرآیند مرحلهای: هر فاز یک commit + deploy + تست
 - هیچ فازی breaking نیست — incremental rollout
+# BOYA Backlog
 
+Items discovered during the admin-panel session (2026-10-30) that are out of
+scope for the current feature set but must be tracked.
+
+## Tech debt
+
+### T-01 — Pre-existing spec drift (`tsc -p tsconfig.json` fails)
+
+- **Symptom:** `npx tsc --noEmit -p tsconfig.json` reports 29 errors
+- **Files:**
+  - `backend/src/modules/addresses/addresses.service.spec.ts` (23 errors) — service signatures gained `tenantId` param (`list`, `get`, `create`, `update`, `setDefault`, `remove`) but spec calls old signatures
+  - `backend/src/modules/auth/auth.service.spec.ts` (6 errors) — spec refers to `redirectRouteFor`, `switchRole`, `activeRole`, `allowedRoles`, `redirectRoute` that no longer exist on `AuthService` / `AuthResponse`
+- **Impact:** production build (`nest build`) succeeds because `tsconfig.build.json` excludes `**/*spec.ts`. Only full type-check fails.
+- **Fix:** update specs to match current service signatures — separate task.
+
+### T-02 — Mojibake in `.git/hooks/pre-commit`
+
+- **Symptom:** Persian echo messages render as mojibake when the hook triggers
+- **Location:** `.git/hooks/pre-commit`
+- **Impact:** hook logic works (delete guard)؛ only echo text is garbled
+- **Fix:** rewrite hook messages in ASCII or re-encode the file as UTF-8
+
+## Process
+
+### P-01 — PowerShell `[locale]` wildcard bug
+
+- **Symptom:** `Get-ChildItem "admin-panel\src\app\[locale]\(protected)"` returns empty (no error)، because `[locale]` is a PowerShell character-class wildcard.
+- **Impact this session:** caused us to overwrite `specialists/page.tsx` believing it did not exist — needed `git checkout HEAD` rollback.
+- **Fix:** any path containing `[`, `]`, `(`, `)` or `$` MUST use `-LiteralPath`.
+- **Action:** add this rule to AI_RULES.md Section 18 (PowerShell Safe Patterns).
+
+## Deferred tasks (sub-tasks of completed work)
+
+### D-01 — Visual verification (all pages)
+
+- **Pages:** `/fa/dashboard` (Topbar)، `/fa/specialists`، `/fa/support`، `/fa/settings`
+- **Blocker:** backend/Docker not running in local dev during this session
+- **When resolved:** `docker compose -f docker-compose.production.yml up -d postgres redis backend` + `npm run dev` in admin-panel، then visually verify all 4 pages
+
+### D-02 — Task 4b — SMTP / SMS / feature flags
+
+- **Blocked on:** new backend `SettingsModule` (does not exist yet)
+- **Current state:** `settings/page.tsx` has a "coming soon" card for these
+
+### D-03 — Task 5b — Customer app reads `adminResponse`
+
+- **Symptom:** admin panel writes `admin_response`، but customer app has no UI to read it
+- **Impact:** support workflow is not end-to-end؛ customer never sees the answer
+- **Fix:** add ticket detail screen in `mobile/customer_app`
+
+### D-04 — Task 6b — Visual verify Persian date in Topbar
+
+- **Symptom:** runtime test via `npx tsx` shows `چهارشنبه ۶ آبان ۱۴۰۵`، but no browser test was performed
+- **Impact:** none expected، but no visual confirm
+
+## Chore
+
+### C-01 — `eslint-disable-next-line` in `jalali.ts`
+
+- **Location:** `admin-panel/src/lib/utils/jalali.ts:12`
+- **Reason:** `(moment as any).loadPersian(...)` needs the cast
+- **Fix:** consider adding `@types/moment-jalaali` with `loadPersian` declared
