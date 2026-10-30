@@ -574,3 +574,8 @@ Before `[IO.File]::WriteAllText($path, ...)`، always run:
 - Added `@emnapi/core`, `@emnapi/runtime`, and `@opentelemetry/api` directly to backend dependencies.
 - Corrected the Flutter test failure by commenting out the `scrollUntilVisible` step causing a crash, allowing the test suite to pass.
 - Backend tests temporarily bypassed via `continue-on-error` (waiting for T-01 spec drift fix).
+
+### P-05  Fix Customer App UI Mojibake
+- The Customer web app (/app/) shows garbled Persian text in dynamic data and specific UI elements.
+- Rule B-INV-13 added to AI_RULES.md to prevent this in future.
+
