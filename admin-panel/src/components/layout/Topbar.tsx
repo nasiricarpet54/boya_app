@@ -2,7 +2,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarDays, Check, Globe, LogOut, Moon, Sun, UserRound } from 'lucide-react';
+import { CalendarDays, Check, Globe, LogOut, Menu, Moon, Sun, UserRound } from 'lucide-react';
 import { BoyaLogo } from '@/components/ui/BoyaLogo';
 import { useEffect, useState } from 'react';
 
@@ -20,7 +20,7 @@ const LOCALE_LABEL: Record<Locale, string> = { fa: 'فارسی', en: 'English' }
 const MENU_ITEM =
   'flex h-10 w-full cursor-pointer select-none items-center gap-3 rounded-sm px-3 text-body text-ink outline-none transition-colors data-[highlighted]:bg-brand-subtle';
 
-export function Topbar() {
+export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const tTopbar = useTranslations('topbar');
   const tAuth = useTranslations('auth');
   const tCommon = useTranslations('common');
@@ -43,10 +43,19 @@ export function Topbar() {
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-6">
-      <div className="flex items-center gap-2">
-        <BoyaLogo className="h-8 w-auto" title="بویا" />
-        <span className="text-title font-bold text-ink">{tCommon('appName')}</span>
+      
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="md:hidden flex items-center justify-center p-2 rounded-md hover:bg-brand-subtle text-ink-muted"
+        aria-label="باز کردن منو"
+      >
+        <Menu className="h-6 w-6" aria-hidden />
+      </button>
+      <div className="hidden md:flex items-center gap-2">
+        {/* Logo moved to sidebar */}
       </div>
+
       
       <div className="flex flex-1 items-center justify-center gap-2 text-caption text-ink-muted">
         <CalendarDays className="h-4 w-4" aria-hidden />

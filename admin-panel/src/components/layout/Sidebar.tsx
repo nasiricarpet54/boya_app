@@ -17,7 +17,7 @@ import { BoyaLogo } from '@/components/ui/BoyaLogo';
  * why the shell anchors it with `border-e` and the brand rail uses `border-s` —
  * logical properties, never left/right.
  */
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
   const tAuth = useTranslations('auth');
@@ -40,9 +40,15 @@ export function Sidebar() {
   const pendingCount = dashboard?.stats.pendingApprovals ?? 0;
 
   return (
-    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface">
+    
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-ink/40 md:hidden" onClick={onClose} aria-hidden />
+      )}
+      <aside className={cn("fixed inset-y-0 right-0 z-50 flex h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-line bg-surface transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0", isOpen ? "translate-x-0" : "translate-x-full")}>
+
       <div className="flex h-16 items-center gap-3 border-b border-line px-4 pe-6">
-        <BoyaLogo className="h-8 w-auto" title={tCommon('appName')} />
+        <BoyaLogo className="h-10 w-auto max-w-[120px] shrink-0 object-contain" title={tCommon('appName')} />
         <div className="min-w-0">
           <p className="truncate text-title font-bold text-ink">{tCommon('appName')}</p>
           <p className="truncate text-overline text-ink-muted">{tCommon('tagline')}</p>
@@ -134,5 +140,6 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }
